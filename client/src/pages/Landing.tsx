@@ -279,15 +279,7 @@ export default function Landing() {
           </div>
 
           {/* System Status */}
-          <div className="terminal-window p-4 mb-8 text-left animated-item" style={{ animationDelay: '0.6s' }}>
-            <div className="font-mono text-sm space-y-2">
-              <div style={{ color: 'var(--color-accent)' }}>$ Live System Feed:</div>
-              <div className="text-gray-400">[STATUS] AI core initialized and stable.</div>
-              <div className="text-gray-400">[STATUS] Neural network connection is nominal.</div>
-              <div className="text-yellow-400">[ALERT] Solar flare activity detected. Uplink integrity at 96%.</div>
-              <div style={{ color: 'var(--color-accent)' }}>System is ready for your command</div>
-            </div>
-          </div>
+          
         </motion.div>
 
         {/* Three Column Layout */}
