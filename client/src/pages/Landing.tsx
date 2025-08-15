@@ -431,7 +431,9 @@ export default function Landing() {
             <div className="terminal-window animated-item" style={{ animationDelay: '1.5s' }}>
               <div className="terminal-header px-4 py-2 mb-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 3: Transmission</div>
+                  <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>
+                    Phase 3: Transmission
+                  </div>
                   <div className="text-white font-bold text-sm">CORE: TRANSPORT</div>
                 </div>
               </div>
@@ -477,9 +479,7 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Authentication Modal */}
+        {/* Authentication Modal */}
       {import.meta.env.VITE_REQUIRE_AUTH === 'true' && (
         <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
           <DialogContent className="terminal-window text-white border-none">
