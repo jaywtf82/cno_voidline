@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { NeonCard, NeonCardHeader, NeonCardTitle, NeonCardContent } from "@/components/ui/neon-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TerminalWindow } from "@/components/ui/terminal-window";
 import { Logo } from "@/components/Logo";
 import { GlitchWord } from "@/components/effects/GlitchWord";
 import { WaveDNA } from "@/components/visualizers/WaveDNA";
@@ -247,15 +248,14 @@ export default function Landing() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          {/* Terminal Title */}
-          <div className="terminal-window p-8 mb-8 animated-item" style={{ animationDelay: '0.3s' }}>
-
+          {/* Terminal Init Card */}
+          <TerminalWindow 
+            command="$ ./ai-mastering-core --init"
+            variant="init"
+            className="mb-8 animated-item" 
+            style={{ animationDelay: '0.3s' }}
+          >
             <div className="text-left font-mono">
-              <div className="text-2xl mb-4" style={{ color: 'var(--color-accent)' }}>
-                <span className="prompt">./ai-mastering-core --init</span>
-                <span className="cursor-blink"></span>
-              </div>
-
               <div className="text-sm space-y-2 text-gray-400 mb-8">
                 <p>Welcome, producer. Our advanced AI is ready to analyze and enhance your audio. Upload your track to begin the mastering process and unlock its full sonic potential.</p>
               </div>
@@ -269,7 +269,7 @@ export default function Landing() {
                 </button>
               </div>
             </div>
-          </div>
+          </TerminalWindow>
 
           {/* System Status */}
           
