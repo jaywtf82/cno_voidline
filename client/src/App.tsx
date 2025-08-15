@@ -27,10 +27,10 @@ function Router() {
         <>
           <Route path="/" component={Console} />
           <Route path="/console" component={Console} />
-          <Route path="/mocking" component={MockingPage} />
           <Route component={NotFound} />
         </>
       )}
+      <Route path="/mocking" component={MockingPage} />
     </Switch>
   );
 }
