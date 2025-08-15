@@ -1,0 +1,124 @@
+AI Analysis • Nuance
+100%
+MISSION LOG
+
+○
+Standard Analysis: peak scan...
+○
+Standard Analysis: crest factor...
+○
+Standard Analysis: phase window init...
+○
+Standard Analysis: spectral FFT...
+○
+Standard Analysis: loudness gates...
+○
+Standard Analysis: correlation matrix...
+●
+AI Refinement: Spatial Flux suggests width 86%
+●
+AI Refinement: EQ bell −1.2 dB @ 2.8 kHz
+●
+AI Refinement: Neural transient detection
+●
+AI Refinement: Dynamic range optimization
+●
+AI Refinement: Stereo field analysis
+●
+AI Refinement: Final parameter tuning
+●
+AI Refinement: Final parameter tuning
+Transients: 27 • Micro‑contrast Δ: 1.8 dB • Sibilants: nominal
+AI Analysis • Dynamics
+100%
+MISSION LOG
+
+○
+Standard Analysis: peak scan...
+○
+Standard Analysis: crest factor...
+○
+Standard Analysis: phase window init...
+○
+Standard Analysis: spectral FFT...
+○
+Standard Analysis: loudness gates...
+○
+Standard Analysis: correlation matrix...
+●
+AI Refinement: Spatial Flux suggests width 86%
+●
+AI Refinement: EQ bell −1.2 dB @ 2.8 kHz
+●
+AI Refinement: Neural transient detection
+●
+AI Refinement: Dynamic range optimization
+●
+AI Refinement: Stereo field analysis
+●
+AI Refinement: Final parameter tuning
+●
+AI Refinement: Final parameter tuning
+Targets: Club −9…−7 LUFS • TP ≤ −1.0 dBTP • LRA 6–10
+AI Analysis • Frequencies
+100%
+MISSION LOG
+
+○
+Standard Analysis: peak scan...
+○
+Standard Analysis: crest factor...
+○
+Standard Analysis: phase window init...
+○
+Standard Analysis: spectral FFT...
+○
+Standard Analysis: loudness gates...
+○
+Standard Analysis: correlation matrix...
+●
+AI Refinement: Spatial Flux suggests width 86%
+●
+AI Refinement: EQ bell −1.2 dB @ 2.8 kHz
+●
+AI Refinement: Neural transient detection
+●
+AI Refinement: Dynamic range optimization
+●
+AI Refinement: Stereo field analysis
+●
+AI Refinement: Final parameter tuning
+●
+AI Refinement: Final parameter tuning
+EQ plan: +1.5 dB @ 65 Hz • −1.2 dB @ 2.8 kHz • +0.8 dB @ 12 kHz
+AI Analysis • Stereo Image
+100%
+MISSION LOG
+
+○
+Standard Analysis: peak scan...
+○
+Standard Analysis: crest factor...
+○
+Standard Analysis: phase window init...
+○
+Standard Analysis: spectral FFT...
+○
+Standard Analysis: loudness gates...
+○
+Standard Analysis: correlation matrix...
+●
+AI Refinement: Spatial Flux suggests width 86%
+●
+AI Refinement: EQ bell −1.2 dB @ 2.8 kHz
+●
+AI Refinement: Neural transient detection
+●
+AI Refinement: Dynamic range optimization
+●
+AI Refinement: Stereo field analysis
+●
+AI Refinement: Final parameter tuning
+●
+AI Refinement: Final parameter tuning
+Keep correlation ≥ 0.2 for mono‑safe lows • Width tuned by Spatial Flux
