@@ -247,11 +247,7 @@ export default function Landing() {
               </Button>
             )}
             
-            {/* System Status */}
-            <div className="flex items-center space-x-2 font-mono text-xs text-accent-primary border border-accent-primary/30 px-3 py-2 rounded-lg bg-black/20">
-              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-              <span>ONLINE</span>
-            </div>
+            
           </div>
         </div>
       </motion.div>
