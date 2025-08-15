@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAudioStore } from '@/lib/stores/audioStore';
@@ -37,7 +37,7 @@ interface PersistentAnalysisCardProps {
 }
 
 export function PersistentAnalysisCard({ analysisId, className = '' }: PersistentAnalysisCardProps) {
-  const [, navigate] = useNavigate();
+  const [, navigate] = useLocation();
   const getAnalysis = useAudioStore((state) => state.getAnalysis);
   
   const analysis = getAnalysis(analysisId);
