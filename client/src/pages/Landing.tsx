@@ -294,48 +294,45 @@ export default function Landing() {
       <div className="background-vignette"></div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-        {/* Header - Identical to Mastering */}
-        <header className="border-b border-cyan-500/30 bg-black/90 backdrop-blur-sm">
-          <div className="container mx-auto px-6 py-4">
+        {/* Header - Match Reference Image */}
+        <header className="border-b border-gray-800 bg-black/95 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-6 py-3">
             <motion.div 
               className="flex items-center justify-between"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              {/* Left Side - Terminal Window */}
-              <div className="flex items-center space-x-2 terminal-window px-3 py-1.5">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                </div>
-                <span className="font-mono text-sm" style={{ color: 'var(--color-accent)' }}>./C/No_Voidline</span>
+              {/* Left Side - Terminal Branding */}
+              <div className="flex items-center space-x-2">
+                <span className="font-mono text-sm text-gray-400">[-]</span>
+                <span className="font-mono text-sm text-green-400">./C/No_Voidline</span>
+                <span className="font-mono text-xs text-gray-500 ml-4">Frequencies attained. Stillness remains.</span>
               </div>
 
               {/* Right Side - Navigation and Controls */}
-              <div className="flex items-center space-x-4">
-                <nav className="hidden md:flex items-center space-x-8">
-                  <a href="#" className="nav-link">/home</a>
-                  <a href="#features" className="nav-link">/features</a>
-                  <a href="#pricing" className="nav-link">/pricing</a>
-                  <a href="#docs" className="nav-link">/docs</a>
-                  <a href="#logs" className="nav-link">/logs</a>
+              <div className="flex items-center space-x-6">
+                <nav className="flex items-center space-x-8">
+                  <a href="#" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/home</a>
+                  <a href="#features" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/features</a>
+                  <a href="#pricing" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/pricing</a>
+                  <a href="#docs" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/docs</a>
+                  <a href="#logs" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/logs</a>
                 </nav>
                 
                 {!isAuthenticated && (
                   <button
                     onClick={handleLogin}
-                    className="btn btn-secondary"
+                    className="font-mono text-sm px-4 py-1.5 border border-green-400 text-green-400 hover:bg-green-400 hover:text-black transition-all duration-200 rounded"
                   >
                     Login
                   </button>
                 )}
                 
-                <div className="flex items-center justify-end space-x-1">
-                  <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <div className="flex items-center space-x-1.5">
+                  <div className="w-2.5 h-2.5 bg-red-400 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
+                  <div className="w-2.5 h-2.5 bg-green-400 rounded-full"></div>
                 </div>
               </div>
             </motion.div>
