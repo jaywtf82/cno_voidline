@@ -220,13 +220,14 @@ export class AnalysisPipeline {
   }
 }
 
-export async function analyzeAudioFile(file: File): Promise<AudioAnalysisData> {
+export async function analyzeAudioFile(file: File): Promise<any> {
   try {
     const audioContext = new AudioContext();
     const arrayBuffer = await file.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
     // Process analysis with error handling
+    const { OptimizedAudioProcessor } = await import('./optimizedAudioProcessor');
     const processor = new OptimizedAudioProcessor();
     await processor.initialize();
     const results = await processor.processAudio(audioBuffer);

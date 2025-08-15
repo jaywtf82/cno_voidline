@@ -56,7 +56,7 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="classic" storageKey="voidline-ui-theme">
+      <ThemeProvider>
         <TooltipProvider>
           <Router />
           <Toaster />

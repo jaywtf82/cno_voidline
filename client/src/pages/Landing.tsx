@@ -69,7 +69,7 @@ async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: 
       onProgress?.({ progress: 30, stage: 'Initializing...' });
       await processor.initialize();
       
-      const results = await processor.processAudio(audioBuffer, onProgress);
+      const results = await processor.processAudio(audioBuffer);
       
       return {
         fileName: file.name,
@@ -245,7 +245,7 @@ export default function Landing() {
         });
         
         // Update the session ID in our analysis
-        analysis.sessionId = sessionId;
+        setAudioAnalysis((prev: any) => ({ ...prev, sessionId }));
         
         console.log('Mastering session created:', sessionId);
       } catch (error) {
@@ -298,13 +298,14 @@ export default function Landing() {
         });
         
         // Update the session ID
-        fallbackAnalysis.sessionId = sessionId;
+        setAudioAnalysis((prev: any) => ({ ...prev, sessionId }));
         
         console.log('Fallback mastering session created:', sessionId);
       } catch (error) {
         console.warn('Failed to create fallback mastering session:', error);
         // Assign basic session ID if mastering store fails
-        fallbackAnalysis.sessionId = Math.random().toString(36).substring(7);
+        const fallbackWithSession = { ...fallbackAnalysis, sessionId: Math.random().toString(36).substring(7) };
+        setAudioAnalysis(fallbackWithSession);
       }
     } finally {
       setIsProcessing(false);

@@ -118,7 +118,7 @@ export class OptimizedAudioProcessor {
         dbtp: -1.0,
         lra: 5.0,
         processed: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -304,7 +304,7 @@ export class OptimizedAudioProcessor {
   ): Promise<AudioBuffer> {
     // Simulate AI processing with optimized chunks
     const samples = audioBuffer.getChannelData(0);
-    const processedBuffer = audioBuffer.getAudioContext().createBuffer(
+    const processedBuffer = this.audioContext!.createBuffer(
       audioBuffer.numberOfChannels,
       audioBuffer.length,
       audioBuffer.sampleRate

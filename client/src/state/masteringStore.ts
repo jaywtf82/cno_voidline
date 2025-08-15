@@ -208,10 +208,10 @@ export const useMasteringStore = create<MasteringStore>()(
           };
           
           const newSessions = new Map(state.sessions);
-          newSessions.set(state.session.id, updatedSession);
+          newSessions.set(state.currentSession.id, updatedSession);
           
           return {
-            session: updatedSession,
+            currentSession: updatedSession,
             sessions: newSessions,
           };
         });
