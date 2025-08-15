@@ -12,13 +12,26 @@
 
 /* Header is fixed/sticky and layered above content */
 .app-header {
-  position: sticky; 
-  top: 0; 
+  position: sticky;
+  top: 0;
   z-index: 50;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-elev) 95%, transparent), rgba(0, 0, 0, 0.95));
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(8px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 85%, transparent), var(--surface));
+  border-bottom: 0; /* remove hairline */
+  backdrop-filter: blur(6px);
   box-shadow: 0 6px 24px var(--shadow);
+}
+
+/* Hairline eraser: ensures no background grid/border peeks through */
+.app-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--surface);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Header content matches your terminal frame */
@@ -126,8 +139,8 @@
   z-index: 0; 
   pointer-events: none;
   background:
-    linear-gradient(to right, color-mix(in srgb, var(--grid) 65%, transparent) 1px, transparent 1px) 0 0/48px 48px,
-    linear-gradient(to bottom, color-mix(in srgb, var(--grid) 65%, transparent) 1px, transparent 1px) 0 0/48px 48px,
+    linear-gradient(to right, color-mix(in srgb, var(--grid) 60%, transparent) 1px, transparent 1px) 0 0/48px 48px,
+    linear-gradient(to bottom, color-mix(in srgb, var(--grid) 60%, transparent) 1px, transparent 1px) 0 0/48px 48px,
     linear-gradient(to right, color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px) 0 0/12px 12px,
     linear-gradient(to bottom, color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px) 0 0/12px 12px;
   box-shadow: inset 0 0 160px 40px rgba(0,0,0,.55);

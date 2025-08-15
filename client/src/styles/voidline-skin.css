@@ -30,8 +30,8 @@ body::before {
   pointer-events: none;
   background:
     /* Grid */
-    linear-gradient(to right, color-mix(in srgb, var(--grid) 65%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
-    linear-gradient(to bottom, color-mix(in srgb, var(--grid) 65%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(to right, color-mix(in srgb, var(--grid) 60%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(to bottom, color-mix(in srgb, var(--grid) 60%, transparent) 1px, transparent 1px) 0 0 / 48px 48px,
     /* Sub-grid */
     linear-gradient(to right, color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px) 0 0 / 12px 12px,
     linear-gradient(to bottom, color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px) 0 0 / 12px 12px;
@@ -74,14 +74,8 @@ body::before {
   border-radius: 12px;
 }
 
-/* Header & nav match reference image */
-.site-header, header[data-role=app-header] {
-  position: sticky;
-  top: 0; z-index: 50;
-  background: rgba(0, 0, 0, 0.95);
-  border-bottom: 1px solid #374151;
-  backdrop-filter: blur(8px);
-}
+/* Defensive: guarantee no bottom rule regardless of other imports */
+.site-header, .app-header { border-bottom: 0 !important; }
 .nav-link, [data-role=nav-link] {
   color: #9CA3AF;
   font-family: 'Fira Code', monospace;
