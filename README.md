@@ -1,71 +1,185 @@
 # C/No Voidline - AI Audio Mastering Console
 
-A professional-grade AI audio mastering console with a terminal aesthetic, featuring advanced visualizers, real-time analysis, and comprehensive preset management.
+🎵 Professional-grade AI audio mastering console with a cinematic, terminal aesthetic.
 
-## Features
+![C/No Voidline](https://img.shields.io/badge/C%2FNo%20Voidline-AI%20Audio%20Mastering-22c55e?style=for-the-badge&logo=audio-technica)
+![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178c6?style=for-the-badge&logo=typescript)
+![React](https://img.shields.io/badge/React-18-61dafb?style=for-the-badge&logo=react)
 
-### Core Mastering
-- **AI-powered audio analysis** with real-time metrics (LUFS, dBTP, LRA, correlation)
-- **Advanced signal processing** using Web Audio API and custom AudioWorklets
-- **Multi-phase workflow** from signal acquisition to transmission
-- **Professional metering** with Voidline scoring system
+## ✨ Quick Start
 
-### Visualizers
-- **WaveDNA Visualizer** - Multi-mode spectrum analysis with orbital 3D view
-- **Stereo Field Radar** - Real-time polar stereo imaging
-- **Phase Lock Grid** - Network visualization of phase correlation
-- **Noise Floor Tracker** - Professional headroom monitoring
-
-### Theme System
-- **Four terminal themes**: Classic, Matrix, Cyberpunk, Retro
-- **Dynamic color schemes** with real-time switching
-- **Customizable visualizer palettes**
-- **Consistent terminal aesthetic** across all components
-
-### Preset Management
-- **Blackroom Profiles** - Built-in AI-crafted presets
-- **Custom preset creation** with parameter validation
-- **Import/export functionality** for sharing presets
-- **Usage tracking** and popularity sorting
-
-### Audio Processing
-- **Real-time DSP chain**: EQ, compression, stereo processing, limiting
-- **Custom AudioWorklet** for advanced stereo and spatial effects
-- **Professional export formats**: Club, Streaming, Vinyl, Radio
-- **Offline rendering** with progress tracking
-
-## Tech Stack
-
-### Frontend
-- **Next.js 14** with App Router
-- **React 18** + TypeScript
-- **Tailwind CSS** with custom terminal styling
-- **Framer Motion** for smooth animations
-- **Zustand** for state management
-- **TanStack Query** for server state
-
-### Backend
-- **Next.js API Routes**
-- **PostgreSQL** with Prisma ORM
-- **Replit Auth** for authentication
-- **Express** with custom session handling
-
-### Audio
-- **Web Audio API** with custom processors
-- **AudioWorklet** for real-time effects
-- **FFT analysis** for spectral visualization
-- **ITU-R BS.1770** LUFS implementation
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL database
-- Replit account (for authentication)
-
-### Installation
-
-1. Clone the repository:
+### 🚀 One-Command Setup
 ```bash
-git clone <repository-url>
-cd voidline-console
+# Clone and start immediately
+npm run quick-start
+```
+
+### 📦 Manual Setup
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Run setup script
+npm run setup
+
+# 3. Start development server
+npm run dev
+```
+
+## 🎯 What's Included
+
+### 🔧 **Complete Stack**
+- **Frontend**: React 18 + TypeScript + Vite
+- **Backend**: Express.js + Node.js
+- **Database**: PostgreSQL with Drizzle ORM
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Authentication**: Replit Auth (configurable)
+
+### 🚀 **Deployment Ready**
+- GitHub Pages workflow included
+- Multi-platform deployment scripts
+- Docker configuration
+- Static site generation support
+
+### ⚙️ **Configuration Management**
+- Web-based configuration interface (`config.html`)
+- Environment-specific setups
+- Multiple deployment targets
+- Database migration scripts
+
+## 🎵 Features
+
+- **Real-time Audio Analysis** - Industry-standard LUFS, dBTP, LRA metrics
+- **AI-Powered Mastering** - Advanced neural network processing
+- **Professional Visualizers** - Spectrum analysis, stereo imaging, phase correlation
+- **Multi-Format Export** - Club, Streaming, Vinyl, Radio presets
+- **Terminal Aesthetic** - Four themes: Classic, Matrix, Cyberpunk, Retro
+- **Preset Management** - Built-in and custom presets with usage tracking
+
+## 🛠️ Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run quick-start` | Interactive setup and start menu |
+| `npm run dev` | Development server (memory storage) |
+| `npm run dev:local` | Development server (PostgreSQL) |
+| `npm run build` | Production build |
+| `npm run deploy` | Interactive deployment tool |
+| `npm run setup` | Complete project setup |
+| `npm run docker:compose` | Run with Docker Compose |
+
+## 📋 Requirements
+
+- **Node.js** 18+
+- **npm** 8+
+- **PostgreSQL** (optional, for persistent storage)
+- **Docker** (optional, for containerized deployment)
+
+## 🗂️ Project Structure
+
+```
+C/No Voidline/
+├── client/               # React frontend
+├── server/               # Express backend
+├── shared/               # Shared types and schemas
+├── scripts/              # Setup and deployment scripts
+├── docs/                 # Documentation
+├── .github/workflows/    # CI/CD workflows
+├── config.html          # Web configuration manager
+└── attached_assets/      # Static assets
+```
+
+## 🚀 Deployment Options
+
+### GitHub Pages
+```bash
+npm run deploy:github
+```
+
+### Netlify
+```bash
+npm run deploy:netlify
+```
+
+### Vercel
+```bash
+npm run deploy:vercel
+```
+
+### Docker
+```bash
+npm run docker:compose
+```
+
+## ⚙️ Configuration
+
+### Environment Variables
+- `.env.development` - Development with memory storage
+- `.env.local` - Local development with PostgreSQL  
+- `.env.production` - Production configuration
+
+### Web Configuration Manager
+Open `config.html` in your browser for a visual configuration interface that generates all necessary config files.
+
+## 🗄️ Database Setup
+
+### PostgreSQL (Recommended)
+```bash
+# 1. Set up database URL in .env.local
+DATABASE_URL=postgresql://user:password@host:port/database
+
+# 2. Push schema to database
+npm run db:push
+```
+
+### Memory Storage (Development)
+```bash
+# Uses in-memory storage (data lost on restart)
+npm run dev:memory
+```
+
+## 🔐 Security Features
+
+- **Authentication** - Configurable Replit Auth or anonymous mode
+- **Session Management** - Secure PostgreSQL-backed sessions
+- **Rate Limiting** - API endpoint protection
+- **CORS Configuration** - Configurable cross-origin settings
+- **Input Validation** - Zod schema validation throughout
+
+## 🎨 Theming
+
+Four built-in themes:
+- **Classic Terminal** - Green on black, retro computing
+- **Matrix** - Bright green matrix-style
+- **Cyberpunk** - Pink/purple neon aesthetics  
+- **Retro** - Amber terminal colors
+
+## 📖 Documentation
+
+- [Setup Guide](SETUP.md) - Detailed installation instructions
+- [Configuration Guide](docs/CONFIGURATION.md) - Environment and deployment config
+- [Deployment Guide](docs/DEPLOYMENT.md) - Platform-specific deployment
+- [Development Guide](docs/DEVELOPMENT.md) - Development workflow
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests and build
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## 🎵 About
+
+C/No Voidline is a professional AI audio mastering console designed for modern music production. Built with cutting-edge web technologies and featuring a distinctive terminal aesthetic inspired by classic computing interfaces.
+
+**Designed and developed by [@dotslashrecords]**
+
+---
+
+🚀 **Ready to master your audio?** Run `npm run quick-start` to get started!

@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>C/No Voidline - Configuration Manager</title>
+        <style>
+            :root {
+                --primary-green: #22c55e;
+                --terminal-bg: #0a0a0a;
+                --terminal-text: #00ff00;
+                --border-color: #333;
+                --card-bg: #1a1a1a;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: "Fira Code", "Courier New", monospace;
+                background: var(--terminal-bg);
+                color: var(--terminal-text);
+                min-height: 100vh;
+                padding: 20px;
+            }
+
+            .terminal-window {
+                background: var(--card-bg);
+                border: 2px solid var(--border-color);
+                border-radius: 8px;
+                max-width: 1200px;
+                margin: 0 auto;
+                overflow: hidden;
+            }
+
+            .terminal-header {
+                background: #333;
+                padding: 12px 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .terminal-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+            }
+
+            .dot-red {
+                background: #ff5f57;
+            }
+            .dot-yellow {
+                background: #ffbd2e;
+            }
+            .dot-green {
+                background: #28ca42;
+            }
+
+            .terminal-title {
+                color: #fff;
+                font-size: 14px;
+                margin-left: 20px;
+            }
+
+            .terminal-content {
+                padding: 30px;
+            }
+
+            .logo {
+                text-align: center;
+                margin-bottom: 40px;
+            }
+
+            .logo h1 {
+                color: var(--primary-green);
+                font-size: 2.5rem;
+                margin-bottom: 10px;
+                text-shadow: 0 0 10px var(--primary-green);
+            }
+
+            .logo p {
+                color: #888;
+                font-size: 1.1rem;
+            }
+
+            .config-section {
+                background: var(--terminal-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                padding: 25px;
+                margin-bottom: 30px;
+            }
+
+            .config-section h2 {
+                color: var(--primary-green);
+                margin-bottom: 20px;
+                font-size: 1.5rem;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 20px;
+            }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                color: #ccc;
+                font-weight: 500;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                width: 100%;
+                padding: 12px;
+                background: var(--terminal-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                color: var(--terminal-text);
+                font-family: inherit;
+                font-size: 14px;
+            }
+
+            .form-group input:focus,
+            .form-group select:focus,
+            .form-group textarea:focus {
+                outline: none;
+                border-color: var(--primary-green);
+                box-shadow: 0 0 5px rgba(34, 197, 94, 0.3);
+            }
+
+            .form-group textarea {
+                resize: vertical;
+                min-height: 120px;
+            }
+
+            .checkbox-group {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .checkbox-group input[type="checkbox"] {
+                width: auto;
+            }
+
+            .button-group {
+                display: flex;
+                gap: 15px;
+                flex-wrap: wrap;
+                margin-top: 30px;
+            }
+
+            .btn {
+                padding: 12px 24px;
+                background: var(--primary-green);
+                color: var(--terminal-bg);
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: inherit;
+                font-weight: 600;
+                transition: all 0.3s ease;
+            }
+
+            .btn:hover {
+                background: #16a34a;
+                transform: translateY(-2px);
+            }
+
+            .btn-secondary {
+                background: transparent;
+                border: 1px solid var(--primary-green);
+                color: var(--primary-green);
+            }
+
+            .btn-secondary:hover {
+                background: var(--primary-green);
+                color: var(--terminal-bg);
+            }
+
+            .output-section {
+                background: var(--terminal-bg);
+                border: 1px solid var(--border-color);
+                padding: 20px;
+                border-radius: 6px;
+                margin-top: 30px;
+            }
+
+            .output-section h3 {
+                color: var(--primary-green);
+                margin-bottom: 15px;
+            }
+
+            .code-output {
+                background: #000;
+                border: 1px solid var(--border-color);
+                padding: 15px;
+                border-radius: 4px;
+                font-family: "Fira Code", monospace;
+                font-size: 12px;
+                white-space: pre-wrap;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+
+            .copy-btn {
+                font-size: 12px;
+                padding: 6px 12px;
+                margin-top: 10px;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+
+            .status-indicator {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                margin-right: 8px;
+            }
+
+            .status-active {
+                background: var(--primary-green);
+            }
+            .status-inactive {
+                background: #666;
+            }
+
+            @media (max-width: 768px) {
+                body {
+                    padding: 10px;
+                }
+
+                .terminal-content {
+                    padding: 20px;
+                }
+
+                .logo h1 {
+                    font-size: 2rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="terminal-dot dot-red"></div>
+                <div class="terminal-dot dot-yellow"></div>
+                <div class="terminal-dot dot-green"></div>
+                <div class="terminal-title">
+                    C/No Voidline Configuration Manager
+                </div>
+            </div>
+
+            <div class="terminal-content">
+                <div class="logo">
+                    <h1>C/No VOIDLINE</h1>
+                    <p>AI Audio Mastering Console - Configuration Manager</p>
+                </div>
+
+                <!-- Deployment Configuration -->
+                <div class="config-section">
+                    <h2>
+                        <span class="status-indicator status-active"></span
+                        >Deployment Configuration
+                    </h2>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="deployment-target"
+                                >Deployment Target</label
+                            >
+                            <select id="deployment-target">
+                                <option value="github-pages">
+                                    GitHub Pages
+                                </option>
+                                <option value="netlify">Netlify</option>
+                                <option value="vercel">Vercel</option>
+                                <option value="railway">Railway</option>
+                                <option value="render">Render</option>
+                                <option value="replit">Replit</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="base-url">Base URL</label>
+                            <input
+                                type="url"
+                                id="base-url"
+                                placeholder="https://username.github.io/cno-voidline"
+                            />
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enable-auth" checked />
+                        <label for="enable-auth">Enable Authentication</label>
+                    </div>
+                </div>
+
+                <!-- Database Configuration -->
+                <div class="config-section">
+                    <h2>
+                        <span class="status-indicator status-active"></span
+                        >Database Configuration
+                    </h2>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="storage-backend">Storage Backend</label>
+                            <select id="storage-backend">
+                                <option value="memory">
+                                    Memory (Development)
+                                </option>
+                                <option value="sqlite">SQLite (Local)</option>
+                                <option value="postgresql" selected>
+                                    PostgreSQL (Production)
+                                </option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="database-url">Database URL</label>
+                            <input
+                                type="text"
+                                id="database-url"
+                                placeholder="postgresql://user:password@host:port/database"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Application Settings -->
+                <div class="config-section">
+                    <h2>
+                        <span class="status-indicator status-active"></span
+                        >Application Settings
+                    </h2>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="default-theme">Default Theme</label>
+                            <select id="default-theme">
+                                <option value="classic" selected>
+                                    Classic Terminal
+                                </option>
+                                <option value="matrix">Matrix Green</option>
+                                <option value="cyberpunk">Cyberpunk</option>
+                                <option value="retro">Retro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="max-file-size"
+                                >Max Audio File Size (MB)</label
+                            >
+                            <input
+                                type="number"
+                                id="max-file-size"
+                                value="100"
+                                min="1"
+                                max="500"
+                            />
+                        </div>
+                    </div>
+                    <div class="grid">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="enable-analytics" />
+                            <label for="enable-analytics"
+                                >Enable Analytics</label
+                            >
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="enable-export" checked />
+                            <label for="enable-export"
+                                >Enable Audio Export</label
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Configuration -->
+                <div class="config-section">
+                    <h2>
+                        <span class="status-indicator status-inactive"></span
+                        >API Configuration
+                    </h2>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="ai-provider">AI Provider</label>
+                            <select id="ai-provider">
+                                <option value="openai">OpenAI</option>
+                                <option value="anthropic" selected>
+                                    Anthropic
+                                </option>
+                                <option value="local">Local Model</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="api-key">API Key</label>
+                            <input
+                                type="password"
+                                id="api-key"
+                                placeholder="Enter your API key"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Settings -->
+                <div class="config-section">
+                    <h2>
+                        <span class="status-indicator status-active"></span
+                        >Security Settings
+                    </h2>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label for="session-timeout"
+                                >Session Timeout (minutes)</label
+                            >
+                            <input
+                                type="number"
+                                id="session-timeout"
+                                value="60"
+                                min="5"
+                                max="1440"
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="cors-origins"
+                                >CORS Origins (comma separated)</label
+                            >
+                            <textarea
+                                id="cors-origins"
+                                placeholder="https://example.com, https://app.example.com"
+                            ></textarea>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <input
+                            type="checkbox"
+                            id="enable-rate-limiting"
+                            checked
+                        />
+                        <label for="enable-rate-limiting"
+                            >Enable Rate Limiting</label
+                        >
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn" onclick="generateConfigs()">
+                        Generate Configuration Files
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        onclick="downloadConfigs()"
+                    >
+                        Download All Configs
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        onclick="resetToDefaults()"
+                    >
+                        Reset to Defaults
+                    </button>
+                </div>
+
+                <!-- Output Section -->
+                <div
+                    class="output-section"
+                    id="output-section"
+                    style="display: none"
+                >
+                    <h3>Generated Configuration Files</h3>
+
+                    <h4>.env.production</h4>
+                    <div class="code-output" id="env-output"></div>
+                    <button
+                        class="btn copy-btn"
+                        onclick="copyToClipboard('env-output')"
+                    >
+                        Copy .env
+                    </button>
+
+                    <h4>vite.config.ts (Updated)</h4>
+                    <div class="code-output" id="vite-output"></div>
+                    <button
+                        class="btn copy-btn"
+                        onclick="copyToClipboard('vite-output')"
+                    >
+                        Copy Vite Config
+                    </button>
+
+                    <h4>package.json (Build Scripts)</h4>
+                    <div class="code-output" id="package-output"></div>
+                    <button
+                        class="btn copy-btn"
+                        onclick="copyToClipboard('package-output')"
+                    >
+                        Copy Package Scripts
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function generateConfigs() {
+                const deploymentTarget =
+                    document.getElementById("deployment-target").value;
+                const baseUrl = document.getElementById("base-url").value;
+                const enableAuth =
+                    document.getElementById("enable-auth").checked;
+                const storageBackend =
+                    document.getElementById("storage-backend").value;
+                const databaseUrl =
+                    document.getElementById("database-url").value;
+                const defaultTheme =
+                    document.getElementById("default-theme").value;
+                const maxFileSize =
+                    document.getElementById("max-file-size").value;
+                const enableAnalytics =
+                    document.getElementById("enable-analytics").checked;
+                const enableExport =
+                    document.getElementById("enable-export").checked;
+                const aiProvider = document.getElementById("ai-provider").value;
+                const apiKey = document.getElementById("api-key").value;
+                const sessionTimeout =
+                    document.getElementById("session-timeout").value;
+                const corsOrigins =
+                    document.getElementById("cors-origins").value;
+                const enableRateLimit = document.getElementById(
+                    "enable-rate-limiting",
+                ).checked;
+
+                // Generate .env.production
+                let envContent = `# C/No Voidline Environment Configuration
+# Generated on: ${new Date().toISOString()}
+
+# Deployment Configuration
+VITE_DEPLOYMENT_TARGET=${deploymentTarget}
+VITE_BASE_URL=${baseUrl || ""}
+VITE_REQUIRE_AUTH=${enableAuth}
+
+# Storage Configuration
+VITE_STORAGE_BACKEND=${storageBackend}
+${databaseUrl ? `DATABASE_URL=${databaseUrl}` : "# DATABASE_URL=your_database_url_here"}
+
+# Application Settings
+VITE_DEFAULT_THEME=${defaultTheme}
+VITE_MAX_FILE_SIZE_MB=${maxFileSize}
+VITE_ENABLE_ANALYTICS=${enableAnalytics}
+VITE_ENABLE_EXPORT=${enableExport}
+
+# API Configuration
+VITE_AI_PROVIDER=${aiProvider}
+${apiKey ? `${aiProvider.toUpperCase()}_API_KEY=${apiKey}` : `# ${aiProvider.toUpperCase()}_API_KEY=your_api_key_here`}
+
+# Security Settings
+SESSION_TIMEOUT_MINUTES=${sessionTimeout}
+CORS_ORIGINS=${corsOrigins || "*"}
+ENABLE_RATE_LIMITING=${enableRateLimit}
+
+# Production Optimization
+NODE_ENV=production
+VITE_OPTIMIZE_BUNDLE=true
+VITE_ENABLE_PWA=true`;
+
+                // Generate vite.config.ts updates
+                let viteConfig = `import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
+
+export default defineConfig({
+  plugins: [react()],
+  base: '${deploymentTarget === "github-pages" ? `${baseUrl.split("/").pop() || ""}/` : "/"}',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'esbuild',
+    target: 'esnext',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          audio: ['@/lib/audio', '@/modules/audio'],
+        },
+      },
+    },
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './client/src'),
+      '@shared': resolve(__dirname, './shared'),
+      '@assets': resolve(__dirname, './attached_assets'),
+    },
+  },
+  server: {
+    port: 5173,
+    host: '0.0.0.0',
+  },
+  preview: {
+    port: 4173,
+    host: '0.0.0.0',
+  },
+})`;
+
+                // Generate package.json build scripts
+                let packageScripts = `{
+  "scripts": {
+    "dev": "NODE_ENV=development tsx server/index.ts",
+    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build:client": "vite build",
+    "build:${deploymentTarget}": "NODE_ENV=production vite build --mode production",
+    "preview": "vite preview",
+    "start": "NODE_ENV=production node dist/index.js",
+    "check": "tsc",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "deploy:${deploymentTarget}": "npm run build:${deploymentTarget} && ${getDeployCommand(deploymentTarget)}"
+  }
+}`;
+
+                // Update output sections
+                document.getElementById("env-output").textContent = envContent;
+                document.getElementById("vite-output").textContent = viteConfig;
+                document.getElementById("package-output").textContent =
+                    packageScripts;
+
+                // Show output section
+                document.getElementById("output-section").style.display =
+                    "block";
+                document
+                    .getElementById("output-section")
+                    .scrollIntoView({ behavior: "smooth" });
+            }
+
+            function getDeployCommand(target) {
+                const commands = {
+                    "github-pages": "gh-pages -d dist",
+                    netlify: "netlify deploy --prod --dir=dist",
+                    vercel: "vercel --prod",
+                    railway: "railway up",
+                    render: 'echo "Push to main branch to deploy"',
+                };
+                return commands[target] || 'echo "Manual deployment required"';
+            }
+
+            function copyToClipboard(elementId) {
+                const element = document.getElementById(elementId);
+                const text = element.textContent;
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = element.nextElementSibling;
+                    const originalText = btn.textContent;
+                    btn.textContent = "Copied!";
+                    btn.style.background = "var(--primary-green)";
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                        btn.style.background = "";
+                    }, 2000);
+                });
+            }
+
+            function downloadConfigs() {
+                const configs = [
+                    {
+                        name: ".env.production",
+                        content:
+                            document.getElementById("env-output").textContent,
+                    },
+                    {
+                        name: "vite.config.ts",
+                        content:
+                            document.getElementById("vite-output").textContent,
+                    },
+                    {
+                        name: "package.json",
+                        content:
+                            document.getElementById("package-output")
+                                .textContent,
+                    },
+                ];
+
+                configs.forEach((config) => {
+                    if (config.content) {
+                        const blob = new Blob([config.content], {
+                            type: "text/plain",
+                        });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = config.name;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }
+                });
+            }
+
+            function resetToDefaults() {
+                document.getElementById("deployment-target").value =
+                    "github-pages";
+                document.getElementById("base-url").value = "";
+                document.getElementById("enable-auth").checked = true;
+                document.getElementById("storage-backend").value = "postgresql";
+                document.getElementById("database-url").value = "";
+                document.getElementById("default-theme").value = "classic";
+                document.getElementById("max-file-size").value = "100";
+                document.getElementById("enable-analytics").checked = false;
+                document.getElementById("enable-export").checked = true;
+                document.getElementById("ai-provider").value = "anthropic";
+                document.getElementById("api-key").value = "";
+                document.getElementById("session-timeout").value = "60";
+                document.getElementById("cors-origins").value = "";
+                document.getElementById("enable-rate-limiting").checked = true;
+
+                document.getElementById("output-section").style.display =
+                    "none";
+            }
+
+            // Auto-populate base URL based on deployment target
+            document
+                .getElementById("deployment-target")
+                .addEventListener("change", function () {
+                    const target = this.value;
+                    const baseUrlField = document.getElementById("base-url");
+
+                    switch (target) {
+                        case "github-pages":
+                            baseUrlField.placeholder =
+                                "https://username.github.io/cno-voidline";
+                            break;
+                        case "netlify":
+                            baseUrlField.placeholder =
+                                "https://app-name.netlify.app";
+                            break;
+                        case "vercel":
+                            baseUrlField.placeholder =
+                                "https://cno-voidline.vercel.app";
+                            break;
+                        case "railway":
+                            baseUrlField.placeholder =
+                                "https://cno-voidline.railway.app";
+                            break;
+                        case "render":
+                            baseUrlField.placeholder =
+                                "https://cno-voidline.onrender.com";
+                            break;
+                        default:
+                            baseUrlField.placeholder =
+                                "https://your-app-url.com";
+                    }
+                });
+        </script>
+    </body>
+</html>

@@ -1,0 +1,190 @@
+C/No Voidline: Mastering Process + Phase 1 + Compliance Metrics + AI + Style/Header Parity + Unified Live Feed
+Repo: https://github.com/jaywtf82/cno_voidline
+Mandates:
+
+Visual parity: Mastering Process page and all cards must reuse the exact colors, typography, spacing, shadows, and iconography from the main page.
+
+Header parity: Mastering Process page must mount the same header/nav component as the main page with identical buttons, layout, interactions (no duplication, import the same component).
+
+Unified live feed: Merge all Phase 1 live events to one compact floating terminal window, transparent/glassy, positioned directly below the toast stack, auto-dismiss on task completion, with “pin to screen” and “expand” controls.
+
+Deliverables (create/update these paths)
+bash
+Copy
+Edit
+# Layout & styling parity
+client/components/layout/AppShell.tsx                 # NEW (or refactor): exports shared header+nav from main page
+client/components/layout/AppHeader.tsx                # If header already exists, export it; do NOT fork styles
+client/styles/theme.css                               # Ensure tokens used here; Mastering Process must import same tokens
+client/styles/overlays.css                            # NEW: Live Feed Terminal glass/blur, z-index, transitions
+
+# Mastering flow & Phase 1 (as previously specified)
+client/app/(landing)/page.tsx                         # Update: upload→analysis→premaster card→CTA (unchanged behavior)
+client/app/mastering/process/page.tsx                 # Use AppShell + exact header; hosts Phase 1
+client/components/premaster/PremasterAnalysisCard.tsx # Standards metrics + AI notes
+client/components/mastering/Phase1DeepSignal.tsx      # Phase 1 card (interactive)
+client/components/mastering/vis/SpectrumCanvas.tsx
+client/components/mastering/vis/ScopeCanvas.tsx
+client/components/mastering/vis/MeterStacks.tsx
+client/worklets/lufs-processor.js
+client/worklets/peaks-rms-processor.js
+client/worklets/correlation-processor.js
+client/lib/audio/analysisPipeline.ts
+client/lib/audio/visualBus.ts                         # Keep for direct frames
+
+# Unified Live Feed hub + UI
+client/state/liveFeedHub.ts                           # NEW: merges all event sources → single stream
+client/components/system/LiveFeedTerminal.tsx         # NEW: floating terminal UI below toast
+client/components/system/ToastStack.tsx               # Ensure exported position anchor used by terminal
+client/state/masteringStore.ts                        # Session state (existing from prior spec)
+
+# AI (offline, scratch or transfer)
+client/state/aiConfig.ts
+client/lib/audio/ai/modelSpec.ts
+client/lib/audio/ai/heads.ts
+client/lib/audio/ai/embedding.ts
+client/lib/audio/ai/runtime.ts
+client/lib/audio/ai/dataset.ts
+client/lib/audio/ai/trainer.ts
+public/models/yamnet/model.json                       # (transfer mode assets, local only)
+public/models/yamnet/*.bin
+Styling & Header Parity (non-negotiable)
+Do not clone styles. Import the exact same theme tokens/variables used on the main page (e.g., from theme.css): colors, radii, shadows, spacing.
+
+AppShell: wrap Mastering Process with AppShell that renders the same AppHeader component used on the main page. Props and nav routes remain identical; all header buttons must behave the same.
+
+Use the same traffic-light header controls on Phase cards; same icon set; same hover/focus states.
+
+All Tailwind classes and CSS variables must match the main page sources; no new palette.
+
+Unified Live Feed Terminal (compact, toast-like)
+Purpose: Aggregate all live events for Mastering Process → Phase 1 into a single, compact, floating terminal that appears just under the toast stack, then auto-dismisses on completion.
+
+Sources to merge (subscribe in liveFeedHub.ts):
+
+Offline standards analysis progress (analysisPipeline.ts)
+
+Worklet frames: LUFS/dBTP/LRA/peaks/RMS/correlation (lufs-processor, peaks-rms-processor, correlation-processor)
+
+AI (embedding load, head training epochs, inference ready)
+
+UI ops (freeze/hold/zoom toggles), errors, completions
+
+Event shape (TypeScript):
+
+ts
+Copy
+Edit
+export type LiveEvent =
+  | { t:number; src:'analysis';    type:'progress'|'summary'; msg:string; pct?:number }
+  | { t:number; src:'worklet';     type:'lufs'|'dbtp'|'lra'|'rms'|'corr'; payload:any }
+  | { t:number; src:'ai';          type:'init'|'epoch'|'done'; msg:string; epoch?:number; loss?:number }
+  | { t:number; src:'ui';          type:'action'|'warning'|'error'|'success'; msg:string }
+Hub behavior (liveFeedHub.ts):
+
+Maintain a ring buffer (e.g., 150 rows) + coalescing (debounce frequent numeric frames into summary lines).
+
+rAF-scheduled flush to the UI (≤ 60Hz) to avoid layout thrash.
+
+Expose subscribe(fn), push(event), complete(taskId); on complete, emit a success event.
+
+UI (LiveFeedTerminal.tsx):
+
+Position: fixed, sits immediately below the toast container (import ToastStack anchor).
+
+Look: glass/blur, 80–90% opacity, tiny mono font, subtle grid backdrop; width ~ 420–520 px, height ~ 160–220 px.
+
+Controls: Pin (keeps it open), Expand (full panel modal), Copy, Clear.
+
+Lifecycle: appears on first event; auto-dismiss 2–3 s after complete() if not pinned.
+
+Keyboard: g toggles expand, x clears, Esc closes (if not pinned).
+
+A11y: role="status" + aria-live="polite" for screen readers; ensure focus ring on controls.
+
+Z-order contract:
+
+ToastStack z-index = Z_toast
+
+LiveFeedTerminal z-index = Z_toast − 1 (visually “under” toasts), but positioned below toasts in the viewport.
+
+On Expand, open a modal with z-index > Z_toast.
+
+Auto-dismiss semantics:
+
+“Task complete” = analysis summary emitted and AI (if enabled) finished or timed out gracefully, then emit complete(taskId).
+
+If pinned, do not dismiss; show a green “idle” dot.
+
+Mastering Flow & Phase 1 (unchanged core, with feed hooks)
+Landing page runs offline analysis → PremasterAnalysisCard → Start Mastering Session CTA.
+
+/mastering/process mounts under AppShell (shared header), hosts Phase1DeepSignal.
+
+Hook all progress and status into liveFeedHub.push(...).
+
+Real-time visuals: independent canvases, 60 fps target, reuse typed arrays, OffscreenCanvas when available.
+
+Standards / Compliance Metrics (must-haves)
+Compute with ITU-R BS.1770 / EBU R128 methods (offline + real-time parity within ±0.5 LU, ±0.3 dBTP):
+
+LUFS I/S(3 s)/M(400 ms) with K-weighting + gating
+
+True Peak (dBTP) ≥ 4× oversampled, peak-hold
+
+LRA (relative gating)
+
+Sample Peak, RMS, Crest
+
+Inter-sample clipping count, DC offset L/R, sample rate/bit depth integrity
+
+Stereo correlation / mono-compatibility (+ bass collapse check)
+
+Strongly recommended
+
+PLR / PSR; Mid/Side energy & channel balance (mono bass <80–120 Hz); hybrid spectrum (1/24-oct + log line, HOLD); vectorscope (polar/Lissajous)
+
+Nice-to-haves
+
+Spectral centroid/bandwidth, ZCR, spectrogram; transient density & micro-dynamics
+
+Targets (UI “corridor” chips)
+Streaming: LUFS-I −14…−9, dBTP ≤ −1.0, LRA 4–8 LU, PLR ~8–10 dB, PSR ≥7 dB
+
+Club/DJ: LUFS-I −7…−6, dBTP −0.8…−1.0, LRA 3–6 LU, bass mono <100 Hz, corr ≥0 in lows
+
+Vinyl pre-master: LUFS-I −12…−16, strict mono sub, tame <40 Hz & 2–6 kHz
+
+Acceptance Criteria
+Parity
+
+Mastering Process page uses the exact same header as main page; all nav buttons present and styled identically.
+
+Colors, typography, spacing, radii, shadows match 1:1 with main page.
+
+Unified Live Feed
+
+All event sources feed into one terminal.
+
+Terminal appears below toasts, auto-dismisses after task completion if not pinned.
+
+Expandable modal shows full history; copy works; ARIA role present.
+
+Performance
+
+Worklets <1.3 ms/block @ 512 frames; visuals 60 fps; no audio dropouts.
+
+Page mount /mastering/process <300 ms with session restored.
+
+Metrics parity
+
+Offline vs real-time within ±0.5 LU and ±0.3 dBTP on the same buffer.
+
+QA Checklist
+Header/nav snapshot: compare Mastering Process vs main page—pixel parity.
+
+Inject synthetic events into liveFeedHub: verify coalescing, auto-dismiss, pinning, expand/copy.
+
+Fixtures: mono sine, pink noise, clipped loop, L/R inverted, DC bias; verify metrics and correlation behavior.
+
+Long file path: ensure terminal remains compact; toasts don’t overlap; expand shows all lines.
