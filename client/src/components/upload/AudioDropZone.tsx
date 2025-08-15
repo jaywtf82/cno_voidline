@@ -7,11 +7,11 @@ import { useTheme } from "@/components/ThemeProvider";
 interface AudioDropZoneProps {
   onFileSelect: (file: File) => void;
   className?: string;
+  isProcessing?: boolean;
 }
 
-export function AudioDropZone({ onFileSelect, className }: AudioDropZoneProps) {
+export function AudioDropZone({ onFileSelect, className, isProcessing = false }: AudioDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { theme } = useTheme();
