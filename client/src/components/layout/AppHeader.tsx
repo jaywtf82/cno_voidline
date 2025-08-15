@@ -20,9 +20,10 @@ export function AppHeader() {
       role="banner"
       aria-label="Primary"
     >
-      <div className="header-inner terminal-window">
+      {/* NOTE: p-2 stays; CSS centers this block and controls max-width */}
+      <div className="header-inner terminal-window p-2">
         <a href="/" className="brand group" aria-label="Homepage">
-          <span className="sig">[-]</span>
+          <span className="sig">[~]</span>
           <div className="brand-copy">
             <h1 className="brand-title">./C/No_Voidline</h1>
             <p className="brand-sub">Frequencies attained. Stillness remains.</p>

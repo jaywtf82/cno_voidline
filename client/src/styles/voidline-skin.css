@@ -148,3 +148,21 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* Accent-green upload CTA */
+.upload-cta,
+.dropzone button,
+.dropzone [role="button"] {
+  border: 1px solid rgba(63,185,80,.45);
+  color: #0b1a10;
+  background: linear-gradient(180deg, var(--accent), var(--accent-600));
+  border-radius: 10px;
+  padding: .6rem .9rem;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(63,185,80,.25);
+}
+.upload-cta:hover,
+.dropzone button:hover,
+.dropzone [role="button"]:hover {
+  filter: brightness(1.05);
+}

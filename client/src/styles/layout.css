@@ -1,6 +1,9 @@
 :root{
-  --header-h: 64px;         /* slimmer like the reference */
-  --ctl-h: 34px;            /* pills/login height */
+  --header-h: 64px;    /* slim header */
+  --ctl-h: 34px;       /* pill/login height */
+  --header-max: 1120px;/* center width similar to reference */
+  --brand-sub-size: 0.66rem;  /* ~3× smaller than title */
+  --brand-grey: #9aa9b8;      /* same family as nav grey */
 }
 
 .app-header{
@@ -12,9 +15,12 @@
 }
 
 .header-inner{
-  max-width: 1200px; margin: 0 auto;
-  display: grid; grid-template-columns: 1fr auto auto;
-  gap: .75rem; min-height: var(--header-h);
+  width: clamp(320px, 92vw, var(--header-max));
+  margin-inline: auto;           /* center horizontally */
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: .75rem;
+  min-height: var(--header-h);
   padding: 6px 12px;
   align-items: center;
 }
@@ -41,10 +47,23 @@
 }
 
 /* Brand + baseline rhythm */
-.brand{ display:inline-flex; gap:.6rem; align-items:center; min-height: var(--ctl-h); }
-.sig{ color: var(--accent); margin-top:.1rem; }
-.brand-title{ color:#C8D2DF; font-weight:700; letter-spacing:.2px; }
-.brand-sub{ color:var(--muted); font-size:.72rem; }
+.brand{
+  display:grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
+  column-gap:.6rem; align-items:center; min-height: var(--ctl-h);
+}
+.sig{
+  color: var(--accent);           /* KEEP green */
+  grid-row: 1 / span 2;           /* span both rows */
+  align-self: center;             /* center vs title+subtitle */
+}
+.brand-copy{ line-height: 1.05; }
+.brand-title{ color:#C8D2DF; font-weight:700; letter-spacing:.2px; grid-column:2; }
+.brand-sub{
+  color: var(--brand-grey);      /* grey like nav/button chips */
+  font-size: var(--brand-sub-size);
+  grid-column: 2;
+  margin-top: 2px;
+}
 
 /* Nav pills: grey active chip, no press color */
 .nav{ display:none; align-items:center; gap:.35rem; }
