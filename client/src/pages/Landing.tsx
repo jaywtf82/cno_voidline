@@ -200,47 +200,86 @@ export default function Landing() {
       <div className="container-professional section-spacing">
       {/* Header */}
       <motion.div 
-        className="flex items-center justify-between mb-12 pb-6 border-b border-primary/10"
+        className="flex items-center justify-between mb-12 pb-4 border-b border-accent-primary/20"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <Logo />
+        {/* Left Side - Terminal Logo */}
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 bg-black/80 border border-accent-primary/30 rounded px-3 py-1.5">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            </div>
+            <span className="font-mono text-sm text-accent-primary">./C/No_Voidline</span>
+          </div>
+        </div>
 
-        <div className="flex items-center space-x-8">
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <a 
-              href="#" 
-              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-              data-testid="link-home"
+        {/* Center - Navigation */}
+        <nav className="hidden md:flex items-center space-x-8">
+          <a 
+            href="#" 
+            className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors relative group"
+            data-testid="link-home"
+          >
+            /home
+            <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent-primary transition-all group-hover:w-full"></div>
+          </a>
+          <a 
+            href="#features" 
+            className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors relative group"
+            data-testid="link-features"
+          >
+            /features
+            <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent-primary transition-all group-hover:w-full"></div>
+          </a>
+          <a 
+            href="#pricing" 
+            className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors relative group"
+            data-testid="link-pricing"
+          >
+            /pricing
+            <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent-primary transition-all group-hover:w-full"></div>
+          </a>
+          <a 
+            href="#docs" 
+            className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors relative group"
+            data-testid="link-docs"
+          >
+            /docs
+            <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent-primary transition-all group-hover:w-full"></div>
+          </a>
+          <a 
+            href="#logs" 
+            className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors relative group"
+            data-testid="link-logs"
+          >
+            /logs
+            <div className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent-primary transition-all group-hover:w-full"></div>
+          </a>
+        </nav>
+
+        {/* Right Side - Login Button with Status Indicator */}
+        <div className="flex items-center space-x-4">
+          {/* Login Button */}
+          {!isAuthenticated && (
+            <Button
+              variant="outline"
+              onClick={handleLogin}
+              className="font-mono text-sm px-6 py-2 border-accent-primary/50 hover:border-accent-primary hover:bg-accent-primary/10 transition-all"
+              data-testid="button-login"
             >
-              /home
-            </a>
-            {/* Moved /docs link to be right next to the home link */}
-            <a 
-              href="#docs" 
-              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-              data-testid="link-docs"
-            >
-              /docs
-            </a>
-          </nav>
+              Login
+            </Button>
+          )}
 
-          <div className="flex items-center space-x-4">
-            {/* Login Button */}
-            {!isAuthenticated && (
-              <Button
-                variant="outline"
-                onClick={handleLogin}
-                className="font-mono text-sm px-4 py-2"
-                data-testid="button-login"
-              >
-                Login
-              </Button>
-            )}
-
-
+          {/* Status Indicators */}
+          <div className="flex items-center space-x-1">
+            <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
+            <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           </div>
         </div>
       </motion.div>

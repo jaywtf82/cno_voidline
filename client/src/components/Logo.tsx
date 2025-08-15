@@ -6,9 +6,9 @@ interface LogoProps {
 
 export function Logo({ className }: LogoProps) {
   return (
-    <div className={cn("flex items-center space-x-4", className)}>
-      <div className="hidden md:block font-mono text-xs text-text-muted">
-        Frequencies aligned. Stillness remains.
+    <div className={cn("flex items-center", className)}>
+      <div className="font-mono text-lg text-accent-primary font-bold tracking-wider">
+        VOIDLINE
       </div>
     </div>
   );
