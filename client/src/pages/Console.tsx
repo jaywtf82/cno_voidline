@@ -18,6 +18,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -45,9 +46,10 @@ import { WaveformComparison } from "@/components/audio/WaveformComparison";
 import { AnalysisProgress } from "@/components/audio/AnalysisProgress";
 import { LiveSystemFeed } from "@/components/system/LiveSystemFeed";
 import type { Preset, ExportFormatType, AnalysisResults, PresetParameters } from "@shared/schema";
-import { useLocation } from 'wouter';
+import { motion } from "framer-motion";
 
 export default function Console() {
+  const [location, navigate] = useLocation();
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults | null>(null);
@@ -369,63 +371,106 @@ export default function Console() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
       {/* Header */}
-      <motion.div 
-        className="flex items-center justify-between mb-12 pb-4"
-        style={{ borderBottom: '1px solid var(--color-glass-border)' }}
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        {/* Left Side - Terminal Window */}
-        <div className="flex items-center space-x-2 terminal-window px-3 py-1.5">
-          <div className="flex space-x-1">
-            <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-            <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+      <header>
+        <motion.div 
+          className="flex items-center justify-between mb-12 pb-4"
+          style={{ borderBottom: '1px solid var(--color-glass-border)' }}
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          {/* Left Side - Terminal Window */}
+          <div className="flex items-center space-x-2 terminal-window px-3 py-1.5">
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            </div>
+            <span className="font-mono text-sm" style={{ color: 'var(--color-accent)' }}>./C/No_Voidline</span>
           </div>
-          <span className="font-mono text-sm" style={{ color: 'var(--color-accent)' }}>./C/No_Voidline</span>
-        </div>
 
-        {/* Center - Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          <a href="/" className="nav-link">/home</a>
-          <a href="#features" className="nav-link">/features</a>
-          <a href="#pricing" className="nav-link">/pricing</a>
-          <a href="#docs" className="nav-link">/docs</a>
-          <a href="#logs" className="nav-link">/logs</a>
-        </nav>
-
-        {/* Right Side - User Controls */}
-        <div className="flex items-center space-x-4">
-
+          {/* Center - Navigation */}
+          <nav className="hidden md:flex items-center space-x-8">
             <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => window.location.href = "/mocking"}
-            className="font-mono text-sm btn btn-secondary"
-            data-testid="button-mocking"
-          >
-            /mocking
-          </Button>
-          <div className="font-mono text-sm text-gray-400">
-            {user?.email}
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="nav-link font-mono text-sm"
+              data-testid="nav-home"
+            >
+              /home
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/#features')}
+              className="nav-link font-mono text-sm"
+              data-testid="nav-features"
+            >
+              /features
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/#pricing')}
+              className="nav-link font-mono text-sm"
+              data-testid="nav-pricing"
+            >
+              /pricing
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/#docs')}
+              className="nav-link font-mono text-sm"
+              data-testid="nav-docs"
+            >
+              /docs
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/#logs')}
+              className="nav-link font-mono text-sm"
+              data-testid="nav-logs"
+            >
+              /logs
+            </Button>
+          </nav>
+
+          {/* Right Side - User Controls */}
+          <div className="flex items-center space-x-4">
+
+              <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/mocking")}
+              className="font-mono text-sm btn btn-secondary"
+              data-testid="button-mocking"
+            >
+              /mocking
+            </Button>
+            <div className="font-mono text-sm text-gray-400">
+              {user?.email}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = "/api/logout"}
+              className="font-mono text-sm btn btn-secondary"
+              data-testid="button-logout"
+            >
+              Logout
+            </Button>
+            <div className="flex items-center justify-end space-x-1">
+              <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
+              <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.location.href = "/api/logout"}
-            className="font-mono text-sm btn btn-secondary"
-            data-testid="button-logout"
-          >
-            Logout
-          </Button>
-          <div className="flex items-center justify-end space-x-1">
-            <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
-            <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          </div>
+        </motion.div>
         </div>
-      </motion.div>
+      </header>
 
       <div className="mb-16">
           {/* Header */}

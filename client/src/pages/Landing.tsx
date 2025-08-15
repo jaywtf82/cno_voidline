@@ -216,50 +216,53 @@ export default function Landing() {
       <div className="background-vignette"></div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <motion.div 
-          className="flex items-center justify-between mb-12 pb-4"
-          style={{ borderBottom: '1px solid var(--color-glass-border)' }}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          {/* Left Side - Terminal Window */}
-          <div className="flex items-center space-x-2 terminal-window px-3 py-1.5">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            </div>
-            <span className="font-mono text-sm" style={{ color: 'var(--color-accent)' }}>./C/No_Voidline</span>
-          </div>
+        {/* Header - Identical to Mastering */}
+        <header className="border-b border-cyan-500/30 bg-black/90 backdrop-blur-sm">
+          <div className="container mx-auto px-6 py-4">
+            <motion.div 
+              className="flex items-center justify-between"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              {/* Left Side - Terminal Window */}
+              <div className="flex items-center space-x-2 terminal-window px-3 py-1.5">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                </div>
+                <span className="font-mono text-sm" style={{ color: 'var(--color-accent)' }}>./C/No_Voidline</span>
+              </div>
 
-          {/* Center - Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <a href="#" className="nav-link">/home</a>
-            <a href="#features" className="nav-link">/features</a>
-            <a href="#pricing" className="nav-link">/pricing</a>
-            <a href="#docs" className="nav-link">/docs</a>
-            <a href="#logs" className="nav-link">/logs</a>
-          </nav>
+              {/* Center - Navigation */}
+              <nav className="hidden md:flex items-center space-x-8">
+                <a href="#" className="nav-link">/home</a>
+                <a href="#features" className="nav-link">/features</a>
+                <a href="#pricing" className="nav-link">/pricing</a>
+                <a href="#docs" className="nav-link">/docs</a>
+                <a href="#logs" className="nav-link">/logs</a>
+              </nav>
 
-          {/* Right Side - Login Button */}
-          <div className="flex items-center space-x-4">
-            {!isAuthenticated && (
-              <button
-                onClick={handleLogin}
-                className="btn btn-secondary"
-              >
-                Login
-              </button>
-            )}
-            <div className="flex items-center justify-end space-x-1">
-              <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
-              <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            </div>
+              {/* Right Side - Login Button */}
+              <div className="flex items-center space-x-4">
+                {!isAuthenticated && (
+                  <button
+                    onClick={handleLogin}
+                    className="btn btn-secondary"
+                  >
+                    Login
+                  </button>
+                )}
+                <div className="flex items-center justify-end space-x-1">
+                  <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
+        </header>
 
         {/* Hero Section - AI Mastering Upload */}
         <motion.div 

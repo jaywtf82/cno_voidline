@@ -41,7 +41,7 @@ interface CardState {
 }
 
 export default function Mastering() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const getAnalysis = useAudioStore((state) => state.getAnalysis);
   const { isAuthenticated } = useAuth();
 
@@ -184,17 +184,33 @@ export default function Mastering() {
             <div className="flex items-center space-x-6">
               {/* Navigation buttons */}
               <nav className="flex items-center space-x-4">
-                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 font-mono text-sm">
-                  Home
+                <Button 
+                  variant="link" 
+                  className="text-cyan-400 hover:text-cyan-300 font-mono text-sm"
+                  onClick={() => navigate('/')}
+                >
+                  /home
                 </Button>
-                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 font-mono text-sm">
-                  Features
+                <Button 
+                  variant="link" 
+                  className="text-cyan-400 hover:text-cyan-300 font-mono text-sm"
+                  onClick={() => navigate('/console')}
+                >
+                  /console
                 </Button>
-                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 font-mono text-sm">
-                  Pricing
+                <Button 
+                  variant="link" 
+                  className="text-cyan-400 hover:text-cyan-300 font-mono text-sm"
+                  onClick={() => navigate('/#features')}
+                >
+                  /features
                 </Button>
-                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 font-mono text-sm">
-                  About
+                <Button 
+                  variant="link" 
+                  className="text-cyan-400 hover:text-cyan-300 font-mono text-sm"
+                  onClick={() => navigate('/#pricing')}
+                >
+                  /pricing
                 </Button>
               </nav>
               <div className="flex items-center space-x-3">

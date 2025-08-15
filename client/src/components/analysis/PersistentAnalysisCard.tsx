@@ -104,8 +104,9 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
               <span className="text-gray-400">Channels:</span>
               <span className="text-white">{safeAnalysis.ch}</span>
               <span className="text-gray-400">|</span>
-              <span className="text-gray-400">Duration:</span>
-              <span className="text-white">{safeAnalysis.dur_s.toFixed(2)} s</span>
+              <div className="text-xs text-gray-400">
+                Duration: {typeof safeAnalysis.dur_s === 'number' ? safeAnalysis.dur_s.toFixed(2) : parseFloat(safeAnalysis.dur_s || '0').toFixed(2)}s
+              </div>
             </div>
           </div>
           <div className="space-y-2">

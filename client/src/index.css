@@ -9,7 +9,7 @@
   html {
     scroll-behavior: smooth;
   }
-  
+
   body {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -219,8 +219,8 @@
   }
 
   body {
-    background-color: var(--color-primary);
-    color: var(--color-secondary);
+    background-color: #000000;
+    color: #C9D1D9;
     font-family: 'Fira Code', monospace;
     overflow-x: hidden;
     font-feature-settings: "cv11", "cv02", "cv03", "cv04";
