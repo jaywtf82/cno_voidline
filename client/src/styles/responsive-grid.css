@@ -29,9 +29,9 @@ img, canvas, svg, video { max-width: 100%; height: auto; display: block; }
 .card__ft { padding: .75rem 1rem; border-top: 1px solid var(--border); }
 
 /* Live visual containers reserve space (no layout shift) */
-.visual { position: relative; height: var(--visual-h, 240px); }
-.visual.is-small { --visual-h: 160px; }
-.visual.is-tall  { --visual-h: 320px; }
+.visual { position: relative; height: var(--visual-h, 260px); }
+.visual.small { --visual-h: 180px; }
+.visual.tall  { --visual-h: 320px; }
 
 /* Canvas fills container; high-DPI controlled via JS ResizeObserver */
 .visual > canvas, .visual > svg { position:absolute; inset:0; width:100%; height:100%; }

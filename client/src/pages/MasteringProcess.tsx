@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { AppShell } from '@/components/layout/AppShell';
 import { Phase1DeepSignal } from '@/components/mastering/Phase1DeepSignal';
 import Phase2Reconstruction from '@/components/mastering/Phase2Reconstruction';
+import { Phase1VisualDeck } from '@/components/mastering/phase1/Phase1VisualDeck';
 import { useMasteringStore } from '@/state/masteringStore';
 
 /**
@@ -40,8 +41,11 @@ export default function MasteringProcess() {
           </p>
         </div>
         
-        {/* Phase 1: Deep Signal Deconstruction */}
-        <Phase1DeepSignal />
+          {/* Phase 1: Deep Signal Deconstruction */}
+          <Phase1DeepSignal />
+          <div className="mt-6">
+            <Phase1VisualDeck sessionId={sessionId} />
+          </div>
         
         {/* Phase 2: Intelligent Reconstruction */}
         <div className="mt-8">
