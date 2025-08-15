@@ -36,7 +36,16 @@ export class OptimizedAudioProcessor {
 
   async initialize() {
     try {
-      this.audioContext = new AudioContext();
+      // Initialize audio context with proper error handling
+      this.audioContext = new AudioContext({ 
+        latencyHint: 'interactive',
+        sampleRate: this.config.sampleRate 
+      });
+
+      // Resume audio context if suspended
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
 
       // Check if worklet files exist before loading
       const workletPaths = [
@@ -45,25 +54,42 @@ export class OptimizedAudioProcessor {
         '/worklets/correlation-processor.js'
       ];
 
-      // Load each worklet with error handling
+      let workletLoadCount = 0;
+
+      // Load each worklet with comprehensive error handling
       for (const path of workletPaths) {
         try {
           await this.audioContext.audioWorklet.addModule(path);
+          workletLoadCount++;
         } catch (error) {
           console.warn(`Failed to load worklet ${path}:`, error);
+          // Continue without this specific worklet
         }
       }
 
       // Only create worklet node if at least one worklet loaded successfully
-      try {
-        this.workletNode = new AudioWorkletNode(this.audioContext, 'lufs-processor');
-      } catch (error) {
-        console.warn('AI Mastering Worklet not available, using fallback processing');
-        // Continue with fallback processing
+      if (workletLoadCount > 0) {
+        try {
+          this.workletNode = new AudioWorkletNode(this.audioContext, 'lufs-processor', {
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            channelCount: this.config.channels
+          });
+        } catch (error) {
+          console.warn('AI Mastering Worklet not available, using fallback processing:', error);
+          this.workletNode = null;
+        }
       }
+
     } catch (error) {
       console.error('Failed to initialize audio context:', error);
-      // Graceful fallback to Web Audio API without worklets
+      // Create minimal fallback context
+      try {
+        this.audioContext = new AudioContext();
+      } catch (fallbackError) {
+        console.error('Complete audio context initialization failed:', fallbackError);
+        this.audioContext = null;
+      }
     }
   }
 
@@ -73,15 +99,27 @@ export class OptimizedAudioProcessor {
         await this.initialize();
       }
 
+      // Validate audio buffer
+      if (!audioBuffer || audioBuffer.length === 0) {
+        throw new Error('Invalid audio buffer provided');
+      }
+
       // Process with worklet if available, otherwise use fallback
-      if (this.workletNode && this.audioContext) {
+      if (this.workletNode && this.audioContext && this.audioContext.state === 'running') {
         return await this.processWithWorklet(audioBuffer);
       } else {
         return await this.processWithFallback(audioBuffer);
       }
     } catch (error) {
       console.error('Audio processing failed:', error);
-      return this.processWithFallback(audioBuffer);
+      // Always return safe fallback data
+      return {
+        lufs: -14.0,
+        dbtp: -1.0,
+        lra: 5.0,
+        processed: false,
+        error: error.message
+      };
     }
   }
 

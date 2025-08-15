@@ -12,29 +12,29 @@ interface AudioAnalysisData {
   sampleRate?: number;
   channels?: number;
   sessionId?: string;
-  
+
   // Must-have metrics (ITU-R BS.1770 compliant)
   lufsI?: number;           // Integrated LUFS
   lufsS?: number;           // Short-term LUFS (3s)
   lufsM?: number;           // Momentary LUFS (400ms)
   dbtp?: number;            // True Peak (dBTP) with 4x oversampling
   lra?: number;             // Loudness Range
-  
+
   // Basic metrics
   samplePeak?: number;      // Sample peak in dBFS
   rms?: number;            // RMS level in dBFS
   crest?: number;          // Crest factor in dB
-  
+
   // Quality metrics
   clipCount?: number;       // Inter-sample clipping count
   dcL?: number;            // DC offset left channel
   dcR?: number;            // DC offset right channel
   correlation?: number;     // Stereo correlation (-1 to +1)
-  
+
   // Derived metrics
   plr?: number;            // Peak to Loudness Ratio
   psr?: number;            // Peak to Short-term Ratio
-  
+
   // Optional quality gates
   stereoWidth?: number;
   phaseCorrelation?: number;
@@ -45,30 +45,30 @@ interface TechnicalAnalysisData {
   id: string;
   sr: number;
   ch: number;
-  dur_s: number;
-  
+  dur_s: number | undefined;
+
   // Core measurements
   lufs_i: number | null;
   lufs_s: number | null;
   lufs_m: number | null;
   dbtp: number;
   lra: number;
-  
+
   // Basic metrics
   sample_peak_dbfs: number;
   rms_mono_dbfs: number;
   crest_db: number;
-  
+
   // Quality metrics
   clip_count: number;
   dc_offset_l: number;
   dc_offset_r: number;
   stereo_correlation: number;
-  
+
   // Derived
   plr: number;  // Peak to Loudness Ratio
   psr: number;  // Peak to Short-term Ratio
-  
+
   // Analysis targets
   targets: {
     streaming: { lufs_i_min: number; lufs_i_max: number; dbtp_max: number; lra_range: [number, number] };
@@ -115,46 +115,62 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
       const duration = analysisData?.duration || 0;
       return typeof duration === 'number' ? duration : safeParseNumber(duration as string, 0);
     })(),
-    
+
     // Core LUFS measurements (K-weighted + gated)
     lufs_i: analysisData.lufsI ?? null,
-    lufs_s: analysisData.lufsS ?? null, 
+    lufs_s: analysisData.lufsS ?? null,
     lufs_m: analysisData.lufsM ?? null,
     dbtp: analysisData.dbtp ?? (analysisData.samplePeak ? analysisData.samplePeak + 0.5 : -1.0),
     lra: analysisData.lra ?? 0,
-    
+
     // Basic measurements
     sample_peak_dbfs: analysisData.samplePeak ?? safeParseNumber(analysisData.rms, -6.0) + 12,
     rms_mono_dbfs: analysisData.rms ?? -18.0,
     crest_db: analysisData.crest ?? 12.0,
-    
+
     // Quality metrics
     clip_count: analysisData.clipCount ?? 0,
     dc_offset_l: analysisData.dcL ?? 0.0,
     dc_offset_r: analysisData.dcR ?? 0.0,
     stereo_correlation: analysisData.correlation ?? 0.85,
-    
+
     // Derived metrics
-    plr: analysisData.plr ?? (analysisData.samplePeak && analysisData.lufsI ? 
+    plr: analysisData.plr ?? (analysisData.samplePeak && analysisData.lufsI ?
          analysisData.samplePeak - analysisData.lufsI : 8.0),
-    psr: analysisData.psr ?? (analysisData.lufsS && analysisData.lufsI ? 
+    psr: analysisData.psr ?? (analysisData.lufsS && analysisData.lufsI ?
          analysisData.lufsS - analysisData.lufsI : 2.0),
-    
+
     // Standard targets per specification
     targets: {
-      streaming: { 
-        lufs_i_min: -14, lufs_i_max: -9, dbtp_max: -1.0, 
-        lra_range: [4, 8] 
+      streaming: {
+        lufs_i_min: -14, lufs_i_max: -9, dbtp_max: -1.0,
+        lra_range: [4, 8]
       },
-      club: { 
-        lufs_i_min: -7, lufs_i_max: -6, dbtp_max: -0.8, 
-        lra_range: [3, 6] 
+      club: {
+        lufs_i_min: -7, lufs_i_max: -6, dbtp_max: -0.8,
+        lra_range: [3, 6]
       }
     }
   };
 
   const handleStartMastering = () => {
     navigate(`/mastering?id=${technicalData.id}`);
+  };
+
+  const handleStartMasteringSession = () => {
+    try {
+      if (typeof window !== 'undefined' && window.handleStartMasteringSession) {
+        window.handleStartMasteringSession();
+      } else {
+        // Fallback navigation if window handler is not available
+        const sessionId = analysisData?.sessionId || 'demo';
+        window.location.href = `/mastering/process?id=${sessionId}`;
+      }
+    } catch (error) {
+      console.error('Failed to start mastering session:', error);
+      // Fallback to basic navigation
+      window.location.href = '/console';
+    }
   };
 
   return (
@@ -304,14 +320,7 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
         <div className="mt-6 text-center">
           <Button
             size="lg"
-            onClick={() => {
-              if (window.location.pathname === '/') {
-                // Call parent callback if provided
-                if (typeof (window as any).handleStartMasteringSession === 'function') {
-                  (window as any).handleStartMasteringSession();
-                }
-              }
-            }}
+            onClick={handleStartMasteringSession}
             className="bg-gradient-to-r from-cyan-500 to-cyan-400 text-black font-mono font-bold px-8 py-3 hover:from-cyan-400 hover:to-cyan-300 transition-all duration-200"
           >
             Start Mastering Session
