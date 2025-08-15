@@ -1,4 +1,3 @@
-
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -9,7 +8,12 @@ import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import Console from "@/pages/Console";
 import MockingPage from "@/pages/MockingPage";
+import Mastering from "@/pages/Mastering";
 import NotFound from "@/pages/not-found";
+import { initializeAnalysisData } from '@/lib/stores/audioStore';
+
+// Initialize analysis data on app start
+initializeAnalysisData();
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -18,7 +22,7 @@ function Router() {
     <Switch>
       {/* Default landing page with full interface */}
       <Route path="/" component={Landing} />
-      
+
       {/* Authentication-protected routes */}
       {isLoading ? (
         <Route>
@@ -36,10 +40,11 @@ function Router() {
           <Route path="/console" component={Console} />
         </>
       )}
-      
+
       {/* Demo/Testing routes */}
       <Route path="/mocking" component={MockingPage} />
-      
+      <Route path="/mastering" component={Mastering} />
+
       <Route component={NotFound} />
     </Switch>
   );

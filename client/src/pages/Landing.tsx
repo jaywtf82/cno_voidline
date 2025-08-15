@@ -21,9 +21,11 @@ import { Play, Pause, Square, Volume2, Settings, Zap, Target, Waves, Brain } fro
 import { aiMasteringCore } from "@/lib/audio/aiMasteringCore";
 import { SpectrumAnalyzer } from "@/components/audio/SpectrumAnalyzer";
 import { WaveformComparison } from "@/components/audio/WaveformComparison";
-import { AnalysisProgress } from "@/components/audio/AnalysisProgress";
+import { AnalysisProgress } from '@/components/audio/AnalysisProgress';
 import { AnalysisDataCard } from '@/components/audio/AnalysisDataCard';
-import { LiveSystemFeed } from "@/components/system/LiveSystemFeed";
+import { LiveSystemFeed } from '@/components/system/LiveSystemFeed';
+import { PersistentAnalysisCard } from '@/components/analysis/PersistentAnalysisCard';
+import { PhaseOneCard } from '@/components/analysis/PhaseOneCard';
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -291,8 +293,8 @@ export default function Landing() {
           {/* Audio Analysis Results */}
           {analysisComplete && audioAnalysis && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* New AnalysisDataCard component added here */}
-              <AnalysisDataCard 
+              {/* PersistentAnalysisCard component added here */}
+              <PersistentAnalysisCard 
                 data={audioAnalysis} 
                 onMasteringStart={() => setShowAuthModal(true)} 
               />
@@ -323,37 +325,7 @@ export default function Landing() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
           >
-            <div className="terminal-window animated-item" style={{ animationDelay: '0.9s' }}>
-              <div className="terminal-header px-4 py-2 mb-4 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 1: Analysis</div>
-                  <div className="text-white font-bold text-sm">CORE: DECONSTRUCT</div>
-                </div>
-              </div>
-              <div className="p-6 pt-0">
-                <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
-                <p className="text-gray-400 mb-6 text-sm">
-                  AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.
-                </p>
-
-                {/* Spectrum Bars */}
-                <div className="bg-black/50 p-4 rounded border" style={{ borderColor: 'var(--color-glass-border)' }}>
-                  <div className="flex items-end space-x-1 h-24">
-                    {Array.from({ length: 8 }, (_, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 animate-pulse"
-                        style={{
-                          backgroundColor: 'var(--color-accent)',
-                          height: `${Math.random() * 80 + 20}%`,
-                          animationDelay: `${i * 0.1}s`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PhaseOneCard /> {/* Replaced with PhaseOneCard */}
           </motion.div>
 
           {/* Phase 2: Enhancement */}
