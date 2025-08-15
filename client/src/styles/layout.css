@@ -2,7 +2,7 @@
   --header-h: clamp(48px, 8vh, 80px);    /* responsive header height */
   --ctl-h: clamp(28px, 4vh, 40px);       /* responsive control height */
   --header-max: clamp(320px, 95vw, 1200px);/* fully responsive width */
-  --brand-sub-size: clamp(0.6rem, 1.5vw, 0.8rem);  /* responsive subtitle */
+  --brand-sub-size: clamp(0.5rem, 1.2vw, 0.65rem);  /* reduced subtitle size */
   --brand-title-size: clamp(0.9rem, 2.5vw, 1.1rem); /* responsive title */
   --nav-font-size: clamp(0.75rem, 1.8vw, 0.875rem); /* responsive nav text */
   --brand-grey: #9aa9b8;      /* same family as nav grey */
