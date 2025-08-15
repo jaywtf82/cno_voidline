@@ -260,10 +260,7 @@ export default function Landing() {
                 <p>Welcome, producer. Our advanced AI is ready to analyze and enhance your audio. Upload your track to begin the mastering process and unlock its full sonic potential<span className="cursor-blink"></span></p>
               </div>
 
-              <div className="flex space-x-4 justify-center">
-                <button className="btn btn-primary">
-                  Start Mastering
-                </button>
+              <div className="flex justify-center">
                 <button className="btn btn-secondary">
                   Upload Audio File ...
                 </button>
