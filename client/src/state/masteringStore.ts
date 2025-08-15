@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -42,7 +41,7 @@ interface MasteringStore {
   currentSession: MasteringSession | null;
   sessions: Map<string, MasteringSession>;
   audioMetrics: AudioMetrics | null;
-  
+
   // Actions
   createSession: (fileMeta: any, buffer: AudioBuffer) => string;
   loadSession: (id: string) => void;
@@ -64,7 +63,7 @@ export const useMasteringStore = create<MasteringStore>()(
 
       createSession: (fileMeta, buffer) => {
         const id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         const newSession: MasteringSession = {
           id,
           fileMeta: {
@@ -108,13 +107,13 @@ export const useMasteringStore = create<MasteringStore>()(
             const db = request.result;
             const transaction = db.transaction(['audioBuffers'], 'readwrite');
             const store = transaction.objectStore('audioBuffers');
-            
+
             // Convert AudioBuffer to transferable format
             const channels = [];
             for (let i = 0; i < buffer.numberOfChannels; i++) {
               channels.push(Array.from(buffer.getChannelData(i)));
             }
-            
+
             store.put({
               id,
               sampleRate: buffer.sampleRate,
@@ -133,13 +132,13 @@ export const useMasteringStore = create<MasteringStore>()(
       loadSession: (id) => {
         const state = get();
         const session = state.sessions.get(id);
-        
+
         if (session) {
           set({ 
             currentSession: session, 
             audioMetrics: session.audioMetrics 
           });
-          
+
           // Load audio buffer from IndexedDB if not present
           if (!session.buffer) {
             try {
@@ -149,7 +148,7 @@ export const useMasteringStore = create<MasteringStore>()(
                 const transaction = db.transaction(['audioBuffers'], 'readonly');
                 const store = transaction.objectStore('audioBuffers');
                 const getRequest = store.get(id);
-                
+
                 getRequest.onsuccess = () => {
                   const data = getRequest.result;
                   if (data) {
@@ -160,11 +159,11 @@ export const useMasteringStore = create<MasteringStore>()(
                       data.length,
                       data.sampleRate
                     );
-                    
+
                     for (let i = 0; i < data.numberOfChannels; i++) {
                       buffer.copyToChannel(new Float32Array(data.channels[i]), i);
                     }
-                    
+
                     set((state) => ({
                       currentSession: state.currentSession ? { ...state.currentSession, buffer } : null
                     }));
@@ -182,18 +181,18 @@ export const useMasteringStore = create<MasteringStore>()(
         set((state) => {
           const newSessions = new Map(state.sessions);
           const existingSession = newSessions.get(id);
-          
+
           if (existingSession) {
             const updatedSession = { ...existingSession, ...updates };
             newSessions.set(id, updatedSession);
-            
+
             return {
               sessions: newSessions,
               currentSession: state.currentSession?.id === id ? updatedSession : state.currentSession,
               audioMetrics: state.currentSession?.id === id ? updatedSession.audioMetrics || state.audioMetrics : state.audioMetrics,
             };
           }
-          
+
           return state;
         });
       },
@@ -201,15 +200,15 @@ export const useMasteringStore = create<MasteringStore>()(
       updateSettings: (settings) => {
         set((state) => {
           if (!state.currentSession) return state;
-          
+
           const updatedSession = {
             ...state.currentSession,
             settings: { ...state.currentSession.settings, ...settings },
           };
-          
+
           const newSessions = new Map(state.sessions);
           newSessions.set(state.currentSession.id, updatedSession);
-          
+
           return {
             currentSession: updatedSession,
             sessions: newSessions,
@@ -220,11 +219,11 @@ export const useMasteringStore = create<MasteringStore>()(
       setAnalysis: (analysis) => {
         set((state) => {
           if (!state.currentSession) return state;
-          
+
           const updatedSession = { ...state.currentSession, analysis };
           const newSessions = new Map(state.sessions);
           newSessions.set(state.currentSession.id, updatedSession);
-          
+
           return {
             currentSession: updatedSession,
             sessions: newSessions,
@@ -266,11 +265,11 @@ export const useMasteringStore = create<MasteringStore>()(
       setAiInsights: (ai) => {
         set((state) => {
           if (!state.currentSession) return state;
-          
+
           const updatedSession = { ...state.currentSession, ai };
           const newSessions = new Map(state.sessions);
           newSessions.set(state.currentSession.id, updatedSession);
-          
+
           return {
             currentSession: updatedSession,
             sessions: newSessions,

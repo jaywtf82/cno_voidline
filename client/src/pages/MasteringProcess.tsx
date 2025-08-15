@@ -10,11 +10,21 @@ import { useMasteringStore } from '@/state/masteringStore';
  * Uses AppShell for exact header parity with main page
  */
 export default function MasteringProcess() {
-  const { currentSession } = useMasteringStore();
+  const { currentSession, createSession } = useMasteringStore();
   const [location] = useLocation();
   
   // Extract session ID from URL or use current session
-  const sessionId = currentSession?.id || 'default';
+  const urlParams = new URLSearchParams(location.split('?')[1] || '');
+  const urlSessionId = urlParams.get('id');
+  const sessionId = urlSessionId || currentSession?.id || 'default';
+
+  // Initialize session if needed
+  React.useEffect(() => {
+    if (urlSessionId && !currentSession) {
+      // Create session from URL parameter
+      createSession(urlSessionId);
+    }
+  }, [urlSessionId, currentSession, createSession]);
 
   return (
     <AppShell className="p-6">
@@ -26,7 +36,7 @@ export default function MasteringProcess() {
             Mastering Process
           </h1>
           <p className="text-terminal-sm">
-            Deep signal deconstruction and AI-powered audio enhancement
+            Deep signal deconstruction and AI-powered audio enhancement • Session: {sessionId}
           </p>
         </div>
         

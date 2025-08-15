@@ -28,37 +28,43 @@ export function Phase1DeepSignal() {
   const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
-  
+
   const { 
     currentSession, 
     audioMetrics,
     setSessionPhase
   } = useMasteringStore();
-  
+
+  // Define analysisProgress state
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+
+
   useEffect(() => {
     // Set current phase
     setSessionPhase('phase1');
   }, [setSessionPhase]);
-  
+
   const handleStartAnalysis = async () => {
     setIsProcessing(true);
     setProgress(0);
     setAnalysisComplete(false);
-    
+    setAnalysisProgress(0); // Reset analysis progress
+
+
     // Start live feed
     liveFeed.ui.action('Starting Phase 1: Deep Signal Deconstruction');
     liveFeed.analysis.progress('Initializing analysis pipeline...', 0);
-    
+
     if (!currentSession?.buffer) {
       liveFeed.analysis.progress('No audio buffer available, using simulation...', 10);
     }
-    
+
     try {
       // Initialize analysis pipeline
       const audioContext = new AudioContext();
       const analysisPipeline = new AnalysisPipeline(audioContext);
       const processor = new OptimizedAudioProcessor();
-      
+
       // Real analysis stages with actual processing
       const stages = [
         { name: 'Loading audio worklets...', duration: 800, action: async () => {
@@ -88,24 +94,26 @@ export function Phase1DeepSignal() {
           // Finalize analysis results
         }}
       ];
-    
+
       let currentProgress = 0;
-      
+
       for (let i = 0; i < stages.length; i++) {
         const stage = stages[i];
         liveFeed.analysis.progress(stage.name, currentProgress);
-        
+
         // Execute actual processing if available
         if (stage.action) {
           await stage.action();
         }
-        
+
         // Simulate processing time
         await new Promise(resolve => setTimeout(resolve, stage.duration));
-        
+
         currentProgress = Math.round(((i + 1) / stages.length) * 100);
         setProgress(currentProgress);
-        
+        setAnalysisProgress(currentProgress); // Update analysis progress state
+
+
         // Send realistic worklet data based on actual analysis or fallback to simulation
         if (i >= 2) {
           if (currentSession?.buffer) {
@@ -126,42 +134,46 @@ export function Phase1DeepSignal() {
           }
         }
       }
-    
+
       // Complete analysis
       liveFeed.analysis.summary('Phase 1 analysis complete - all metrics within tolerance');
       liveFeed.ai.done('AI analysis ready for Phase 2 processing');
       liveFeed.complete('phase1', 'Deep Signal Deconstruction completed successfully');
-      
+
       // Clean up resources
       if (audioContext && audioContext.state !== 'closed') {
         await audioContext.close();
       }
-      
+
       setIsProcessing(false);
       setAnalysisComplete(true);
+      setAnalysisProgress(100); // Ensure progress is 100% on completion
+
     } catch (error) {
       console.error('Phase 1 analysis failed:', error);
       liveFeed.analysis.summary('Phase 1 analysis failed - using fallback simulation');
-      
+
       // Continue with simulation on error
       setIsProcessing(false);
       setAnalysisComplete(true);
+      setAnalysisProgress(100); // Ensure progress is 100% on completion even on error
     }
   };
-  
+
   const handlePlayPause = () => {
     setIsPlaying(!isPlaying);
     liveFeed.ui.action(isPlaying ? 'Playback paused' : 'Playback started');
   };
-  
+
   const handleReset = () => {
     setProgress(0);
     setIsProcessing(false);
     setAnalysisComplete(false);
     setIsPlaying(false);
+    setAnalysisProgress(0); // Reset analysis progress
     liveFeed.ui.action('Phase 1 reset to initial state');
   };
-  
+
   return (
     <div className="card-terminal">
       {/* Header */}
@@ -171,7 +183,7 @@ export function Phase1DeepSignal() {
           Phase 1: Deep Signal Deconstruction
           <span className={`status-indicator ${analysisComplete ? 'status-indicator--active' : isProcessing ? 'status-indicator--warning' : 'status-indicator--inactive'}`} />
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             onClick={handlePlayPause}
@@ -182,7 +194,7 @@ export function Phase1DeepSignal() {
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             {isPlaying ? 'Pause' : 'Play'}
           </Button>
-          
+
           <Button
             onClick={handleReset}
             className="btn-terminal btn-terminal--secondary"
@@ -193,7 +205,7 @@ export function Phase1DeepSignal() {
           </Button>
         </div>
       </div>
-      
+
       {/* Progress */}
       {isProcessing && (
         <div className="mb-6">
@@ -207,7 +219,7 @@ export function Phase1DeepSignal() {
           />
         </div>
       )}
-      
+
       {/* Main content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Real-time visualizations */}
@@ -224,7 +236,7 @@ export function Phase1DeepSignal() {
               isActive={isPlaying || isProcessing}
             />
           </div>
-          
+
           {/* Scope Canvas */}
           <div className="card-terminal p-4">
             <h3 className="text-terminal-base font-semibold mb-3 flex items-center gap-2">
@@ -238,7 +250,7 @@ export function Phase1DeepSignal() {
             />
           </div>
         </div>
-        
+
         {/* Meter stacks and controls */}
         <div className="space-y-6">
           {/* Meters */}
@@ -249,14 +261,14 @@ export function Phase1DeepSignal() {
             </h3>
             <MeterStacks isActive={isPlaying || isProcessing} />
           </div>
-          
+
           {/* Controls */}
           <div className="card-terminal p-4">
             <h3 className="text-terminal-base font-semibold mb-3 flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Analysis Controls
             </h3>
-            
+
             <div className="space-y-4">
               <Button
                 onClick={handleStartAnalysis}
@@ -265,7 +277,7 @@ export function Phase1DeepSignal() {
               >
                 {isProcessing ? 'Processing...' : 'Start Deep Analysis'}
               </Button>
-              
+
               <div className="space-y-2 text-terminal-xs">
                 <div className="flex justify-between">
                   <span>LUFS Integration:</span>
@@ -294,7 +306,7 @@ export function Phase1DeepSignal() {
               </div>
             </div>
           </div>
-          
+
           {/* Mission Status */}
           {analysisComplete && (
             <div className="card-terminal p-4 border-status-success">

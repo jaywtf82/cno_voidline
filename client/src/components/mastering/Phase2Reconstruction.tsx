@@ -17,21 +17,30 @@ export interface Phase2ReconstructionProps {
 
 export default function Phase2Reconstruction({ sessionId }: Phase2ReconstructionProps): JSX.Element {
   const { currentSession, setSessionPhase } = useMasteringStore();
+  const [reconstructionEnabled, setReconstructionEnabled] = React.useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [chainParams, setChainParams] = useState<ChainParams | null>(null);
   const [abState, setAbState] = useState<'A' | 'B' | 'bypass' | 'delta' | 'null'>('A');
   const [matchGain, setMatchGain] = useState(false);
   const [systemFeedMessages, setSystemFeedMessages] = useState<string[]>([]);
 
+  // Enable reconstruction when analysis is complete
+  React.useEffect(() => {
+    // Check if we have analysis data or session
+    if (currentSession || sessionId !== 'default') {
+      setReconstructionEnabled(true);
+    }
+  }, [currentSession, sessionId]);
+
   useEffect(() => {
     if (currentSession) {
       setSessionPhase('phase2');
-      
+
       // Initialize Phase 2 with Phase 1 results
       liveFeed.ui.action('Phase 2 initialized - ready for reconstruction');
       addSystemMessage('Phase 2: Intelligent Reconstruction initialized');
       addSystemMessage(`Session: ${currentSession.fileMeta.name}`);
-      
+
       // Check if we have Phase 1 analysis results
       if (currentSession.analysis) {
         addSystemMessage(`LUFS: ${currentSession.analysis.lufsI?.toFixed(1)} | dBTP: ${currentSession.analysis.dbtp?.toFixed(1)}`);
@@ -46,7 +55,7 @@ export default function Phase2Reconstruction({ sessionId }: Phase2Reconstruction
     setChainParams(params);
     addSystemMessage(`Preset generated for ${params.target} target`);
     liveFeed.ai.init(`AI preset generated for ${params.target}`);
-    
+
     // Validate preset parameters against Phase 1 analysis
     if (currentSession?.analysis) {
       const analysis = currentSession.analysis;
@@ -63,7 +72,7 @@ export default function Phase2Reconstruction({ sessionId }: Phase2Reconstruction
     setIsProcessing(true);
     addSystemMessage('Applying preset to audio chain...');
     liveFeed.ui.action('Phase 2: Applying intelligent reconstruction parameters');
-    
+
     // Simulate realistic processing with stages
     const processStages = [
       'Initializing audio processing chain...',
@@ -73,7 +82,7 @@ export default function Phase2Reconstruction({ sessionId }: Phase2Reconstruction
       'Finalizing reconstruction parameters...',
       'Reconstruction complete - audio enhanced'
     ];
-    
+
     let stageIndex = 0;
     const processInterval = setInterval(() => {
       if (stageIndex < processStages.length) {
@@ -87,7 +96,7 @@ export default function Phase2Reconstruction({ sessionId }: Phase2Reconstruction
         setIsProcessing(false);
         addSystemMessage('Phase 2 reconstruction applied successfully');
         liveFeed.complete('phase2', 'Intelligent Reconstruction completed');
-        
+
         // Update A/B state to show processed result
         setAbState('B');
       }
@@ -102,6 +111,15 @@ export default function Phase2Reconstruction({ sessionId }: Phase2Reconstruction
     return (
       <div className="terminal-window p-8 text-center">
         <div className="text-gray-400">No active session. Please return to upload.</div>
+      </div>
+    );
+  }
+
+  // Only render the reconstruction interface if enabled
+  if (!reconstructionEnabled) {
+    return (
+      <div className="terminal-window p-8 text-center">
+        <div className="text-gray-400">Analyzing audio... Please wait.</div>
       </div>
     );
   }
@@ -125,15 +143,15 @@ export default function Phase2Reconstruction({ sessionId }: Phase2Reconstruction
             <span className="text-xs font-mono text-gray-400">ACTIVE</span>
           </div>
         </div>
-        
+
         <div className="p-6">
           <p className="text-gray-400 mb-6 text-sm">
             AI rebuilds the audio using Phase 1 analysis data, applying precise, calculated enhancements for optimal signal reconstruction.
-            {currentSession?.analysis ? 
-              ` Input: ${currentSession.analysis.lufsI?.toFixed(1)} LUFS, ${currentSession.analysis.dbtp?.toFixed(1)} dBTP` : 
+            {currentSession?.analysis ?
+              ` Input: ${currentSession.analysis.lufsI?.toFixed(1)} LUFS, ${currentSession.analysis.dbtp?.toFixed(1)} dBTP` :
               ' No Phase 1 data - using simulation mode.'}
           </p>
-          
+
           {/* A/B Transport */}
           <ABTransport
             sessionId={sessionId}

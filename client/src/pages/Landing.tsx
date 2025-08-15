@@ -315,6 +315,10 @@ export default function Landing() {
   const handleStartMasteringSession = () => {
     if (audioAnalysis?.sessionId) {
       navigate(`/mastering/process?id=${audioAnalysis.sessionId}`);
+    } else {
+      // Create a new session ID if none exists
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      navigate(`/mastering/process?id=${newSessionId}`);
     }
   };
 
