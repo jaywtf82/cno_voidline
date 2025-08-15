@@ -140,22 +140,22 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
             <div 
               className="w-3 h-3 rounded-full shadow-sm"
               style={{ 
-                backgroundColor: '#3FB950',
-                boxShadow: '0 0 6px rgba(63, 185, 80, 0.4)' 
+                backgroundColor: '#FF5F56',
+                boxShadow: '0 0 6px rgba(255, 95, 86, 0.4)' 
               }}
             />
             <div 
               className="w-3 h-3 rounded-full shadow-sm"
               style={{ 
-                backgroundColor: '#2EA043',
-                boxShadow: '0 0 6px rgba(46, 160, 67, 0.4)' 
+                backgroundColor: '#FFBD2E',
+                boxShadow: '0 0 6px rgba(255, 189, 46, 0.4)' 
               }}
             />
             <div 
               className="w-3 h-3 rounded-full shadow-sm"
               style={{ 
-                backgroundColor: '#22c55e',
-                boxShadow: '0 0 6px rgba(34, 197, 94, 0.4)' 
+                backgroundColor: '#00FF41',
+                boxShadow: '0 0 8px rgba(0, 255, 65, 0.6)' 
               }}
             />
           </div>

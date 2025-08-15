@@ -311,7 +311,7 @@ export default function Landing() {
               </div>
 
               <div className="flex justify-center">
-                <button className="btn btn-secondary">
+                <button className="btn btn-secondary" style={{ color: '#3FB950' }}>
                   Drag & Drop or Choose Files to Upload ...
                 </button>
               </div>
