@@ -36,10 +36,22 @@ export function AudioDropZone({ onFileSelect, className }: AudioDropZoneProps) {
   }, []);
 
   const validateAudioFile = (file: File): string | null => {
-    const allowedTypes = ['audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/aac', 'audio/flac', 'audio/ogg'];
+    const allowedTypes = [
+      'audio/wav', 'audio/wave', 'audio/x-wav',
+      'audio/mp3', 'audio/mpeg', 'audio/mp4',
+      'audio/aac', 'audio/x-aac',
+      'audio/flac', 'audio/x-flac',
+      'audio/ogg', 'audio/ogg; codecs=vorbis'
+    ];
+    const allowedExtensions = ['.wav', '.mp3', '.aac', '.flac', '.ogg', '.m4a'];
     const maxSize = 100 * 1024 * 1024; // 100MB
 
-    if (!allowedTypes.includes(file.type)) {
+    // Check file extension as well as MIME type
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+    const hasValidMimeType = allowedTypes.includes(file.type.toLowerCase());
+
+    if (!hasValidExtension && !hasValidMimeType) {
       return 'Please upload a valid audio file (WAV, MP3, AAC, FLAC, OGG)';
     }
 

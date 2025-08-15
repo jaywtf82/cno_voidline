@@ -123,29 +123,20 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface-dark to-surface-darker text-text-primary p-6">
+    <div className="min-h-screen bg-gradient-to-br from-surface-dark to-surface-darker text-text-primary">
+      <div className="container-professional section-spacing">
       {/* Header */}
       <motion.div 
-        className="flex items-center justify-between mb-8"
+        className="flex items-center justify-between mb-12 pb-6 border-b border-primary/10"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <div className="flex items-center space-x-4">
-          <Logo className="h-8" />
-          <div className="border-l border-accent-primary/30 pl-4">
-            <h1 className="font-mono text-2xl text-accent-primary">
-              <GlitchWord trigger={glitchTrigger} intensity="medium">
-                •/C/No_Voidline
-              </GlitchWord>
-            </h1>
-            <p className="font-mono text-sm text-text-muted">Frequencies aligned. Stillness remains.</p>
-          </div>
-        </div>
+        <Logo />
         
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-8">
           {/* Navigation Links */}
-          <div className="flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-6">
             <a 
               href="#" 
               className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
@@ -174,30 +165,26 @@ export default function Landing() {
             >
               /docs
             </a>
-            <a 
-              href="#logs" 
-              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-              data-testid="link-logs"
-            >
-              /logs
-            </a>
-          </div>
+          </nav>
           
-          {/* Login Button */}
-          {!isAuthenticated && (
-            <Button
-              variant="outline"
-              onClick={handleLogin}
-              className="font-mono text-sm"
-              data-testid="button-login"
-            >
-              Login
-            </Button>
-          )}
-          
-          {/* System Status */}
-          <div className="font-mono text-xs text-accent-primary border border-accent-primary/30 px-3 py-1 rounded">
-            ● ● ●
+          <div className="flex items-center space-x-4">
+            {/* Login Button */}
+            {!isAuthenticated && (
+              <Button
+                variant="outline"
+                onClick={handleLogin}
+                className="font-mono text-sm px-4 py-2"
+                data-testid="button-login"
+              >
+                Login
+              </Button>
+            )}
+            
+            {/* System Status */}
+            <div className="flex items-center space-x-2 font-mono text-xs text-accent-primary border border-accent-primary/30 px-3 py-2 rounded-lg bg-black/20">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+              <span>ONLINE</span>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -231,11 +218,11 @@ export default function Landing() {
       </motion.div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-12 gap-6 mb-16" id="features">
+      <div className="feature-grid" id="features">
         
         {/* Left Panel - Transport & Controls */}
         <motion.div 
-          className="col-span-3"
+          className="space-y-6"
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7, delay: 0.1 }}
@@ -320,7 +307,7 @@ export default function Landing() {
 
         {/* Center Panel - Visualizers */}
         <motion.div 
-          className="col-span-6"
+          className="space-y-6"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -329,7 +316,7 @@ export default function Landing() {
             {/* WaveDNA Visualizer */}
             <WaveDNA isPlaying={isPlaying} className="h-64" />
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Phase 2: Enhancement */}
               <NeonCard variant="terminal" className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
@@ -347,20 +334,31 @@ export default function Landing() {
                 </p>
                 
                 {/* Neural Module Display */}
-                <div className="bg-black/50 p-4 rounded">
-                  <div className="font-mono text-sm mb-2">neural module v9.4.1</div>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
-                      <div className="text-xs">Dynamics</div>
+                <div className="bg-black/50 p-4 rounded border border-accent-primary/20">
+                  <div className="font-mono text-sm mb-3 text-accent-primary">neural module v9.4.1</div>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 bg-accent-primary/20 border border-accent-primary rounded-lg mx-auto mb-2 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-accent-primary rounded-full animate-pulse"></div>
+                      </div>
+                      <div className="text-xs font-mono">Dynamics</div>
                     </div>
-                    <div>
-                      <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
-                      <div className="text-xs">Stereo</div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 bg-accent-primary/20 border border-accent-primary rounded-lg mx-auto mb-2 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-accent-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                      <div className="text-xs font-mono">Stereo</div>
                     </div>
-                    <div>
-                      <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
-                      <div className="text-xs">EQ Balance</div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 bg-accent-primary/20 border border-accent-primary rounded-lg mx-auto mb-2 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-accent-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                      <div className="text-xs font-mono">EQ Balance</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-accent-primary/20">
+                    <div className="text-xs font-mono text-text-muted text-center">
+                      designed and developed by <span className="text-accent-primary">[@dotslashrecords]</span>
                     </div>
                   </div>
                 </div>
@@ -384,12 +382,15 @@ export default function Landing() {
                 </p>
                 
                 {/* Signal Bars */}
-                <div className="bg-black/50 p-4 rounded">
-                  <div className="flex items-end justify-center space-x-2 h-16">
-                    <div className="w-3 h-8 bg-accent-primary"></div>
-                    <div className="w-3 h-12 bg-accent-primary"></div>
-                    <div className="w-3 h-16 bg-yellow-400"></div>
-                    <div className="w-3 h-14 bg-accent-primary"></div>
+                <div className="bg-black/50 p-4 rounded border border-accent-primary/20">
+                  <div className="flex items-end justify-center space-x-3 h-16">
+                    <div className="w-4 h-8 bg-accent-primary rounded-t shadow-glow-sm"></div>
+                    <div className="w-4 h-12 bg-accent-primary rounded-t shadow-glow-sm"></div>
+                    <div className="w-4 h-16 bg-yellow-400 rounded-t shadow-glow-md"></div>
+                    <div className="w-4 h-14 bg-accent-primary rounded-t shadow-glow-sm"></div>
+                  </div>
+                  <div className="text-xs font-mono text-center mt-2 text-text-muted">
+                    Signal Strength: Optimal
                   </div>
                 </div>
               </NeonCard>
@@ -406,7 +407,7 @@ export default function Landing() {
 
         {/* Right Panel - Presets & Analysis */}
         <motion.div 
-          className="col-span-3"
+          className="space-y-6"
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
@@ -712,6 +713,7 @@ export default function Landing() {
           </div>
         </div>
       </motion.div>
+      </div>
     </div>
   );
 }
