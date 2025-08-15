@@ -46,31 +46,53 @@ import { PremasterAnalysis } from '@/components/analysis/PremasterAnalysis';
 import { FloatingSystemToast } from '@/components/system/FloatingSystemToast';
 
 // Enhanced analyzeAudioFile function with proper error handling
-async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: number; stage: string }) => void) {
+async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: number; stage: string; metrics?: any }) => void) {
   console.log(`Analyzing ${file.name}...`);
-  
+
   try {
     // Validate file first
     if (!file || file.size === 0) {
       throw new Error('Invalid audio file');
     }
 
-    onProgress?.({ progress: 10, stage: 'Loading file...' });
+    onProgress?.({ progress: 5, stage: 'Validating file...' });
 
     // Try to use actual audio analysis if available
-    const processor = new (await import('@/lib/audio/optimizedAudioProcessor')).OptimizedAudioProcessor();
-    
+    const processorModule = await import('@/lib/audio/optimizedAudioProcessor');
+    const processor = new processorModule.OptimizedAudioProcessor();
+
     try {
       // Attempt to load and analyze the actual file
       const audioContext = new AudioContext();
       const arrayBuffer = await file.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      onProgress?.({ progress: 30, stage: 'Initializing...' });
+
+      onProgress?.({ progress: 15, stage: 'Initializing analysis engine...' });
       await processor.initialize();
       
-      const results = await processor.processAudio(audioBuffer);
+      onProgress?.({ progress: 25, stage: 'Decoding audio data...' });
       
+      let results = {
+        lufs: -14.5,
+        dbtp: -1.2,
+        lra: 8.0,
+        stereoWidth: 75,
+        phaseCorrelation: 0.90,
+        voidlineScore: 92.5,
+        // Add other metrics as they become available from processor
+      };
+      
+      let currentProgress = 30;
+      const updateProgress = (newProgress: number) => {
+        currentProgress = Math.max(currentProgress, newProgress);
+        onProgress?.({ progress: currentProgress, stage: 'Processing audio chunks...', metrics: results });
+      };
+
+      const processedData = await processor.processAudio(audioBuffer, updateProgress);
+      results = { ...results, ...processedData }; // Merge results
+
+      onProgress?.({ progress: 100, stage: 'Analysis complete.', metrics: results });
+
       return {
         fileName: file.name,
         fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
@@ -80,36 +102,49 @@ async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: 
         lufsI: results.lufs || -14.5,
         dbtp: results.dbtp || -1.2,
         lra: results.lra || 8.0,
-        samplePeak: -0.5,
-        rms: -16.0,
-        crest: 10.0,
-        correlation: 0.90,
-        voidlineScore: 92.5,
+        samplePeak: -0.5, // Placeholder, can be added if processor provides
+        rms: -16.0,       // Placeholder, can be added if processor provides
+        crest: 10.0,      // Placeholder, can be added if processor provides
+        correlation: results.phaseCorrelation || 0.90,
+        voidlineScore: results.voidlineScore || 92.5,
+        stereoWidth: results.stereoWidth || 75,
         sessionId: Math.random().toString(36).substring(7)
       };
     } catch (audioError) {
       console.warn('Audio processing failed, using fallback analysis:', audioError);
-      
+
       // Return realistic fallback data
+      const fallbackMetrics = {
+        lufs: -14.5,
+        dbtp: -1.2,
+        lra: 8.0,
+        stereoWidth: 75,
+        phaseCorrelation: 0.90,
+        voidlineScore: 92.5,
+      };
+      onProgress?.({ progress: 100, stage: 'Fallback analysis loaded.', metrics: fallbackMetrics });
+      
       return {
         fileName: file.name,
         fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        duration: 180.5,
-        sampleRate: 44100,
-        channels: 2,
-        lufsI: -14.5,
-        dbtp: -1.2,
-        lra: 8.0,
+        duration: 180.5, // Fallback duration
+        sampleRate: 44100, // Fallback sample rate
+        channels: 2, // Fallback channels
+        lufsI: fallbackMetrics.lufs,
+        dbtp: fallbackMetrics.dbtp,
+        lra: fallbackMetrics.lra,
         samplePeak: -0.5,
         rms: -16.0,
         crest: 10.0,
-        correlation: 0.90,
-        voidlineScore: 92.5,
+        correlation: fallbackMetrics.phaseCorrelation,
+        voidlineScore: fallbackMetrics.voidlineScore,
+        stereoWidth: fallbackMetrics.stereoWidth,
         sessionId: Math.random().toString(36).substring(7)
       };
     }
   } catch (error) {
     console.error('Analysis completely failed:', error);
+    onProgress?.({ progress: 0, stage: `Error: ${error.message}` });
     throw error; // Re-throw to be handled by the calling function
   }
 }
@@ -140,7 +175,7 @@ export default function Landing() {
   // File analysis state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [analysisProgressState, setAnalysisProgressState] = useState({ progress: 0, stage: '', metrics: {} });
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [audioAnalysis, setAudioAnalysis] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -207,31 +242,30 @@ export default function Landing() {
 
   const handleFileSelect = async (file: File) => {
     setIsProcessing(true);
-    setAnalysisProgress(0);
+    setAnalysisProgressState({ progress: 0, stage: 'Initializing...', metrics: {} });
     setAnalysisComplete(false);
     setAudioAnalysis(null);
 
     try {
       const analysis = await analyzeAudioFile(file, (progress) => {
-        setAnalysisProgress(progress.progress);
+        setAnalysisProgressState(progress);
       });
 
-      setAnalysisProgress(100);
       setAudioAnalysis(analysis);
       setAnalysisComplete(true);
-      
+
       // Create mastering session with the analyzed audio
       try {
         const audioContext = new AudioContext();
         const arrayBuffer = await file.arrayBuffer();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        
+
         const { useMasteringStore } = await import('@/state/masteringStore');
         const sessionId = useMasteringStore.getState().createSession({
           name: analysis.fileName,
           size: analysis.fileSize
         }, audioBuffer);
-        
+
         // Set analysis data in the mastering session
         useMasteringStore.getState().setAnalysis({
           lufsI: analysis.lufsI,
@@ -243,10 +277,10 @@ export default function Landing() {
           samplePeak: analysis.samplePeak,
           crest: analysis.crest
         });
-        
+
         // Update the session ID in our analysis
         setAudioAnalysis((prev: any) => ({ ...prev, sessionId }));
-        
+
         console.log('Mastering session created:', sessionId);
       } catch (error) {
         console.warn('Failed to create mastering session:', error);
@@ -270,22 +304,22 @@ export default function Landing() {
         correlation: 0.85
       };
 
-      setAnalysisProgress(100);
+      setAnalysisProgressState({ progress: 100, stage: 'Analysis failed, using fallback.', metrics: fallbackAnalysis });
       setAudioAnalysis(fallbackAnalysis);
       setAnalysisComplete(true);
-      
+
       // Create fallback mastering session
       try {
         const audioContext = new AudioContext();
         const arrayBuffer = await file.arrayBuffer();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        
+
         const { useMasteringStore } = await import('@/state/masteringStore');
         const sessionId = useMasteringStore.getState().createSession({
           name: fallbackAnalysis.fileName,
           size: fallbackAnalysis.fileSize
         }, audioBuffer);
-        
+
         // Set fallback analysis data
         useMasteringStore.getState().setAnalysis({
           lufsI: fallbackAnalysis.lufsI,
@@ -296,10 +330,10 @@ export default function Landing() {
           samplePeak: fallbackAnalysis.samplePeak,
           crest: fallbackAnalysis.crest
         });
-        
+
         // Update the session ID
         setAudioAnalysis((prev: any) => ({ ...prev, sessionId }));
-        
+
         console.log('Fallback mastering session created:', sessionId);
       } catch (error) {
         console.warn('Failed to create fallback mastering session:', error);
@@ -353,7 +387,7 @@ export default function Landing() {
     <div className="min-h-screen bg-terminal-bg text-terminal-text overflow-x-hidden">
       {/* Fixed Background Pattern */}
       <div className="fixed inset-0 grid-pattern opacity-[0.02] pointer-events-none" />
-      
+
       {/* Landing Page Header */}
       <header className="app-header site-header" role="banner" aria-label="Primary">
         <div className="header-inner terminal-window p-2">
@@ -391,7 +425,7 @@ export default function Landing() {
           </div>
         </div>
       </header>
-      
+
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8" style={{ 
         fontFamily: "'Fira Code', monospace"
       }}>
@@ -435,8 +469,9 @@ export default function Landing() {
             <div className="auto-grid grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <AnalysisProgress 
                 isAnalyzing={isProcessing}
-                progress={analysisProgress}
-                currentStage="Analyzing audio spectrum..."
+                progress={analysisProgressState.progress}
+                currentStage={analysisProgressState.stage}
+                metrics={analysisProgressState.metrics}
               />
               <LiveSystemFeed isActive={isProcessing} />
             </div>
