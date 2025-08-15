@@ -212,20 +212,6 @@ export default function Landing() {
               /home
             </a>
             <a 
-              href="#features" 
-              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-              data-testid="link-features"
-            >
-              /features
-            </a>
-            <a 
-              href="#pricing" 
-              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-              data-testid="link-pricing"
-            >
-              /pricing
-            </a>
-            <a 
               href="#docs" 
               className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
               data-testid="link-docs"
@@ -669,8 +655,7 @@ export default function Landing() {
       <div 
         className={`grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mb-16 transition-opacity duration-500 ${
           masteringActive ? 'opacity-30 pointer-events-none' : 'opacity-100'
-        }`} 
-        id="features"
+        }`}
       >
         
         {/* Left Panel - Transport & Controls */}
@@ -1014,126 +999,7 @@ export default function Landing() {
         </motion.div>
       </div>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="mb-16">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4 text-accent-primary font-mono">$ Transmission Pricing</h2>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* Payload - Free */}
-          <NeonCard variant="terminal" className="p-6">
-            <div className="mb-4">
-              <h3 className="text-xl font-bold mb-2">Payload</h3>
-              <p className="text-text-muted text-sm">15 Day Free Trial</p>
-            </div>
-            
-            <div className="text-3xl font-bold mb-6">Free</div>
-            
-            <ul className="space-y-2 text-sm mb-8">
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                3 AI Masters
-              </li>
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                WAV & MP3 Exports
-              </li>
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                Standard Delivery
-              </li>
-            </ul>
-            
-            <Button 
-              variant="outline" 
-              className="w-full font-mono border-accent-primary/30 hover:border-accent-primary text-accent-primary"
-            >
-              Start Trial
-            </Button>
-          </NeonCard>
-
-          {/* Orbital Pack - Most Popular */}
-          <NeonCard variant="terminal" className="p-6 border-accent-primary">
-            <div className="mb-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold">Orbital Pack</h3>
-                <span className="bg-accent-primary text-black px-2 py-1 text-xs font-bold rounded">MOST POPULAR</span>
-              </div>
-              <p className="text-text-muted text-sm">Ideal for EPs and albums, providing better value.</p>
-            </div>
-            
-            <div className="mb-6">
-              <span className="text-3xl font-bold">₹ 599</span>
-              <span className="text-text-muted"> / month</span>
-            </div>
-            
-            <ul className="space-y-2 text-sm mb-8">
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                15 AI Masters / month
-              </li>
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                All Formats (WAV, MP3, FLAC)
-              </li>
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                Priority Queue
-              </li>
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                Reference Tracks
-              </li>
-            </ul>
-            
-            <Button 
-              className="w-full font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
-            >
-              Select Plan
-            </Button>
-          </NeonCard>
-
-          {/* Voidline Unlimited */}
-          <NeonCard variant="terminal" className="p-6">
-            <div className="mb-4">
-              <h3 className="text-xl font-bold mb-2">Voidline Unlimited</h3>
-              <p className="text-text-muted text-sm">For the prolific producer and professional studios.</p>
-            </div>
-            
-            <div className="mb-6">
-              <span className="text-3xl font-bold">₹ 999</span>
-              <span className="text-text-muted"> / year</span>
-            </div>
-            
-            <ul className="space-y-2 text-sm mb-8">
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                Unlimited AI Masters
-              </li>
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                All Formats & Features
-              </li>
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                Highest Priority Access
-              </li>
-              <li className="flex items-center">
-                <span className="text-accent-primary mr-2">&gt;</span>
-                Dedicated Support Channel
-              </li>
-            </ul>
-            
-            <Button 
-              variant="outline"
-              className="w-full font-mono border-accent-primary/30 hover:border-accent-primary text-accent-primary"
-            >
-              Select Plan
-            </Button>
-          </NeonCard>
-        </div>
-      </section>
+      
 
       {/* Footer Status Bar */}
       <motion.div 
