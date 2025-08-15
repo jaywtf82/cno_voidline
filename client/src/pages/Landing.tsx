@@ -24,7 +24,7 @@ import { WaveformComparison } from "@/components/audio/WaveformComparison";
 import { AnalysisProgress } from '@/components/audio/AnalysisProgress';
 import { AnalysisDataCard } from '@/components/audio/AnalysisDataCard';
 import { LiveSystemFeed } from '@/components/system/LiveSystemFeed';
-import { PersistentAnalysisCard } from '@/components/analysis/PersistentAnalysisCard';
+import { PremasterAnalysis } from '@/components/analysis/PremasterAnalysis';
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -289,27 +289,12 @@ export default function Landing() {
             </div>
           )}
 
-          {/* Audio Analysis Results - Show only after upload and analysis */}
+          {/* Premaster Analysis - Show after analysis completes */}
           {analysisComplete && audioAnalysis && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* Real-time Technical Analysis Card */}
-              <PersistentAnalysisCard 
+            <div className="mb-8">
+              <PremasterAnalysis 
                 analysisData={audioAnalysis}
               />
-              <div className="space-y-6">
-                <SpectrumAnalyzer 
-                  audioFile={selectedFile || undefined}
-                  isActive={isPlaying}
-                  showChannels={true}
-                  mode="instant"
-                />
-                <WaveformComparison 
-                  originalFile={selectedFile || undefined}
-                  isProcessing={false}
-                  showChannels={true}
-                />
-                <LiveSystemFeed isActive={true} />
-              </div>
             </div>
           )}
 
@@ -318,23 +303,7 @@ export default function Landing() {
         {/* Three Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
           {/* Phase 1: Analysis */}
-          <motion.div 
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-          >
-            <div className="bg-black/90 border border-cyan-500/30 rounded-lg p-8 text-center">
-              <h3 className="font-mono text-xl text-cyan-400 font-bold mb-4">
-                Phase 1 · Deep Signal Deconstruction
-              </h3>
-              <p className="text-gray-400 mb-6">
-                Experience advanced AI analysis when you start mastering your tracks.
-              </p>
-              <div className="text-sm text-gray-500 font-mono">
-                Upload audio to begin your mastering session
-              </div>
-            </div>
-          </motion.div>
+          {/* Removed Phase 1 section as requested */}
 
           {/* Phase 2: Enhancement */}
           <motion.div 
