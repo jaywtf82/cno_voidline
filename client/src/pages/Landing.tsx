@@ -289,14 +289,13 @@ export default function Landing() {
             </div>
           )}
 
-          {/* Audio Analysis Results */}
-          {analysisComplete && audioAnalysis && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {/* PersistentAnalysisCard component added here */}
-              <PersistentAnalysisCard 
-                data={audioAnalysis} 
-                onMasteringStart={() => setShowAuthModal(true)} 
-              />
+          {/* Audio Analysis Results - Always Persistent */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Persistent Technical Analysis Card */}
+            <PersistentAnalysisCard 
+              analysisId="888_premaster"
+            />
+            {analysisComplete && audioAnalysis && (
               <div className="space-y-6">
                 <SpectrumAnalyzer 
                   audioFile={selectedFile || undefined}
@@ -311,8 +310,8 @@ export default function Landing() {
                 />
                 <LiveSystemFeed isActive={true} />
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
         </motion.div>
 
