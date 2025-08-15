@@ -13,7 +13,7 @@ export default {
       colors: {
         // Voidline theme colors from CSS variables
         bg: "var(--bg)",
-        surface: "var(--bg-elev)",
+        surface: "var(--surface)",
         grid: "var(--grid)",
         border: "var(--border)",
         text: "var(--text)",
@@ -27,12 +27,12 @@ export default {
         info: "var(--info)",
         danger: "var(--danger)",
         // Surface colors
-        surface: {
+        surfacePalette: {
           dark: "var(--bg)",
-          darker: "var(--bg-elev)",
+          darker: "var(--surface)",
         },
         // Terminal accent colors
-        accent: {
+        accentPalette: {
           primary: "var(--accent)",
           secondary: "var(--accent-600)",
           matrix: "#00FF41",
@@ -42,7 +42,7 @@ export default {
           cyan: "#17A2B8",
         },
         // Text colors
-        text: {
+        textPalette: {
           primary: "var(--text)",
           secondary: "var(--muted)",
           muted: "var(--muted)",
@@ -66,7 +66,7 @@ export default {
           DEFAULT: "var(--secondary)",
           foreground: "var(--secondary-foreground)",
         },
-        muted: {
+        mutedPalette: {
           DEFAULT: "var(--muted)",
           foreground: "var(--muted-foreground)",
         },
@@ -74,7 +74,7 @@ export default {
           DEFAULT: "var(--destructive)",
           foreground: "var(--destructive-foreground)",
         },
-        border: "var(--border)",
+        borderColor: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
         chart: {
@@ -138,11 +138,12 @@ export default {
         "glow-md": "0 0 20px var(--theme-glow)",
         "glow-lg": "0 0 30px var(--theme-glow-strong)",
         "terminal": "0 4px 20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
-        "card": "0 2px 12px var(--shadow)",
+        card: "0 2px 12px var(--shadow)",
         "card-hover": "0 8px 24px rgba(0,0,0,.45)",
+        cardHover: "0 8px 24px rgba(0,0,0,.45)",
       },
       backgroundImage: {
-        "voidline-surface": "linear-gradient(180deg, color-mix(in srgb, var(--bg-elev) 88%, transparent), var(--bg-elev))",
+        "voidline-surface": "linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, transparent), var(--surface))",
       },
       transitionTimingFunction: {
         "void-snap": "cubic-bezier(.2,.6,.2,1)",
