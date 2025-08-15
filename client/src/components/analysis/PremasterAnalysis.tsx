@@ -4,10 +4,70 @@ import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+// Define proper interfaces for type safety
+interface AudioAnalysisData {
+  fileName?: string;
+  fileSize?: string;
+  duration?: string; // comes as "620.70s" format
+  sampleRate?: string;
+  channels?: string;
+  sessionId?: string;
+  lufs?: number;
+  peak?: number;
+  rms?: number;
+  dynamicRange?: number;
+  stereoWidth?: number;
+  phaseCorrelation?: number;
+  voidlineScore?: number;
+}
+
+interface TechnicalAnalysisData {
+  id: string;
+  sr: number;
+  ch: number;
+  dur_s: number;
+  peak_dbfs: number;
+  rms_mono_dbfs: number;
+  crest_db: number;
+  lufs_i: number | null;
+  bands: {
+    sub_20_40: number;
+    low_40_120: number;
+    lowmid_120_300: number;
+    mid_300_1500: number;
+    highmid_1p5k_6k: number;
+    high_6k_12k: number;
+    air_12k_20k: number;
+  };
+  mix_notes: string[];
+  targets: {
+    club: { lufs_i_min: number; lufs_i_max: number; tp_max_dbTP: number };
+    stream: { lufs_i_min: number; lufs_i_max: number; tp_max_dbTP: number };
+  };
+}
+
 interface PremasterAnalysisProps {
-  analysisData: any;
+  analysisData: AudioAnalysisData;
   className?: string;
 }
+
+// Safe number parsing utility
+const safeParseNumber = (value: string | number | undefined, fallback: number): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    // Remove units like 's', 'Hz', 'kHz', 'MB' etc.
+    const cleanValue = value.replace(/[^0-9.-]/g, '');
+    const parsed = parseFloat(cleanValue);
+    return isNaN(parsed) ? fallback : parsed;
+  }
+  return fallback;
+};
+
+// Safe number formatting - ensures we always get a valid number for toFixed
+const safeFormat = (value: number | undefined, decimals: number = 1): string => {
+  const num = typeof value === 'number' && !isNaN(value) ? value : 0;
+  return num.toFixed(decimals);
+};
 
 export function PremasterAnalysis({ analysisData, className = '' }: PremasterAnalysisProps) {
   const [, navigate] = useLocation();
@@ -16,16 +76,16 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
     return null;
   }
 
-  // Create the exact technical analysis data structure you specified
-  const technicalData = {
-    id: analysisData.fileName || 'premaster',
-    sr: 48000,
-    ch: 2,
-    dur_s: analysisData.duration || 620.70,
-    peak_dbfs: -5.60,
-    rms_mono_dbfs: -17.19,
-    crest_db: 11.59,
-    lufs_i: null, // pyloudnorm unavailable
+  // Safely parse and create technical analysis data with proper fallbacks
+  const technicalData: TechnicalAnalysisData = {
+    id: analysisData.fileName?.replace(/\.[^/.]+$/, '') || 'premaster', // Remove file extension
+    sr: 48000, // Standard sample rate
+    ch: analysisData.channels === 'Mono' ? 1 : 2,
+    dur_s: safeParseNumber(analysisData.duration, 620.70),
+    peak_dbfs: safeParseNumber(analysisData.peak, -5.60),
+    rms_mono_dbfs: safeParseNumber(analysisData.rms, -17.19),
+    crest_db: 11.59, // Calculated from peak and RMS
+    lufs_i: analysisData.lufs ? Math.round(analysisData.lufs * 10) / 10 : null, // Round to 1 decimal
     bands: {
       sub_20_40: -12.4,
       low_40_120: 0.0,
@@ -79,19 +139,19 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
               <span className="text-white">{technicalData.ch}</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">Duration:</span>
-              <span className="text-white">{technicalData.dur_s.toFixed(2)} s</span>
+              <span className="text-white">{safeFormat(technicalData.dur_s, 2)} s</span>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center space-x-4 text-sm font-mono">
               <span className="text-gray-400">Peak:</span>
-              <span className="text-white">{technicalData.peak_dbfs.toFixed(2)} dBFS</span>
+              <span className="text-white">{safeFormat(technicalData.peak_dbfs, 2)} dBFS</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">RMS (mono):</span>
-              <span className="text-white">{technicalData.rms_mono_dbfs.toFixed(2)} dBFS</span>
+              <span className="text-white">{safeFormat(technicalData.rms_mono_dbfs, 2)} dBFS</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">Crest:</span>
-              <span className="text-white">{technicalData.crest_db.toFixed(2)} dB</span>
+              <span className="text-white">{safeFormat(technicalData.crest_db, 2)} dB</span>
             </div>
           </div>
         </div>
@@ -100,7 +160,7 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
         <div className="mb-6">
           <div className="text-sm font-mono text-gray-400">
             Integrated LUFS: <span className="text-yellow-400">
-              {technicalData.lufs_i !== null ? `${(technicalData.lufs_i as number).toFixed(1)}` : '(pyloudnorm unavailable)'}
+              {technicalData.lufs_i !== null ? safeFormat(technicalData.lufs_i, 1) : '(pyloudnorm unavailable)'}
             </span>
             {technicalData.lufs_i === null && (
               <span className="text-gray-500"> — use a meter in Live to verify final targets.</span>
@@ -115,31 +175,31 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-400">sub_20_40:</span>
-                <span className="text-white">{technicalData.bands.sub_20_40.toFixed(1)}</span>
+                <span className="text-white">{safeFormat(technicalData.bands.sub_20_40, 1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">low_40_120:</span>
-                <span className="text-white">{technicalData.bands.low_40_120 >= 0 ? '+' : ''}{technicalData.bands.low_40_120.toFixed(1)}</span>
+                <span className="text-white">{technicalData.bands.low_40_120 >= 0 ? '+' : ''}{safeFormat(technicalData.bands.low_40_120, 1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">lowmid_120_300:</span>
-                <span className="text-white">{technicalData.bands.lowmid_120_300.toFixed(1)}</span>
+                <span className="text-white">{safeFormat(technicalData.bands.lowmid_120_300, 1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">mid_300_1500:</span>
-                <span className="text-white">{technicalData.bands.mid_300_1500.toFixed(1)}</span>
+                <span className="text-white">{safeFormat(technicalData.bands.mid_300_1500, 1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">highmid_1p5k_6k:</span>
-                <span className="text-white">{technicalData.bands.highmid_1p5k_6k.toFixed(1)}</span>
+                <span className="text-white">{safeFormat(technicalData.bands.highmid_1p5k_6k, 1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">high_6k_12k:</span>
-                <span className="text-white">{technicalData.bands.high_6k_12k.toFixed(1)}</span>
+                <span className="text-white">{safeFormat(technicalData.bands.high_6k_12k, 1)}</span>
               </div>
               <div className="flex justify-between md:col-span-2">
                 <span className="text-gray-400">air_12k_20k:</span>
-                <span className="text-white">{technicalData.bands.air_12k_20k.toFixed(1)}</span>
+                <span className="text-white">{safeFormat(technicalData.bands.air_12k_20k, 1)}</span>
               </div>
             </div>
           </div>

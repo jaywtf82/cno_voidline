@@ -1,0 +1,150 @@
+Project: https://github.com/jaywtf82/cno_voidline
+Goal: Implement a production-grade, futuristic Deep Signal Deconstruction panel with four interactive filters—Nuance, Dynamics, Frequencies, Stereo Image—that runs in real time in the browser, matches the app’s terminal aesthetic, and takes visual inspiration from FabFilter, Ozone, and Adobe Audition while remaining original.
+
+Tech guardrails (align to repo):
+
+Next.js 14 (App Router) + React 18 + TypeScript.
+
+Tailwind CSS (use existing terminal theme vars).
+
+Web Audio API + AudioWorklet for DSP; OffscreenCanvas for rendering when available; fall back to Canvas2D.
+
+No external calls; client-side only.
+
+60 fps target; main thread kept under ~4 ms/frame.
+
+Create these files (paths relative to repo root):
+
+bash
+Copy
+Edit
+client/app/phase1/deep-signal/page.tsx
+client/components/phase1/DeepSignalPanel.tsx
+client/components/phase1/vis/ScopeCanvas.tsx
+client/components/phase1/vis/SpectrumCanvas.tsx
+client/components/phase1/vis/Meters.tsx
+client/worklets/lufs-processor.js
+client/worklets/correlation-processor.js
+client/worklets/peaks-rms-processor.js
+client/styles/phase1.css
+Data pipeline (AudioWorklets):
+
+peaks-rms-processor.js
+
+Per block: compute peak, RMS (per channel), short window (10–50 ms) for Nuance micro-dynamics.
+
+PostMessage a compact frame {ts, peakL, peakR, rmsL, rmsR}.
+
+lufs-processor.js (BS.1770-style)
+
+Apply K-weighting IIR filters → mean square → channel-weighted sum → 400 ms overlapped gating.
+
+Emit Momentary LUFS (400 ms), Short-term LUFS (3 s), running Integrated LUFS.
+
+Also compute dBTP via 4× oversampled peak estimate.
+
+correlation-processor.js
+
+Generate stereo correlation coefficient (-1..+1) and an XY point buffer for the goniometer / vectorscope.
+
+Expose downsampled point cloud for rendering.
+
+UI/UX spec (match terminal theme & your attached refs):
+
+Top header: “Deep Signal Deconstruction” with a minimal HUD—play/pause, freeze, A/B overlay, hold peak.
+
+Filter chips (toggle + focus mode): Nuance · Dynamics · Frequencies · Stereo Image. Active chip glows with accent.
+
+Nuance: vertical micro-dynamics meter: stacked bars showing ΔRMS (fast vs slow), Crest (Peak–RMS), sparkline history; tooltips with exact numbers.
+
+Dynamics: tri-meter with PLR (Peak–LUFS), PSR (Peak–Short), ML crest, histogram strip on the side; green zone bands for target corridors.
+
+Frequencies: hybrid analyzer—1/24-octave bars with adaptive smoothing + log-frequency line; overlay a faint “blueprint” wire of held peak (“HOLD”). Pin-to-note gridlines at 55, 110, 220… Hz.
+
+Stereo Image: dual view switcher: Polar vectorscope and Lissajous XY; correlation bar with mid/side mini meters; center-of-mass dot with slow trail.
+
+Micro-interactions: hover shows readouts; cmd/ctrl-drag = freq-zoom; shift-drag = level-zoom; double-tap = reset.
+
+Aesthetic: dark console, subtle vignette, accent glow for active energy (use existing theme tokens). Keep it crisp, not skeuomorphic.
+
+Rendering strategy:
+
+Use requestAnimationFrame loop driving three independent canvases (scope, spectrum, meters) to isolate paint costs.
+
+For spectrum: use an AnalyserNode for FFT magnitude OR feed time-domain to a lightweight FFT (512–4096) inside a worker when AnalyserNode resolution isn’t enough.
+
+Use OffscreenCanvas + transferControlToOffscreen() where supported; otherwise 2D canvas with batched fillRect/putImageData.
+
+Component contracts (TypeScript):
+
+ts
+Copy
+Edit
+// DeepSignalPanel.tsx
+export default function DeepSignalPanel() {
+  // loads audio via <input> or drag-n-drop; wires worklets; renders 4 tiles
+}
+
+// Meters.tsx
+export type DynamicsSample = { ts:number; peak:number; rms:number; lufsM:number; lufsS:number; lufsI:number; dbtp:number; plr:number; psr:number; };
+export function Meters(props:{ sample: DynamicsSample, hold:boolean, targets?:{lufs:number; plrMin:number; psrMin:number;} }): JSX.Element;
+
+// SpectrumCanvas.tsx
+export function SpectrumCanvas(props:{ data: Float32Array; hold: Float32Array | null; focusBand?:[number,number]; smoothing:number; }): JSX.Element;
+
+// ScopeCanvas.tsx
+export function ScopeCanvas(props:{ points: Float32Array; correlation:number; mode:'polar'|'lissa' }): JSX.Element;
+DSP details to implement:
+
+K-weighting filter per ITU BS.1770 for loudness (coeffs hard-coded, 48 kHz friendly).
+
+Gating: 400 ms overlapping blocks with dual-threshold gating for Integrated LUFS.
+
+dBTP: 4× oversample with peak-hold; simple polyphase FIR is sufficient.
+
+Correlation: normalized cross-correlation over short window; clamp noise floor.
+
+Spectrum: 1/24-octave binning from FFT bins, with psychoacoustic smoothing option.
+
+Controls & persistence:
+
+Settings popover: FFT size, smoothing, averaging, scale (dBFS/LUFS), scope mode, accent palette (pull from theme).
+
+Remember last settings in localStorage namespaced to voidline:v1:phase1.
+
+Performance SLAs:
+
+AudioWorklet processing < 1.3 ms/block @ 512 frames.
+
+rAF visuals 60 fps on mid-range laptop iGPU; avoid GC churn (reuse typed arrays).
+
+Zero audio dropouts when switching views or resizing.
+
+Testing & QA:
+
+Add basic unit tests for LUFS block math (fixtures) and correlation sign.
+
+Smoke test with mono, hard-L/R, pink noise, and short transients; verify meters behave intuitively.
+
+Visual sanity check: freeze/hold, A/B overlay, zoom, correlation ranges.
+
+Acceptance criteria:
+
+Panel mounts at /phase1/deep-signal and renders four live tiles once an audio buffer/stream is connected.
+
+Nuance, Dynamics, Frequencies, Stereo Image filters each independently toggle and “focus” (solo) the corresponding tile.
+
+LUFS (M/S/I) and dBTP values are stable and match reference within reasonable tolerance.
+
+Spectrum supports HOLD overlay; scope supports POLAR/LISSA switch; correlation bar updates smoothly.
+
+Styling matches the repo’s terminal aesthetic and color tokens; no external fonts or heavy libs.
+
+Nice-to-have (only if time permits):
+
+Side-by-side A/B buffer compare with delta visualization.
+
+Screenshot export (PNG) of any tile via toDataURL().
+
+Deliverables: all files above, plus a short README block inside client/app/phase1/deep-signal/page.tsx explaining controls.
+
