@@ -1,0 +1,322 @@
+Replit Prompt — Implement Persistent Audio Analysis + Mastering Flow (Voidline)
+Tech assumptions
+Keep the current stack (plain HTML/CSS/JS) unless it’s simpler to upgrade to a tiny SPA scaffold (Vite + vanilla TS). Do not introduce heavy frameworks.
+
+Preserve the existing visual language (dark UI, green accent, animated thumbnails, card/modals).
+
+Accessibility and responsiveness are non‑negotiable.
+
+1) Persist the “Audio Analysis” card and inject real data
+Requirements
+The Audio Analysis card must not disappear after analyzing.
+
+It must render this exact dataset (no truncation, no overlap, no wrap bugs):
+
+yaml
+Copy
+Edit
+888_premaster — Technical Analysis
+Sample rate: 48000 Hz | Channels: 2 | Duration: 620.70 s
+Peak: -5.60 dBFS | RMS (mono): -17.19 dBFS | Crest: 11.59 dB
+Integrated LUFS: (pyloudnorm unavailable) — use a meter in Live to verify final targets.
+
+Relative band energy (dB; 0 = loudest band):
+  sub_20_40: -12.4
+  low_40_120: +0.0
+  lowmid_120_300: -8.3
+  mid_300_1500: -4.9
+  highmid_1p5k_6k: -6.1
+  high_6k_12k: -15.4
+  air_12k_20k: -27.3
+
+Mix notes:
+- Tighten lows: Ozone Low End Focus (40–120 Hz) Contrast 25–35, Amount 20–30; or Pro-MB low band 1.5:1, 30–50 ms attack, 120–200 ms release, ~1–2 dB GR.
+- Highs look controlled; minimal de-essing.
+- Optional +0.5 dB shelf @ 11–12 kHz for air if needed.
+
+Targets:
+  Club: -7.5..-6.5 LUFS-I, TP ≤ -0.8 dBTP
+  Streaming: -10..-9 LUFS-I, TP ≤ -1.0 dBTP
+Implementation details
+Add a persistent store using localStorage key voidline.analysis.888_premaster to cache:
+
+json
+Copy
+Edit
+{
+  "id": "888_premaster",
+  "sr": 48000,
+  "ch": 2,
+  "dur_s": 620.7,
+  "peak_dbfs": -5.6,
+  "rms_mono_dbfs": -17.19,
+  "crest_db": 11.59,
+  "lufs_i": null, 
+  "bands": {
+    "sub_20_40": -12.4, "low_40_120": 0.0, "lowmid_120_300": -8.3,
+    "mid_300_1500": -4.9, "highmid_1p5k_6k": -6.1, "high_6k_12k": -15.4, "air_12k_20k": -27.3
+  },
+  "mix_notes": [
+    "Tighten lows ... 1–2 dB GR.",
+    "Highs look controlled; minimal de-essing.",
+    "Optional +0.5 dB shelf @ 11–12 kHz for air if needed."
+  ],
+  "targets": {
+    "club": {"lufs_i_min": -7.5, "lufs_i_max": -6.5, "tp_max_dbTP": -0.8},
+    "stream": {"lufs_i_min": -10.0, "lufs_i_max": -9.0, "tp_max_dbTP": -1.0}
+  }
+}
+On load, render the card from state (not transient DOM). Show Start Mastering Session CTA at the bottom right of the card.
+
+Typography must be locked to one line per row; implement clipping guards:
+
+Wrap long text in an inner container with max-width and text-wrap: balance.
+
+Footers render inside a fixed‑height strip to avoid collisions with graphs.
+
+2) Phase 1 card + animated thumbnail stays alive
+Keep the Phase 1: Deep Signal Deconstruction master card on the landing page, with animated thumbnails (Nuance, Dynamics, Frequencies, Stereo Image).
+
+Clicking anywhere on the master card opens the modal (already implemented). In thumbnails:
+
+Nuance: pulsing transients + sweep.
+
+Dynamics: bouncing bars + micro‑gauge glow.
+
+Frequencies: scan bar across bars + EQ curve.
+
+Stereo: gentle needle swing + radar wedge.
+
+3) Button + Routing to “Mastering Process” page
+Add a button on the persistent analysis card: Start Mastering Session.
+Action: Navigate to /mastering.html (or /mastering if you choose SPA routing).
+
+The Mastering Process page must reuse the same header (logo/title/traffic‑lights) as landing. No layout jumps.
+
+Pass id=888_premaster through querystring or state.
+
+Files to add/modify
+
+index.html: Render persistent analysis card + Phase 1 card + modal.
+
+mastering.html: New page for the live process.
+
+styles.css: Extract shared tokens (colors, radii, shadows).
+
+app.js: Shared utilities; storage, router (if SPA), timers, workers.
+
+4) Mastering Process page — dynamic Phase 1 stream
+Create a responsive two‑column grid (stack on small screens) that streams live processing states for Phase 1 in four cards (Nuance, Dynamics, Frequencies, Stereo Image), each with a header, content, and a footer strip with the exact strings below (no wrapping/overlap):
+
+Frequencies footer:
+EQ plan: +1.5 dB @ 65 Hz • −1.2 dB @ 2.8 kHz • +0.8 dB @ 12 kHz
+
+Stereo footer:
+Keep correlation ≥ 0.2 for mono‑safe lows • Width tuned by Spatial Flux
+
+Dynamics footer:
+Targets: Club −9…−7 LUFS • TP ≤ −1.0 dBTP • LRA 6–10
+
+Nuance footer:
+Transients: 27 • Micro‑contrast Δ: 1.8 dB • Sibilants: nominal
+
+Real‑time behavior
+Phase 1 pipeline per card:
+
+Standard Analysis stage (0–3s): show a progress bar + “Analyzing…” micro‑log lines (e.g., “peak scan…”, “crest factor…”, “phase window init…”).
+
+AI Refinement stage (>3s): additional lines (e.g., “Spatial Flux suggests width 86%”, “EQ bell −1.2 dB @ 2.8 kHz”).
+
+Use a simple setInterval (or a Web Worker if you prefer) to append a log line every 300–500 ms to each card. Stop at ~10–12 lines per card.
+
+Show a thin mission status bar at the top of the page that rises from 0% → 100% as all four cards finish both stages.
+
+5) Spectral Profile — proper axes
+Inside the Frequencies detailed card:
+
+Implement Y axis in dB: ticks at −12, −24, −36, −48; label “Level (dB)”.
+
+Implement X axis: 20, 100, 1k, 5k, 10k, 20k; label “Frequency (Hz)”.
+
+Ensure plot area is clipped and the scan line animates; no text overlaps.
+
+6) QA guardrails (acceptance tests)
+Resize viewport from 320px → 1920px:
+
+No footer text wraps or overlaps.
+
+Thumbnails stay animated on the landing card.
+
+Reload the app:
+
+The Audio Analysis card with 888_premaster data is still visible with the exact values.
+
+Click Start Mastering Session:
+
+Routed to /mastering.html with identical header.
+
+All four Phase 1 cards stream logs and show progress → 100%, then hold results (don’t disappear).
+
+Keyboard:
+
+Landing modal opens via Enter/Space on the Phase 1 card; closes via red light or Esc.
+
+7) Concrete tasks for Replit to execute
+Refactor storage
+
+Implement getAnalysis(id), setAnalysis(id, data) in app.js using localStorage.
+
+On DOMContentLoaded, call ensureAnalysisSeed('888_premaster', seedJson) and render the Analysis card.
+
+Render persistent Analysis card
+
+Create <section id="analysis-card"> with:
+
+Title line: 888_premaster — Technical Analysis
+
+Two rows of meta (sample rate/channels/duration; peak/RMS/crest/LUFS note).
+
+Preformatted “Relative band energy” list (monospace).
+
+“Mix notes” bullet list.
+
+“Targets” block.
+
+Right‑aligned button: Start Mastering Session → mastering.html?id=888_premaster.
+
+Keep Phase 1 card animated
+
+Ensure the landing card’s four thumbnail tiles retain CSS/SVG animations (pulse, scan, swing, bounce).
+
+Mastering page
+
+Duplicate the header markup/styles from index so it’s identical.
+
+Build a .grid with four Phase 1 cards:
+
+Nuance: waveform + pulsing transients + sweep; footer string fixed.
+
+Dynamics: meters + crest gauge; footer targets fixed.
+
+Frequencies: bars + EQ curve + axis ticks + scan; footer EQ plan fixed.
+
+Stereo: goniometer + radar + width bar; footer correlation text fixed.
+
+Add a compact “mission log” pane per card: <ul aria-live="polite"> where we append lines.
+
+Simulate real‑time
+
+In mastering.js, read id from query and fetch analysis via getAnalysis.
+
+Start a setInterval per card; push 8–12 log lines each; change a local progress counter; when all cards hit done, set overall progress to 100% and freeze intervals.
+
+No disappearance
+
+Replace any code that removes/hides the analysis card after parsing; set it to persist and toggle only the analyzing badge.
+
+Pixel safety
+
+Put each footer inside a fixed‑height strip (e.g., 50px, line-height: 50px) with internal padding and white-space: nowrap; overflow: hidden; text-overflow: ellipsis; so it never overflows even at narrow widths.
+
+Accessibility
+
+Add role="button" and keyboard handlers to clickable cards.
+
+Ensure the modal close control is the red traffic light with aria-label="Close".
+
+8) Snippets (you can adapt)
+Persistent seed on landing
+
+js
+Copy
+Edit
+// app.js
+const KEY = 'voidline.analysis.';
+function getAnalysis(id){ return JSON.parse(localStorage.getItem(KEY+id) || 'null'); }
+function setAnalysis(id, data){ localStorage.setItem(KEY+id, JSON.stringify(data)); }
+function ensureAnalysisSeed(id, data){ if(!getAnalysis(id)) setAnalysis(id, data); }
+
+// call on load
+ensureAnalysisSeed('888_premaster', /* seed JSON from section 1 */);
+Start Mastering Session CTA
+
+html
+Copy
+Edit
+<button id="startMastering" class="btn btn-accent">Start Mastering Session</button>
+<script>
+document.getElementById('startMastering')
+  .addEventListener('click', ()=>location.href='mastering.html?id=888_premaster');
+</script>
+Mastering page loop
+
+js
+Copy
+Edit
+// mastering.js
+const params = new URLSearchParams(location.search);
+const id = params.get('id') || '888_premaster';
+const analysis = getAnalysis(id);
+
+const cards = ['nuance','dynamics','frequencies','stereo'].map(k=>({
+  key:k, i:0, done:false, el:document.querySelector(`#log-${k}`), progress:0
+}));
+
+const timer = setInterval(()=>{
+  let allDone = true;
+  for(const c of cards){
+    if(c.done) continue;
+    const stage = c.i < 6 ? 'Standard Analysis' : 'AI Refinement';
+    c.el.insertAdjacentHTML('beforeend', `<li>${stage}: step ${c.i+1}</li>`);
+    c.progress = Math.min(100, c.progress + 8);
+    c.i++;
+    if(c.i >= 12){ c.done = true; c.progress = 100; }
+    allDone = allDone && c.done;
+  }
+  updateMissionBar(cards.reduce((a,c)=>a+c.progress,0) / 4);
+  if(allDone) clearInterval(timer);
+}, 400);
+Axis ticks (Frequencies card)
+
+html
+Copy
+Edit
+<!-- Y axis -->
+<line x1="76" y1="84" x2="76" y2="284" class="axis"/>
+<text x="68" y="128" class="tick">-12</text>
+<text x="68" y="168" class="tick">-24</text>
+<text x="68" y="208" class="tick">-36</text>
+<text x="68" y="248" class="tick">-48</text>
+<!-- X axis -->
+<line x1="76" y1="284" x2="568" y2="284" class="axis"/>
+<text x="76" y="302" class="tick">20</text>
+<text x="140" y="302" class="tick">100</text>
+<text x="252" y="302" class="tick">1k</text>
+<text x="360" y="302" class="tick">5k</text>
+<text x="468" y="302" class="tick">10k</text>
+<text x="568" y="302" class="tick">20k</text>
+9) Definition of Done
+The Audio Analysis card with the exact 888_premaster dataset renders on every reload and never disappears.
+
+CTA routes to Mastering Process page with identical header to landing.
+
+Mastering Process spawns four Phase 1 cards that show:
+
+live progress,
+
+log lines that transition from Standard → AI,
+
+final footers with these exact strings:
+
+EQ plan: +1.5 dB @ 65 Hz • −1.2 dB @ 2.8 kHz • +0.8 dB @ 12 kHz
+
+Keep correlation ≥ 0.2 for mono‑safe lows • Width tuned by Spatial Flux
+
+Targets: Club −9…−7 LUFS • TP ≤ −1.0 dBTP • LRA 6–10
+
+Transients: 27 • Micro‑contrast Δ: 1.8 dB • Sibilants: nominal
+
+The landing Phase 1 thumbnail remains animated.
+
+No overlaps or broken layout at any common viewport, from 320px to 1920px.
+

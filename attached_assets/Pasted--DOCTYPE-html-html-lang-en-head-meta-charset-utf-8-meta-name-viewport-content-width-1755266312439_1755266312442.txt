@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>C/No Voidline — Phase 1 · Deep Signal Deconstruction</title>
+<style>
+  :root{
+    --bg:#0A0D11; --panel:#101317; --card:#0B0C0E; --hdr:#0F1318;
+    --muted:#7D8590; --text:#C9D1D9; --stroke:#20252C; --ring:#1F2937;
+    --accent:#3FB950; --accent-2:#2EA043;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{min-height:100%;display:grid;place-items:center;padding:32px}
+  .shadow{filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))}
+  .clickable{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
+  .clickable:active{transform:translateY(1px) scale(.998)}
+
+  dialog{border:none;padding:0;background:transparent;width:min(1800px,96vw)}
+  dialog::backdrop{background:rgba(0,0,0,.55)}
+  .modal{background:var(--card);border:1px solid var(--stroke);border-radius:16px;overflow:hidden}
+  .modal-hdr{background:var(--hdr);display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--stroke)}
+  .modal-body{padding:20px;background:var(--panel)}
+  .grid{display:grid;grid-template-columns:1fr;gap:24px;justify-items:center}
+  @media (min-width:1700px){.grid{grid-template-columns:1fr 1fr}}
+
+  /* traffic lights in header */
+  .lightbar{display:flex;gap:12px;align-items:center}
+  .light{width:18px;height:18px;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.25) inset;border:1px solid transparent}
+  .green{background:#10B981;border-color:#064E3B}
+  .yellow{background:#F59E0B;border-color:#7C4A03}
+  .red{background:#EF4444;border-color:#7F1D1D;cursor:pointer}
+  .red:focus{outline:2px solid #EF4444;outline-offset:2px}
+
+  /* 2× detailed SVGs */
+  .svg-card{width:1200px;height:auto;max-width:100%;display:block}
+
+  .h6{font:600 14px/1.2 ui-sans-serif,system-ui}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ========== PHASE 1 MASTER CARD (animated thumbnails) ========== -->
+  <div id="phase1-card" class="clickable shadow" role="button" aria-label="Open Phase 1: Deep Signal Deconstruction" tabindex="0">
+    <svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" aria-label="Phase 1: Deep Signal Deconstruction">
+      <defs>
+        <filter id="softShadow"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity=".45"/></filter>
+        <pattern id="grid24" width="24" height="24" patternUnits="userSpaceOnUse">
+          <path d="M24 0H0V24" fill="none" stroke="#1B2026" stroke-width="1"/>
+        </pattern>
+        <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#2EA043"/><stop offset="1" stop-color="#3FB950"/>
+        </linearGradient>
+        <style>
+          @keyframes scan {0%{transform:translateX(-220px)}100%{transform:translateX(0)}}
+          @keyframes pulse {0%,100%{opacity:.5}50%{opacity:1}}
+          @keyframes swing {0%{transform:rotate(-18deg)}50%{transform:rotate(18deg)}100%{transform:rotate(-18deg)}}
+          @keyframes bounce {0%{height:18px}50%{height:66px}100%{height:32px}}
+          .anim-scan{transform-box:fill-box;transform-origin:center;animation:scan 5.5s linear infinite;opacity:.18}
+          .anim-pulse{animation:pulse 1.6s ease-in-out infinite}
+          .anim-swing{transform-box:fill-box;transform-origin:55px 44px;animation:swing 4s ease-in-out infinite}
+          .anim-bounce1{animation:bounce 3.6s ease-in-out infinite}
+          .anim-bounce2{animation:bounce 4.2s ease-in-out infinite}
+          .anim-bounce3{animation:bounce 3.2s ease-in-out infinite}
+        </style>
+
+        <!-- Animated Nuance thumb -->
+        <g id="thumb-nuance">
+          <rect x="0" y="0" width="220" height="120" rx="12" fill="#101317" stroke="#1F2937"/>
+          <rect x="0" y="0" width="220" height="120" rx="12" fill="url(#grid24)" opacity=".45"/>
+          <polyline points="8,88 28,78 48,92 68,54 88,70 108,48 128,58 148,32 168,42 188,36 208,46"
+                    fill="none" stroke="url(#accentGrad)" stroke-width="2"/>
+          <circle cx="68" cy="54" r="3" fill="#3FB950" class="anim-pulse"/>
+          <circle cx="148" cy="32" r="3" fill="#3FB950" class="anim-pulse" style="animation-delay:.3s"/>
+          <rect x="210" y="0" width="10" height="120" fill="#3FB950" class="anim-scan"/>
+          <text x="12" y="18" fill="#7D8590" font-size="11" font-family="ui-sans-serif,system-ui">Nuance</text>
+        </g>
+
+        <!-- Animated Dynamics thumb -->
+        <g id="thumb-dyn">
+          <rect x="0" y="0" width="220" height="120" rx="12" fill="#101317" stroke="#1F2937"/>
+          <rect x="0" y="0" width="220" height="120" rx="12" fill="url(#grid24)" opacity=".45"/>
+          <g transform="translate(20,22)">
+            <rect x="0"  y="44" width="20" height="18" rx="4" fill="#3FB950" class="anim-bounce1"/>
+            <rect x="28" y="36" width="20" height="24" rx="4" fill="#22C55E" class="anim-bounce2"/>
+            <rect x="56" y="62" width="20" height="10" rx="4" fill="#F59E0B" class="anim-bounce3"/>
+            <g transform="translate(110,6)">
+              <circle cx="36" cy="32" r="28" fill="#0C1014" stroke="#1F2937"/>
+              <path d="M8 32 A 28 28 0 0 1 36 60" fill="none" stroke="#3FB950" stroke-width="6"/>
+              <text x="36" y="37" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="10" fill="#C9D1D9">CREST</text>
+            </g>
+          </g>
+          <text x="12" y="18" fill="#7D8590" font-size="11" font-family="ui-sans-serif,system-ui">Dynamics</text>
+        </g>
+
+        <!-- Animated Frequencies thumb -->
+        <g id="thumb-spec">
+          <rect x="0" y="0" width="220" height="120" rx="12" fill="#101317" stroke="#1F2937"/>
+          <rect x="0" y="0" width="220" height="120" rx="12" fill="url(#grid24)" opacity=".45"/>
+          <g transform="translate(10,22)" fill="#3FB950" opacity=".9">
+            <!-- a few bars get subtle animated height via CSS (kept static here; motion via scan) -->
+            <rect x="0" y="60" width="6" height="36" rx="2"/>
+            <rect x="12" y="48" width="6" height="48" rx="2"/>
+            <rect x="24" y="36" width="6" height="60" rx="2"/>
+            <rect x="36" y="30" width="6" height="66" rx="2"/>
+            <rect x="48" y="28" width="6" height="68" rx="2"/>
+            <rect x="60" y="34" width="6" height="62" rx="2"/>
+            <rect x="72" y="40" width="6" height="56" rx="2"/>
+            <rect x="84" y="52" width="6" height="44" rx="2"/>
+            <rect x="96" y="60" width="6" height="36" rx="2"/>
+            <rect x="108" y="64" width="6" height="32" rx="2"/>
+            <rect x="120" y="58" width="6" height="38" rx="2"/>
+            <rect x="132" y="54" width="6" height="42" rx="2"/>
+            <rect x="144" y="52" width="6" height="44" rx="2"/>
+            <rect x="156" y="60" width="6" height="36" rx="2"/>
+            <rect x="168" y="68" width="6" height="28" rx="2"/>
+          </g>
+          <path d="M10,92 C48,62 80,70 112,74 S168,82 196,76" fill="none" stroke="#7EE4A7" stroke-width="2"/>
+          <rect x="206" y="22" width="10" height="88" fill="#3FB950" class="anim-scan"/>
+          <text x="12" y="18" fill="#7D8590" font-size="11" font-family="ui-sans-serif,system-ui">Frequencies</text>
+        </g>
+
+        <!-- Animated Stereo thumb -->
+        <g id="thumb-stereo">
+          <rect x="0" y="0" width="220" height="120" rx="12" fill="#101317" stroke="#1F2937"/>
+          <rect x="0" y="0" width="220" height="120" rx="12" fill="url(#grid24)" opacity=".45"/>
+          <g transform="translate(14,16)">
+            <rect x="0" y="0" width="110" height="88" rx="10" fill="#0C1014" stroke="#1F2937"/>
+            <ellipse cx="55" cy="44" rx="40" ry="22" fill="none" stroke="#3FB950" stroke-width="2"/>
+            <ellipse cx="55" cy="44" rx="24" ry="12" fill="none" stroke="#7EE4A7" stroke-width="1.4"/>
+            <g class="anim-swing"><line x1="55" y1="44" x2="95" y2="44" stroke="#34D399" stroke-width="2"/></g>
+          </g>
+          <g transform="translate(136,16)">
+            <rect x="0" y="0" width="70" height="88" rx="10" fill="#0C1014" stroke="#1F2937"/>
+            <circle cx="35" cy="44" r="24" fill="none" stroke="#233040"/>
+            <circle cx="35" cy="44" r="14" fill="none" stroke="#233040"/>
+            <path d="M35,44 L59,44 A24,24 0 0 1 35,44 Z" fill="#3FB950" opacity=".22"/>
+          </g>
+          <text x="12" y="18" fill="#7D8590" font-size="11" font-family="ui-sans-serif,system-ui">Stereo Image</text>
+        </g>
+      </defs>
+
+      <!-- frame -->
+      <g filter="url(#softShadow)"><rect x="0.5" y="0.5" width="959" height="359" rx="16" fill="var(--card)" stroke="var(--stroke)"/></g>
+
+      <!-- header -->
+      <g>
+        <rect x="1" y="1" width="958" height="48" rx="16" fill="var(--hdr)"/>
+        <text x="24" y="30" font-size="16" font-weight="600" fill="var(--text)">Phase 1 · Deep Signal Deconstruction</text>
+        <g>
+          <circle cx="908" cy="25" r="6" fill="#10B981" stroke="#064E3B" stroke-width="1"/>
+          <circle cx="928" cy="25" r="6" fill="#F59E0B" stroke="#7C4A03" stroke-width="1"/>
+          <circle cx="948" cy="25" r="6" fill="#EF4444" stroke="#7F1D1D" stroke-width="1"/>
+        </g>
+        <text x="24" y="54" font-size="12" fill="#7D8590">AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.</text>
+      </g>
+
+      <!-- thumbnails grid + descriptor -->
+      <g>
+        <rect x="16" y="64" width="928" height="280" rx="14" fill="var(--panel)" stroke="#1F2937"/>
+        <rect x="16" y="64" width="928" height="280" rx="14" fill="url(#grid24)" opacity=".35"/>
+        <g transform="translate(36,88)"><use href="#thumb-nuance"/></g>
+        <g transform="translate(268,88)"><use href="#thumb-dyn"/></g>
+        <g transform="translate(36,228)"><use href="#thumb-spec"/></g>
+        <g transform="translate(268,228)"><use href="#thumb-stereo"/></g>
+
+        <g transform="translate(520,88)">
+          <rect x="0" y="0" width="372" height="260" rx="12" fill="#0C1014" stroke="#1F2937"/>
+          <text x="16" y="28" fill="#C9D1D9" font-size="14" font-weight="600">What happens in Phase 1?</text>
+          <text x="16" y="52" fill="#7D8590" font-size="12">• Micro‑transient mapping (Nuance)</text>
+          <text x="16" y="70" fill="#7D8590" font-size="12">• Loudness/Peaks/Crest (Dynamics)</text>
+          <text x="16" y="88" fill="#7D8590" font-size="12">• Spectral profile & EQ intent (Frequencies)</text>
+          <text x="16" y="106" fill="#7D8590" font-size="12">• Goniometer + correlation (Stereo)</text>
+          <rect x="8" y="122" width="356" height="112" rx="10" fill="#0A0E12" stroke="#1F2937"/>
+          <rect x="354" y="122" width="10" height="112" fill="#3FB950" class="anim-scan"/>
+          <text x="16" y="250" fill="#93E6B0" font-size="12" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace">Click to expand full analysis ⏎</text>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ========== MODAL (2× CARDS, PERFECTLY ALIGNED FOOTERS) ========== -->
+  <dialog id="phase1-modal" aria-label="Deep Signal Deconstruction — Detailed View">
+    <div class="modal">
+      <div class="modal-hdr">
+        <div class="h6">Deep Signal Deconstruction — Detailed Panels</div>
+        <div class="lightbar" aria-label="Window controls">
+          <span class="light green" aria-hidden="true"></span>
+          <span class="light yellow" aria-hidden="true"></span>
+          <button id="closeRed" class="light red" aria-label="Close detail view" title="Close (Esc)"></button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="grid">
+
+          <!-- ========== NUANCE (footer text boxed; no overlap) ========== -->
+          <svg class="svg-card" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" aria-label="Nuance detailed">
+            <defs>
+              <filter id="ssA"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity=".45"/></filter>
+              <pattern id="g24A" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#1B2026" stroke-width="1"/></pattern>
+              <linearGradient id="agA" x1="0" y="0" x2="1" y="0"><stop offset="0" stop-color="#2EA043"/><stop offset="1" stop-color="#3FB950"/></linearGradient>
+              <clipPath id="clA"><rect x="16" y="64" width="568" height="220" rx="14"/></clipPath>
+            </defs>
+            <style>
+              .uiA{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+              .monoA{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+              @keyframes glowA{0%,100%{opacity:.35;r:3}50%{opacity:1;r:5}}
+              @keyframes sweepA{0%{transform:translateX(-560px)}100%{transform:translateX(0)}}
+              .pulseA{animation:glowA 1.8s ease-in-out infinite}
+              .sweepA{transform-box:fill-box;transform-origin:center;animation:sweepA 6s linear infinite}
+            </style>
+            <g filter="url(#ssA)"><rect x="0.5" y="0.5" width="599" height="359" rx="16" fill="var(--card)" stroke="var(--stroke)"/></g>
+            <g>
+              <rect x="1" y="1" width="598" height="48" rx="16" fill="var(--hdr)"/>
+              <text x="24" y="30" class="uiA" font-size="16" font-weight="600" fill="#C9D1D9">AI Analysis • Nuance</text>
+            </g>
+            <g>
+              <rect x="16" y="64" width="568" height="220" rx="14" fill="var(--panel)" stroke="#1F2937"/>
+              <rect x="16" y="64" width="568" height="220" rx="14" fill="url(#g24A)" opacity=".45" clip-path="url(#clA)"/>
+              <text x="32" y="92" class="uiA" font-size="12" fill="#7D8590">MICRO‑TRANSIENT MAP</text>
+              <text x="548" y="92" class="monoA" font-size="12" fill="#C9D1D9" text-anchor="end">Resolution: 5 ms</text>
+
+              <polyline points="32,240 60,210 88,230 116,170 144,200 172,160 200,182 228,120 256,140 284,112 312,150 340,132 368,170 396,166 424,190 452,180 480,200 508,186 536,208 564,196"
+                        fill="none" stroke="url(#agA)" stroke-width="2.2" clip-path="url(#clA)"/>
+              <g>
+                <circle cx="116" cy="170" r="4" fill="#3FB950" class="pulseA"/>
+                <circle cx="228" cy="120" r="4" fill="#3FB950" class="pulseA" style="animation-delay:.25s"/>
+                <circle cx="284" cy="112" r="4" fill="#3FB950" class="pulseA" style="animation-delay:.5s"/>
+                <circle cx="340" cy="132" r="4" fill="#3FB950" class="pulseA" style="animation-delay:.75s"/>
+                <circle cx="452" cy="180" r="4" fill="#3FB950" class="pulseA" style="animation-delay:1s"/>
+              </g>
+              <rect x="560" y="64" width="8" height="220" fill="#3FB950" opacity=".2" class="sweepA" clip-path="url(#clA)"/>
+
+              <!-- Footer strip: single line, non-overlapping -->
+              <g transform="translate(16,294)">
+                <rect x="0" y="0" width="568" height="50" rx="10" fill="#0C1014" stroke="#1F2937"/>
+                <text x="16" y="30" class="monoA" font-size="13" fill="#C9D1D9">
+                  Transients: 27 • Micro‑contrast Δ: 1.8 dB • Sibilants: nominal
+                </text>
+              </g>
+            </g>
+          </svg>
+
+          <!-- ========== DYNAMICS (footer boxed; no overlap) ========== -->
+          <svg class="svg-card" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" aria-label="Dynamics detailed">
+            <defs><filter id="ssB"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity=".45"/></filter></defs>
+            <style>
+              .uiB{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+              .monoB{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+              @keyframes riseB{0%{height:8px}50%{height:140px}100%{height:72px}}
+              @keyframes pulseB{0%,100%{opacity:.5}50%{opacity:1}}
+              .a1{animation:riseB 4s ease-in-out infinite}
+              .a2{animation:riseB 4.4s ease-in-out infinite}
+              .a3{animation:riseB 3.6s ease-in-out infinite}
+              .gl{animation:pulseB 2s ease-in-out infinite}
+            </style>
+            <g filter="url(#ssB)"><rect x="0.5" y="0.5" width="599" height="359" rx="16" fill="var(--card)" stroke="var(--stroke)"/></g>
+            <g>
+              <rect x="1" y="1" width="598" height="48" rx="16" fill="var(--hdr)"/>
+              <text x="24" y="30" class="uiB" font-size="16" font-weight="600" fill="#C9D1D9">AI Analysis • Dynamics</text>
+            </g>
+            <g>
+              <rect x="16" y="64" width="568" height="220" rx="14" fill="var(--panel)" stroke="#1F2937"/>
+              <text x="32" y="92" class="uiB" font-size="12" fill="#7D8590">LOUDNESS • PEAK • CREST</text>
+              <g transform="translate(60,120)">
+                <rect x="0" y="0" width="36" height="140" rx="6" fill="#0E151A" stroke="#1C2A24"/>
+                <rect x="0" y="0" width="36" height="96" rx="6" fill="#3FB950" class="a1"/>
+                <text x="18" y="168" class="monoB" font-size="12" text-anchor="middle" fill="#C9D1D9">LUFS‑I</text>
+                <text x="18" y="186" class="monoB" font-size="12" text-anchor="middle" fill="#C9D1D9">‑9.6</text>
+
+                <rect x="64" y="0" width="36" height="140" rx="6" fill="#0E151A" stroke="#1C2A24"/>
+                <rect x="64" y="0" width="36" height="122" rx="6" fill="#22C55E" class="a2"/>
+                <text x="82" y="168" class="monoB" font-size="12" text-anchor="middle" fill="#C9D1D9">LUFS‑S</text>
+                <text x="82" y="186" class="monoB" font-size="12" text-anchor="middle" fill="#C9D1D9">‑8.7</text>
+
+                <rect x="128" y="0" width="36" height="140" rx="6" fill="#0E151A" stroke="#1C2A24"/>
+                <rect x="128" y="0" width="36" height="40" rx="6" fill="#F59E0B" class="a3"/>
+                <text x="146" y="168" class="monoB" font-size="12" text-anchor="middle" fill="#C9D1D9">dBTP</text>
+                <text x="146" y="186" class="monoB" font-size="12" text-anchor="middle" fill="#C9D1D9">‑0.9</text>
+
+                <rect x="192" y="0" width="36" height="140" rx="6" fill="#0E151A" stroke="#1C2A24"/>
+                <rect x="192" y="0" width="36" height="72" rx="6" fill="#93C5FD"/>
+                <text x="210" y="168" class="monoB" font-size="12" text-anchor="middle" fill="#C9D1D9">LRA</text>
+                <text x="210" y="186" class="monoB" font-size="12" text-anchor="middle" fill="#C9D1D9">7.2</text>
+
+                <g transform="translate(300,6)">
+                  <circle cx="0" cy="0" r="52" fill="#0C1014" stroke="#1F2937"/>
+                  <path d="M-46 0 A 46 46 0 0 1 46 0" fill="none" stroke="#334155" stroke-width="8"/>
+                  <path d="M-46 0 A 46 46 0 0 1 14 44" fill="none" stroke="#3FB950" stroke-width="8" class="gl"/>
+                  <text x="0" y="8" class="monoB" font-size="14" text-anchor="middle" fill="#C9D1D9">CREST</text>
+                  <text x="0" y="26" class="monoB" font-size="16" font-weight="700" text-anchor="middle" fill="#C9D1D9">8.3 dB</text>
+                </g>
+              </g>
+              <g transform="translate(16,294)">
+                <rect x="0" y="0" width="568" height="50" rx="10" fill="#0C1014" stroke="#1F2937"/>
+                <text x="16" y="30" class="monoB" font-size="13" fill="#C9D1D9">
+                  Targets: Club −9…−7 LUFS • TP ≤ −1.0 dBTP • LRA 6–10
+                </text>
+              </g>
+            </g>
+          </svg>
+
+          <!-- ========== FREQUENCIES (proper X/Y axes + ticks; footer boxed) ========== -->
+          <svg class="svg-card" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" aria-label="Frequencies detailed">
+            <defs>
+              <filter id="ssC"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity=".45"/></filter>
+              <clipPath id="clCplot"><rect x="76" y="84" width="492" height="200" rx="8"/></clipPath>
+            </defs>
+            <style>
+              .uiC{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+              .monoC{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+              @keyframes scanC{0%{transform:translateX(-492px)}100%{transform:translateX(0)}}
+              .scanC{transform-box:fill-box;transform-origin:center;animation:scanC 7s linear infinite;opacity:.18}
+            </style>
+            <g filter="url(#ssC)"><rect x="0.5" y="0.5" width="599" height="359" rx="16" fill="var(--card)" stroke="var(--stroke)"/></g>
+            <g>
+              <rect x="1" y="1" width="598" height="48" rx="16" fill="var(--hdr)"/>
+              <text x="24" y="30" class="uiC" font-size="16" font-weight="600" fill="#C9D1D9">AI Analysis • Frequencies</text>
+            </g>
+            <g>
+              <rect x="16" y="64" width="568" height="220" rx="14" fill="var(--panel)" stroke="#1F2937"/>
+              <text x="32" y="80" class="uiC" font-size="12" fill="#7D8590">SPECTRAL PROFILE (20 Hz → 20 kHz)</text>
+
+              <!-- Axes (log-ish X; linear Y in dBFS) -->
+              <g class="axes uiC" font-size="11" fill="#7D8590" stroke="#2A323B" stroke-width="1">
+                <!-- Y axis -->
+                <line x1="76" y1="84" x2="76" y2="284"/>
+                <line x1="76" y1="124" x2="568" y2="124" opacity=".5"/>
+                <line x1="76" y1="164" x2="568" y2="164" opacity=".35"/>
+                <line x1="76" y1="204" x2="568" y2="204" opacity=".35"/>
+                <line x1="76" y1="244" x2="568" y2="244" opacity=".35"/>
+                <text x="68" y="128">-12</text>
+                <text x="68" y="168">-24</text>
+                <text x="68" y="208">-36</text>
+                <text x="68" y="248">-48</text>
+                <text x="62" y="88" transform="rotate(-90 62,88)">Level (dB)</text>
+
+                <!-- X axis tick labels (20 Hz → 20 kHz) -->
+                <line x1="76" y1="284" x2="568" y2="284"/>
+                <g text-anchor="middle">
+                  <text x="76"  y="302">20</text>
+                  <text x="140" y="302">100</text>
+                  <text x="252" y="302">1k</text>
+                  <text x="360" y="302">5k</text>
+                  <text x="468" y="302">10k</text>
+                  <text x="568" y="302">20k</text>
+                </g>
+                <text x="300" y="320">Frequency (Hz)</text>
+              </g>
+
+              <!-- Plot area -->
+              <g clip-path="url(#clCplot)">
+                <!-- Bars -->
+                <g fill="#3FB950" opacity=".85">
+                  <!-- (hand-laid representative bars) -->
+                  <rect x="84"  y="210" width="8" height="70" rx="2"/>
+                  <rect x="98"  y="196" width="8" height="84" rx="2"/>
+                  <rect x="112" y="178" width="8" height="102" rx="2"/>
+                  <rect x="126" y="166" width="8" height="114" rx="2"/>
+                  <rect x="140" y="158" width="8" height="122" rx="2"/>
+                  <rect x="154" y="160" width="8" height="120" rx="2"/>
+                  <rect x="168" y="170" width="8" height="110" rx="2"/>
+                  <rect x="182" y="186" width="8" height="94"  rx="2"/>
+                  <rect x="196" y="198" width="8" height="82"  rx="2"/>
+                  <rect x="210" y="206" width="8" height="74"  rx="2"/>
+                  <rect x="224" y="202" width="8" height="78"  rx="2"/>
+                  <rect x="238" y="196" width="8" height="84"  rx="2"/>
+                  <rect x="252" y="190" width="8" height="90"  rx="2"/>
+                  <rect x="266" y="196" width="8" height="84"  rx="2"/>
+                  <rect x="280" y="208" width="8" height="72"  rx="2"/>
+                  <rect x="294" y="214" width="8" height="66"  rx="2"/>
+                  <rect x="308" y="220" width="8" height="60"  rx="2"/>
+                  <rect x="322" y="218" width="8" height="62"  rx="2"/>
+                  <rect x="336" y="212" width="8" height="68"  rx="2"/>
+                  <rect x="350" y="206" width="8" height="74"  rx="2"/>
+                  <rect x="364" y="202" width="8" height="78"  rx="2"/>
+                  <rect x="378" y="200" width="8" height="80"  rx="2"/>
+                  <rect x="392" y="204" width="8" height="76"  rx="2"/>
+                  <rect x="406" y="212" width="8" height="68"  rx="2"/>
+                  <rect x="420" y="224" width="8" height="56"  rx="2"/>
+                  <rect x="434" y="234" width="8" height="46"  rx="2"/>
+                  <rect x="448" y="240" width="8" height="40"  rx="2"/>
+                  <rect x="462" y="246" width="8" height="34"  rx="2"/>
+                  <rect x="476" y="252" width="8" height="28"  rx="2"/>
+                </g>
+
+                <!-- EQ curve -->
+                <path d="M84,240 C140,170 196,188 252,198 S364,210 420,194 496,200 564,220"
+                      fill="none" stroke="#7EE4A7" stroke-width="2.5" opacity=".9"/>
+
+                <!-- Animated scan -->
+                <rect x="564" y="84" width="12" height="200" fill="#3FB950" class="scanC"/>
+              </g>
+
+              <!-- Footer with exact EQ plan (no wrap/overlap) -->
+              <g transform="translate(16,294)">
+                <rect x="0" y="0" width="568" height="50" rx="10" fill="#0C1014" stroke="#1F2937"/>
+                <text x="16" y="30" class="monoC" font-size="13" fill="#C9D1D9">
+                  EQ plan: +1.5 dB @ 65 Hz • −1.2 dB @ 2.8 kHz • +0.8 dB @ 12 kHz
+                </text>
+              </g>
+            </g>
+          </svg>
+
+          <!-- ========== STEREO IMAGE (footer boxed; no overlap) ========== -->
+          <svg class="svg-card" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 360" aria-label="Stereo Image detailed">
+            <defs>
+              <filter id="ssD"><feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000" flood-opacity=".45"/></filter>
+              <radialGradient id="gbD" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#0C1014"/><stop offset="1" stop-color="#0A0D11"/></radialGradient>
+            </defs>
+            <style>
+              .uiD{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+              .monoD{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+              @keyframes rotD{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+              .swD{transform-box:fill-box;transform-origin:50% 50%;animation:rotD 6s linear infinite}
+            </style>
+            <g filter="url(#ssD)"><rect x="0.5" y="0.5" width="599" height="359" rx="16" fill="var(--card)" stroke="var(--stroke)"/></g>
+            <g>
+              <rect x="1" y="1" width="598" height="48" rx="16" fill="var(--hdr)"/>
+              <text x="24" y="30" class="uiD" font-size="16" font-weight="600" fill="#C9D1D9">AI Analysis • Stereo Image</text>
+            </g>
+            <g>
+              <rect x="16" y="64" width="568" height="220" rx="14" fill="var(--panel)" stroke="#1F2937"/>
+
+              <text x="32" y="92" class="uiD" font-size="12" fill="#7D8590">GONIOMETER • PHASE • WIDTH</text>
+
+              <g transform="translate(32,108)">
+                <!-- Goniometer -->
+                <g>
+                  <rect x="0" y="0" width="260" height="200" rx="12" fill="url(#gbD)" stroke="#1F2937"/>
+                  <g stroke="#1E2630" opacity=".6">
+                    <line x1="130" y1="0" x2="130" y2="200"/><line x1="0" y1="100" x2="260" y2="100"/>
+                    <rect x="10" y="10" width="240" height="180" fill="none"/>
+                  </g>
+                  <ellipse cx="130" cy="100" rx="88" ry="48" fill="none" stroke="#3FB950" stroke-width="2.2"/>
+                  <ellipse cx="130" cy="100" rx="52" ry="24" fill="none" stroke="#7EE4A7" stroke-width="1.4"/>
+                  <g class="swD"><line x1="130" y1="100" x2="214" y2="100" stroke="#34D399" stroke-width="2"/><circle cx="130" cy="100" r="3" fill="#34D399"/></g>
+                  <text x="130" y="220" class="monoD" font-size="12" text-anchor="middle" fill="#C9D1D9">Goniometer</text>
+                </g>
+
+                <!-- Phase radar + width -->
+                <g transform="translate(292,0)">
+                  <rect x="0" y="0" width="228" height="200" rx="12" fill="#0C1014" stroke="#1F2937"/>
+                  <g transform="translate(114,86)">
+                    <circle r="60" fill="none" stroke="#233040"/>
+                    <circle r="40" fill="none" stroke="#233040"/>
+                    <circle r="20" fill="none" stroke="#233040"/>
+                    <g class="swD"><path d="M0,0 L60,0 A60,60 0 0 1 0,0 Z" fill="#3FB950" opacity=".15"/><line x1="0" y1="0" x2="60" y2="0" stroke="#3FB950" stroke-width="2"/></g>
+                    <circle r="4" fill="#34D399"/>
+                  </g>
+                  <g class="monoD" font-size="12" fill="#C9D1D9">
+                    <text x="16" y="184">Phase Corr:</text><text x="128" y="184" text-anchor="end">+0.63</text>
+                  </g>
+                  <g transform="translate(16,152)">
+                    <rect x="0" y="0" width="196" height="10" rx="5" fill="#0A0E12" stroke="#1F2937"/>
+                    <rect x="0" y="0" width="168" height="10" rx="5" fill="#3FB950"/>
+                    <text x="198" y="-6" class="monoD" font-size="11" text-anchor="end" fill="#C9D1D9">Stereo Width 86%</text>
+                  </g>
+                </g>
+              </g>
+
+              <!-- Footer -->
+              <g transform="translate(16,294)">
+                <rect x="0" y="0" width="568" height="50" rx="10" fill="#0C1014" stroke="#1F2937"/>
+                <text x="16" y="30" class="monoD" font-size="13" fill="#C9D1D9">
+                  Keep correlation ≥ 0.2 for mono‑safe lows • Width tuned by Spatial Flux
+                </text>
+              </g>
+            </g>
+          </svg>
+
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+</div>
+
+<script>
+  const card = document.getElementById('phase1-card');
+  const dlg = document.getElementById('phase1-modal');
+  const closeRed = document.getElementById('closeRed');
+
+  function openModal(){ if (typeof dlg.showModal==='function') dlg.showModal(); else dlg.setAttribute('open',''); }
+  function closeModal(){ if (typeof dlg.close==='function') dlg.close(); else dlg.removeAttribute('open'); }
+
+  card.addEventListener('click', openModal);
+  card.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openModal(); } });
+
+  closeRed.addEventListener('click', closeModal);
+  dlg.addEventListener('click', (ev)=>{
+    const box = dlg.querySelector('.modal').getBoundingClientRect();
+    if(ev.clientX<box.left || ev.clientX>box.right || ev.clientY<box.top || ev.clientY>box.bottom){ closeModal(); }
+  });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && dlg.open){ closeModal(); }});
+</script>
+</body>
+</html>
