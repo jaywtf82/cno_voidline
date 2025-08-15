@@ -80,7 +80,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     queryKey: ["/api/preferences"],
     queryFn: async () => {
       if (!isAuthenticated) return null;
-      return await apiRequest("GET", "/api/preferences");
+      const response = await apiRequest("GET", "/api/preferences");
+      return response.json();
     },
     enabled: isAuthenticated,
     retry: false,

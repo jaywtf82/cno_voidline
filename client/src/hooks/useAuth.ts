@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import type { User } from "@shared/schema";
 
 export function useAuth() {
   const { data: user, isLoading, error } = useQuery({
