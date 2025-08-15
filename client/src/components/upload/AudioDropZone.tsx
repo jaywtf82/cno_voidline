@@ -63,24 +63,18 @@ export function AudioDropZone({ onFileSelect, className, isProcessing = false }:
   };
 
   const processFile = async (file: File) => {
-    setIsProcessing(true);
     setError(null);
 
     const validationError = validateAudioFile(file);
     if (validationError) {
       setError(validationError);
-      setIsProcessing(false);
       return;
     }
 
     try {
-      // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, 500));
       onFileSelect(file);
     } catch (err) {
       setError('Failed to process audio file');
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -89,18 +83,22 @@ export function AudioDropZone({ onFileSelect, className, isProcessing = false }:
     e.stopPropagation();
     setIsDragOver(false);
 
+    if (isProcessing) return; // Prevent multiple uploads while processing
+
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
       processFile(files[0]);
     }
-  }, [onFileSelect]);
+  }, [onFileSelect, isProcessing]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isProcessing) return; // Prevent multiple uploads while processing
+
     const files = e.target.files;
     if (files && files.length > 0) {
       processFile(files[0]);
     }
-  }, [onFileSelect]);
+  }, [onFileSelect, isProcessing]);
 
   const handleClick = () => {
     fileInputRef.current?.click();
