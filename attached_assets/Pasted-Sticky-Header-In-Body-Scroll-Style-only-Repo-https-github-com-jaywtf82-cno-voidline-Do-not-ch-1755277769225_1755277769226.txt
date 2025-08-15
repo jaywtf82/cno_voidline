@@ -1,0 +1,204 @@
+Sticky Header + In-Body Scroll (Style-only)
+Repo: https://github.com/jaywtf82/cno_voidline
+Do not change: routes, handlers, business logic, or page content.
+Do change: layout wrapper, header styling, global theme, and scroll container.
+
+1) Create shared layout (wraps all pages)
+Edit: client/app/layout.tsx (or the root layout file under client/app/) to wrap every page with AppShell.
+
+tsx
+Copy
+Edit
+// client/app/layout.tsx
+import './styles/voidline-skin.css';
+import './styles/layout.css';
+import type { ReactNode } from 'react';
+import { AppHeader } from '../components/layout/AppHeader';
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en" className="h-full">
+      <body className="h-[100dvh] overflow-hidden bg-[var(--bg)] text-[var(--text)] antialiased">
+        {/* Fixed/Sticky Header */}
+        <AppHeader />
+
+        {/* Scroll area: body content scrolls under header */}
+        <main id="app-main" className="app-main">
+          {children}
+        </main>
+      </body>
+    </html>
+  );
+}
+2) Shared header component (reuse existing look)
+Add: client/components/layout/AppHeader.tsx
+
+tsx
+Copy
+Edit
+// client/components/layout/AppHeader.tsx
+export function AppHeader() {
+  return (
+    <header
+      className="app-header site-header"
+      role="banner"
+      aria-label="Primary"
+    >
+      <div className="header-inner terminal-window">
+        <a href="/" className="brand group" aria-label="Homepage">
+          <span className="sig">[~]</span>
+          <div className="brand-copy">
+            <h1 className="brand-title">./C/N₀_Voidline</h1>
+            <p className="brand-sub">Frequencies attuned. Stillness remains.</p>
+          </div>
+        </a>
+
+        <nav className="nav" aria-label="Main navigation">
+          <a className="nav-link" href="/home">/home</a>
+          <a className="nav-link" href="/features">/features</a>
+          <a className="nav-link" href="/pricing">/pricing</a>
+          <a className="nav-link" href="/docs">/docs</a>
+          <a className="nav-link" href="/logs">/logs</a>
+        </nav>
+
+        <div className="actions">
+          <a className="btn btn-ghost" href="/login">Login</a>
+          <div className="header-lights" data-role="traffic-lights">
+            <span className="dot red" />
+            <span className="dot yellow" />
+            <span className="dot green" />
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+3) Make header sticky; body scrollable
+Add: client/styles/layout.css
+
+css
+Copy
+Edit
+:root{
+  /* sticky heights; adjust only here if header size changes */
+  --header-h: 64px;
+}
+@media (min-width: 768px){ :root{ --header-h: 72px; } }
+
+/* Header is fixed/sticky and layered above content */
+.app-header{
+  position: sticky; top: 0; z-index: 50;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 85%, transparent), var(--surface));
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 24px var(--shadow);
+}
+
+/* Header content matches your terminal frame */
+.header-inner{
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr auto auto;
+  align-items: center; gap: .75rem;
+  padding: .75rem 1rem;
+}
+
+/* Brand */
+.brand{ display: inline-flex; gap: .6rem; align-items: flex-start; text-decoration: none; }
+.sig{ color: var(--accent); margin-top: .2rem; }
+.brand-title{ color: #C8D2DF; font-weight: 700; letter-spacing: .2px; }
+.brand-sub{ color: var(--muted); font-size: .72rem; }
+
+/* Nav */
+.nav{ display: none; gap: .35rem; }
+@media (min-width: 768px){ .nav{ display: inline-flex; } }
+.nav-link{
+  color: var(--muted); padding: .35rem .5rem; border-radius: .5rem;
+  transition: color .15s ease, background-color .15s ease;
+}
+.nav-link:hover{ color: var(--text); background: color-mix(in srgb, var(--surface) 70%, transparent); }
+
+/* Actions */
+.actions{ display: inline-flex; align-items: center; gap: .6rem; }
+
+/* Main scroll area: fills viewport minus header, scrolls independently */
+.app-main{
+  height: calc(100dvh - var(--header-h));
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 1rem;
+  position: relative;
+  z-index: 1; /* under header */
+}
+
+/* Grid background and vignette pinned to viewport */
+body::before{
+  content:""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--grid) 65%, transparent) 1px, transparent 1px) 0 0/48px 48px,
+    linear-gradient(to bottom, color-mix(in srgb, var(--grid) 65%, transparent) 1px, transparent 1px) 0 0/48px 48px,
+    linear-gradient(to right, color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px) 0 0/12px 12px,
+    linear-gradient(to bottom, color-mix(in srgb, var(--grid) 35%, transparent) 1px, transparent 1px) 0 0/12px 12px;
+  box-shadow: inset 0 0 160px 40px rgba(0,0,0,.55);
+}
+4) Theme (same colors/hover as your screenshot)
+Add/Update: client/styles/voidline-skin.css (extend if you already have it)
+
+css
+Copy
+Edit
+:root{
+  --bg:#0B1014; --surface:#0E141A; --grid:#0E171C; --border:#1B2733;
+  --text:#C8D2DF; --muted:#8FA1B3;
+  --accent:#3FB950; --accent-600:#2EA043; --accent-200:#93e29d;
+  --warn:#F59E0B; --info:#60A5FA; --danger:#F87171;
+  --shadow:rgba(0,0,0,.35);
+}
+.terminal-window{
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, transparent), var(--surface));
+  border:1px solid var(--border); border-radius:16px; box-shadow:0 2px 12px var(--shadow);
+}
+.btn{ font-weight:600; padding:.55rem 1rem; border-radius:12px; transition:transform .12s ease, filter .12s ease; }
+.btn-primary{ background:linear-gradient(180deg, var(--accent), var(--accent-600)); color:#041b0d; border:1px solid color-mix(in srgb, var(--accent-600) 80%, #1a2a1f); }
+.btn-primary:hover{ filter:brightness(1.05); transform:translateY(-1px); }
+.btn-ghost{ color:var(--text); border:1px solid var(--border); background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.header-lights{ display:inline-flex; gap:8px; }
+.header-lights .dot{ width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 1px rgba(0,0,0,.45) inset;}
+.header-lights .dot.green{ background:#22c55e;} .header-lights .dot.yellow{ background:#f59e0b;} .header-lights .dot.red{ background:#ef4444;}
+/* Card hover */
+.terminal-window.hoverable:hover{ transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.45), 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);}
+5) Tailwind hook (map variables to utilities)
+Edit: tailwind.config.(js|ts) (keep existing options, just extend)
+
+js
+Copy
+Edit
+module.exports = {
+  darkMode: ['class', '[data-theme="dark"]'],
+  content: ['client/**/*.{ts,tsx,js,jsx,html}'],
+  theme: {
+    extend: {
+      colors: {
+        bg: 'var(--bg)', surface: 'var(--surface)', border: 'var(--border)',
+        text: 'var(--text)', muted: 'var(--muted)',
+        accent: { DEFAULT: 'var(--accent)', 600: 'var(--accent-600)', 200: 'var(--accent-200)' }
+      },
+      boxShadow: { card:'0 2px 12px var(--shadow)', cardHover:'0 8px 24px rgba(0,0,0,.45)' }
+    }
+  },
+  plugins: []
+}
+6) Keep every page’s content the same
+No JSX changes are needed inside individual pages. Because the RootLayout wraps children in <main class="app-main">, all existing pages automatically scroll under the sticky header and inherit the colors/grid.
+
+Acceptance Criteria
+Header is always visible (sticky), identical styling across all pages.
+
+Only the main content scrolls: main.app-main scrollable; body stays fixed at 100dvh.
+
+Landing, main, and all other pages retain exact functionality and DOM content.
+
+Colors, grid background, button/card hovers match your current design.
+
+No layout jank on mobile; uses 100dvh/media queries for header height.
+
+Lighthouse/CLS unaffected (no layout shift when header becomes sticky).
+
