@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 interface AudioAnalysisData {
   fileName?: string;
   fileSize?: string;
-  duration?: string; // comes as "620.70s" format
+  duration?: string | number; // comes as "620.70s" format or can be number
   sampleRate?: string;
   channels?: string;
   sessionId?: string;
@@ -81,7 +81,10 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
     id: analysisData.fileName?.replace(/\.[^/.]+$/, '') || 'premaster', // Remove file extension
     sr: 48000, // Standard sample rate
     ch: analysisData.channels === 'Mono' ? 1 : 2,
-    dur_s: safeParseNumber(analysisData.duration, 620.70),
+    dur_s: (() => {
+      const duration = analysisData?.duration || 0;
+      return typeof duration === 'number' ? duration : safeParseNumber(duration as string, 0);
+    })(),
     peak_dbfs: safeParseNumber(analysisData.peak, -5.60),
     rms_mono_dbfs: safeParseNumber(analysisData.rms, -17.19),
     crest_db: 11.59, // Calculated from peak and RMS
@@ -139,7 +142,9 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
               <span className="text-white">{technicalData.ch}</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">Duration:</span>
-              <span className="text-white">{safeFormat(technicalData.dur_s, 2)} s</span>
+              <div className="text-cyan-400 font-mono text-sm">
+                {technicalData.dur_s?.toFixed ? technicalData.dur_s.toFixed(2) : technicalData.dur_s}s
+              </div>
             </div>
           </div>
           <div className="space-y-2">
@@ -241,11 +246,19 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           </div>
         </div>
 
-        {/* Start Mastering CTA */}
-        <div className="flex justify-end">
+        {/* CTA Button */}
+        <div className="mt-6 text-center">
           <Button
-            onClick={handleStartMastering}
-            className="bg-gradient-to-r from-green-500 to-green-400 hover:from-green-400 hover:to-green-300 text-black font-mono font-bold px-6 py-2 rounded-lg transition-all duration-300 shadow-lg shadow-green-500/25"
+            size="lg"
+            onClick={() => {
+              if (window.location.pathname === '/') {
+                // Call parent callback if provided
+                if (typeof (window as any).handleStartMasteringSession === 'function') {
+                  (window as any).handleStartMasteringSession();
+                }
+              }
+            }}
+            className="bg-gradient-to-r from-cyan-500 to-cyan-400 text-black font-mono font-bold px-8 py-3 hover:from-cyan-400 hover:to-cyan-300 transition-all duration-200"
           >
             Start Mastering Session
           </Button>

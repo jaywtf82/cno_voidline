@@ -17,7 +17,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useNavigate } from "wouter";
 import { Button } from "@/components/ui/button";
 import { NeonCard, NeonCardHeader, NeonCardTitle, NeonCardContent } from "@/components/ui/neon-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -178,6 +178,12 @@ export default function Landing() {
     }
   };
 
+  const handleStartMasteringSession = () => {
+    if (audioAnalysis?.sessionId) {
+      navigate(`/mastering/process?id=${audioAnalysis.sessionId}`);
+    }
+  };
+
   const getTargetLUFS = (target: string) => {
     const targets = {
       streaming: '-14.0',
@@ -316,6 +322,9 @@ export default function Landing() {
               <PremasterAnalysis 
                 analysisData={audioAnalysis}
               />
+              <script>
+                {`window.handleStartMasteringSession = ${handleStartMasteringSession.toString()}`}
+              </script>
             </div>
           )}
 
