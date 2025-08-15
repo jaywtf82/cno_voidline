@@ -31,7 +31,7 @@ export default function Landing() {
   const [glitchTrigger, setGlitchTrigger] = useState(false);
   const { theme, setTheme } = useTheme();
   const { isAuthenticated } = useAuth();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
 
   // Mock audio parameters with animated values
   const [mockData, setMockData] = useState({
