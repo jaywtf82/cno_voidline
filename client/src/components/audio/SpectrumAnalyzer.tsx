@@ -490,28 +490,46 @@ export function SpectrumAnalyzer({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
             <h4 className="font-mono text-sm text-cyan-400 font-bold tracking-wider">SPECTRUM ANALYZER</h4>
-            <div className="flex items-center space-x-2 text-xs font-mono">
+            <div className="flex items-center gap-2 text-xs font-mono">
               <button 
-                className={`px-2 py-1 rounded text-xs transition-colors ${
-                  currentMode === 'instant' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
+                type="button"
+                className={`px-3 py-1 rounded border transition-all duration-200 ${
+                  currentMode === 'instant' 
+                    ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40 shadow-sm' 
+                    : 'text-gray-400 border-gray-600/40 hover:text-cyan-400 hover:border-cyan-500/40'
                 }`}
-                onClick={() => setCurrentMode('instant')}
+                onClick={() => {
+                  console.log('Switching to instant mode');
+                  setCurrentMode('instant');
+                }}
               >
                 Instant
               </button>
               <button 
-                className={`px-2 py-1 rounded text-xs transition-colors ${
-                  currentMode === 'peak' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
+                type="button"
+                className={`px-3 py-1 rounded border transition-all duration-200 ${
+                  currentMode === 'peak' 
+                    ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40 shadow-sm' 
+                    : 'text-gray-400 border-gray-600/40 hover:text-cyan-400 hover:border-cyan-500/40'
                 }`}
-                onClick={() => setCurrentMode('peak')}
+                onClick={() => {
+                  console.log('Switching to peak mode');
+                  setCurrentMode('peak');
+                }}
               >
                 Peak
               </button>
               <button 
-                className={`px-2 py-1 rounded text-xs transition-colors ${
-                  currentMode === 'average' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
+                type="button"
+                className={`px-3 py-1 rounded border transition-all duration-200 ${
+                  currentMode === 'average' 
+                    ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40 shadow-sm' 
+                    : 'text-gray-400 border-gray-600/40 hover:text-cyan-400 hover:border-cyan-500/40'
                 }`}
-                onClick={() => setCurrentMode('average')}
+                onClick={() => {
+                  console.log('Switching to average mode');
+                  setCurrentMode('average');
+                }}
               >
                 Average
               </button>
