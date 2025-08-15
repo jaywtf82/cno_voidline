@@ -43,6 +43,7 @@ import { AnalysisProgress } from '@/components/audio/AnalysisProgress';
 import { AnalysisDataCard } from '@/components/audio/AnalysisDataCard';
 import { LiveSystemFeed } from '@/components/system/LiveSystemFeed';
 import { PremasterAnalysis } from '@/components/analysis/PremasterAnalysis';
+import { FloatingSystemToast } from '@/components/system/FloatingSystemToast';
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -73,6 +74,7 @@ export default function Landing() {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [audioAnalysis, setAudioAnalysis] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSystemToast, setShowSystemToast] = useState(false);
 
   // Mastering session state
   const [masteringActive, setMasteringActive] = useState(false);
@@ -520,6 +522,15 @@ export default function Landing() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Floating System Toast */}
+      <FloatingSystemToast 
+        isActive={showSystemToast}
+        onComplete={() => {
+          setShowSystemToast(false);
+          setAnalysisComplete(true);
+        }}
+      />
     </div>
   );
 }

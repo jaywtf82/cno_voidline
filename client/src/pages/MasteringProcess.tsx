@@ -1,4 +1,3 @@
-
 /**
  * MasteringProcess.tsx - Professional Mastering Process Interface
  * 
@@ -25,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/Logo';
+import { FloatingSystemToast } from '@/components/system/FloatingSystemToast';
 import { useMasteringStore } from '@/state/masteringStore';
 import { Phase1DeepSignal } from '@/components/mastering/Phase1DeepSignal';
 import { SpectrumCanvas } from '@/components/mastering/vis/SpectrumCanvas';
@@ -50,6 +50,8 @@ export default function MasteringProcess() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [workletMetrics, setWorkletMetrics] = useState<any>(null);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [showExportToast, setShowExportToast] = useState(false);
+
 
   // Refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -78,12 +80,12 @@ export default function MasteringProcess() {
 
         // Start real-time processing
         await analysisPipelineRef.current.startRealTimeAnalysis(session.buffer);
-        
+
         // Subscribe to worklet updates
         visualBusRef.current.subscribe('metrics', setWorkletMetrics);
-        
+
         setIsProcessing(true);
-        
+
         toast({
           title: "Analysis Started",
           description: "Real-time processing active",
@@ -337,6 +339,14 @@ export default function MasteringProcess() {
           </Card>
         )}
       </main>
+
+      {/* Export System Toast */}
+      <FloatingSystemToast 
+        isActive={showExportToast}
+        onComplete={() => {
+          setShowExportToast(false);
+        }}
+      />
     </div>
   );
 }
