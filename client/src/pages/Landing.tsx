@@ -11,10 +11,12 @@ import { VoidlineMeter } from "@/components/meters/VoidlineMeter";
 import { Fader } from "@/components/controls/Fader";
 import { Knob } from "@/components/controls/Knob";
 import { PresetTile } from "@/components/presets/PresetTile";
+import { AudioDropZone } from "@/components/upload/AudioDropZone";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import { Play, Pause, Square, Volume2, Settings, Zap, Target, Waves } from "lucide-react";
+import { aiMasteringCore } from "@/lib/audio/aiMasteringCore";
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -83,6 +85,34 @@ export default function Landing() {
     }
   };
 
+  const handleFileSelect = async (file: File) => {
+    try {
+      // Initialize AI mastering core
+      await aiMasteringCore.initialize();
+      
+      // Convert file to AudioBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      const audioContext = new AudioContext();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Create mastering session
+      const sessionId = await aiMasteringCore.createSession(audioBuffer);
+      
+      console.log('Mastering session created:', sessionId);
+      
+      // Redirect to console for authenticated users, or show login
+      if (isAuthenticated) {
+        window.location.href = `/console?session=${sessionId}`;
+      } else {
+        // Store session in localStorage for after login
+        localStorage.setItem('pendingSession', sessionId);
+        handleLogin();
+      }
+    } catch (error) {
+      console.error('Failed to process audio file:', error);
+    }
+  };
+
   const mockPresets = [
     { name: "CLUB_MASTER", category: "Club", description: "High energy club master", isActive: false },
     { name: "VINYL_WARM", category: "Vinyl", description: "Warm vinyl simulation", isActive: true },
@@ -104,7 +134,7 @@ export default function Landing() {
           <div className="border-l border-accent-primary/30 pl-4">
             <h1 className="font-mono text-2xl text-accent-primary">
               <GlitchWord trigger={glitchTrigger} intensity="medium">
-                ./ai-mastering-core --init
+                •/C/No_Voidline
               </GlitchWord>
             </h1>
             <p className="font-mono text-sm text-text-muted">Frequencies aligned. Stillness remains.</p>
@@ -170,52 +200,32 @@ export default function Landing() {
         </div>
       </motion.div>
 
-      {/* Hero Section */}
+      {/* Hero Section - AI Mastering Upload */}
       <motion.div 
-        className="text-center mb-12"
+        className="mb-12"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
       >
-        <div className="font-mono text-accent-primary text-lg mb-4">
-          $ ./ai-mastering-core --init
-        </div>
-        
-        <p className="text-lg text-text-secondary mb-8 max-w-3xl mx-auto">
-          Welcome, producer. Our advanced AI is ready to analyze and enhance your audio. Upload your track to begin 
-          the mastering process and unlock its full sonic potential.
-        </p>
-        
-        <div className="flex justify-center space-x-4 mb-12">
-          <Button 
-            size="lg"
-            onClick={handleStartMastering}
-            className="neon-button font-bold px-8 py-3 bg-accent-primary hover:bg-accent-primary/80 text-black"
-            data-testid="button-start-mastering"
-          >
-            Start Mastering
-          </Button>
-          <Button 
-            variant="outline"
-            size="lg"
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="neon-button-outline px-8 py-3 border-accent-primary/30 hover:border-accent-primary text-accent-primary"
-            data-testid="button-upload-audio"
-          >
-            Upload Audio File...
-          </Button>
-        </div>
+        <AudioDropZone onFileSelect={handleFileSelect} className="mb-8" />
         
         {/* System Status */}
-        <NeonCard variant="terminal" className="p-4 max-w-2xl mx-auto text-left">
-          <div className="font-mono text-sm space-y-2">
-            <div className="text-accent-primary">$ Live System Feed:</div>
-            <div className="text-text-muted">[STATUS] AI core initialized and stable.</div>
-            <div className="text-text-muted">[STATUS] Neural network connection is nominal.</div>
-            <div className="text-yellow-400">[ALERT] Solar flare activity detected. Uplink integrity at 96%.</div>
-            <div className="text-accent-primary">System is ready for your command</div>
-          </div>
-        </NeonCard>
+        <motion.div 
+          className="mt-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
+          <NeonCard variant="terminal" className="p-4 max-w-2xl mx-auto text-left">
+            <div className="font-mono text-sm space-y-2">
+              <div className="text-accent-primary">$ Live System Feed:</div>
+              <div className="text-text-muted">[STATUS] AI core initialized and stable.</div>
+              <div className="text-text-muted">[STATUS] Neural network connection is nominal.</div>
+              <div className="text-yellow-400">[ALERT] Solar flare activity detected. Uplink integrity at 96%.</div>
+              <div className="text-accent-primary">System is ready for your command</div>
+            </div>
+          </NeonCard>
+        </motion.div>
       </motion.div>
 
       {/* Main Grid */}
@@ -327,8 +337,11 @@ export default function Landing() {
                 </div>
                 
                 <h3 className="text-lg font-bold mb-3">Intelligent Reconstruction</h3>
-                <p className="text-text-secondary mb-6 text-sm">
+                <p className="text-text-secondary mb-4 text-sm">
                   The AI rebuilds the audio, applying precise, calculated enhancements.
+                </p>
+                <p className="text-xs font-mono text-text-muted/70 mb-4">
+                  designed and developed by <span className="text-accent-primary">[@dotslashrecords]</span>
                 </p>
                 
                 {/* Neural Module Display */}
