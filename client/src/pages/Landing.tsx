@@ -219,6 +219,38 @@ export default function Landing() {
       setAnalysisProgress(100);
       setAudioAnalysis(analysis);
       setAnalysisComplete(true);
+      
+      // Create mastering session with the analyzed audio
+      try {
+        const audioContext = new AudioContext();
+        const arrayBuffer = await file.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        const { useMasteringStore } = await import('@/state/masteringStore');
+        const sessionId = useMasteringStore.getState().createSession({
+          name: analysis.fileName,
+          size: analysis.fileSize
+        }, audioBuffer);
+        
+        // Set analysis data in the mastering session
+        useMasteringStore.getState().setAnalysis({
+          lufsI: analysis.lufsI,
+          dbtp: analysis.dbtp,
+          lra: analysis.lra,
+          rms: analysis.rms,
+          correlation: analysis.correlation,
+          voidlineScore: analysis.voidlineScore,
+          samplePeak: analysis.samplePeak,
+          crest: analysis.crest
+        });
+        
+        // Update the session ID in our analysis
+        analysis.sessionId = sessionId;
+        
+        console.log('Mastering session created:', sessionId);
+      } catch (error) {
+        console.warn('Failed to create mastering session:', error);
+      }
     } catch (error) {
       console.error('Analysis failed:', error);
 
@@ -241,6 +273,39 @@ export default function Landing() {
       setAnalysisProgress(100);
       setAudioAnalysis(fallbackAnalysis);
       setAnalysisComplete(true);
+      
+      // Create fallback mastering session
+      try {
+        const audioContext = new AudioContext();
+        const arrayBuffer = await file.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        
+        const { useMasteringStore } = await import('@/state/masteringStore');
+        const sessionId = useMasteringStore.getState().createSession({
+          name: fallbackAnalysis.fileName,
+          size: fallbackAnalysis.fileSize
+        }, audioBuffer);
+        
+        // Set fallback analysis data
+        useMasteringStore.getState().setAnalysis({
+          lufsI: fallbackAnalysis.lufsI,
+          dbtp: fallbackAnalysis.dbtp,
+          lra: fallbackAnalysis.lra,
+          rms: fallbackAnalysis.rms,
+          correlation: fallbackAnalysis.correlation,
+          samplePeak: fallbackAnalysis.samplePeak,
+          crest: fallbackAnalysis.crest
+        });
+        
+        // Update the session ID
+        fallbackAnalysis.sessionId = sessionId;
+        
+        console.log('Fallback mastering session created:', sessionId);
+      } catch (error) {
+        console.warn('Failed to create fallback mastering session:', error);
+        // Assign basic session ID if mastering store fails
+        fallbackAnalysis.sessionId = Math.random().toString(36).substring(7);
+      }
     } finally {
       setIsProcessing(false);
     }
