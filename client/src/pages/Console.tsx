@@ -469,7 +469,6 @@ export default function Console() {
             </div>
           </div>
         </motion.div>
-        </div>
       </header>
 
       <div className="mb-16">
