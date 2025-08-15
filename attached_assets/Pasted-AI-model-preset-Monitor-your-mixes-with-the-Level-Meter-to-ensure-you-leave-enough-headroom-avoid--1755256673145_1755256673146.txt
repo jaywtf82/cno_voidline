@@ -1,0 +1,29 @@
+AI model preset  Monitor your mixes with the Level Meter to ensure you leave enough headroom; avoid distortion when your music is uploaded to Spotify, iTunes, and TIDAL. Target specific integrated loudness levels using the Loudness Meter to prevent your tracks from being reduced in level or increased in level—and limited—by streaming services.
+
+￼
+  Streamlined A/B comparisons
+All the reference meters you need for mixing and mastering. Insert Metric AB on your master channel, key bind the “A/B” button, and quickly toggle between mixes using your keyboard.
+Instant loudness matching
+Drag and drop up to 16 reference tracks into Metric AB. Match the loudness of your mix and every reference track at once. There are four different loudness-matching modes to choose from. Eliminate loudness bias and conduct accurate A/B comparisons in seconds.
+Precise playback options
+Sync the playback of reference tracks with your DAW. Set cue markers to play references at the beginning of different song sections. Depending on your preference, select the Latch, Cue, Sync, or Manual playback mode to change the playback behavior of reference tracks.
+See the differences
+Get technical with multiple analysis modes: spectrum, correlation, stereo image, dynamics, and loudness (LUFS). Select from various graph options, including Plot, Octave, 3rd Octave, Critical, and Multi. View the A stream (blue) and B stream (orange) information individually, side by side, or layered together to pinpoint the smallest mix variances.
+Hear the differences
+Mastering meters are helpful for identifying technical mix discrepancies. Although, you should also use your ears to determine whether or not you need to make changes to your mix. Metric AB’s filter bank allows you to solo different frequency ranges and audition your audio with precision.
+ 
+￼
+￼
+  	•	ITU BS1770
+    * ITU BS1770-2
+    * ITU BS1770-3 only differs from ITU BS1770-2 by removing filters from the true peak level measurement that have been optional beforehand.
+* EBU R128 (Target Loudness: -23 LUFS +/-0.5 LUFS (+/-1 LUFS for live content), True Peak: -1dB). EBU also provides corresponding test signals.
+    * EBU TECH3341 defines how to measure momentary, short-term and integrated loudness based on ITU BS1770-2
+    * EBU TECH3342 defines how to measure loudness range (LRA) based on short-term loudness (using a relative gate of -20LU instead of -10LU) and taking the 10th and 95th percentile
+    * EBU TECH3343 describes the correction part of the loudness workflow (see chapter 4.4 and 6)
+    * EBU TECH3344 describes loudness metering usage in distribution systems
+    * EBU R128 s1 defines loudness measurement for short form content such as commercials
+* ATSC A/85 (Target Loudness: -24 LUFS +/-2 LUFS, True Peak: -2dB)
+* FreeTV OP59
+* ARIB TR-B32 
+* PRSS (National Public Radio)

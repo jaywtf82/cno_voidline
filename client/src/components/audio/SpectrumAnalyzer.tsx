@@ -5,16 +5,28 @@ interface SpectrumAnalyzerProps {
   audioFile?: File;
   isActive?: boolean;
   className?: string;
+  showChannels?: boolean;
+  mode?: 'instant' | 'peak' | 'average';
 }
 
-export function SpectrumAnalyzer({ audioFile, isActive = false, className = '' }: SpectrumAnalyzerProps) {
+export function SpectrumAnalyzer({ 
+  audioFile, 
+  isActive = false, 
+  className = '', 
+  showChannels = true,
+  mode = 'instant'
+}: SpectrumAnalyzerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const audioContextRef = useRef<AudioContext>();
-  const analyserRef = useRef<AnalyserNode>();
+  const analyserLeftRef = useRef<AnalyserNode>();
+  const analyserRightRef = useRef<AnalyserNode>();
   const sourceRef = useRef<AudioBufferSourceNode>();
+  const splitterRef = useRef<ChannelSplitterNode>();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [frequencyData, setFrequencyData] = useState<Uint8Array>(new Uint8Array(256));
+  const [leftChannelData, setLeftChannelData] = useState<Uint8Array>(new Uint8Array(512));
+  const [rightChannelData, setRightChannelData] = useState<Uint8Array>(new Uint8Array(512));
+  const [peakData, setPeakData] = useState<Float32Array>(new Float32Array(512));
 
   useEffect(() => {
     if (audioFile && isActive) {
@@ -36,10 +48,17 @@ export function SpectrumAnalyzer({ audioFile, isActive = false, className = '' }
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       const audioContext = audioContextRef.current;
       
-      // Create analyser
-      analyserRef.current = audioContext.createAnalyser();
-      analyserRef.current.fftSize = 512;
-      analyserRef.current.smoothingTimeConstant = 0.85;
+      // Create analysers for stereo channels
+      analyserLeftRef.current = audioContext.createAnalyser();
+      analyserRightRef.current = audioContext.createAnalyser();
+      
+      analyserLeftRef.current.fftSize = 1024;
+      analyserRightRef.current.fftSize = 1024;
+      analyserLeftRef.current.smoothingTimeConstant = 0.3;
+      analyserRightRef.current.smoothingTimeConstant = 0.3;
+      
+      // Create channel splitter
+      splitterRef.current = audioContext.createChannelSplitter(2);
       
       // Load and decode audio file
       const arrayBuffer = await audioFile.arrayBuffer();
@@ -48,8 +67,14 @@ export function SpectrumAnalyzer({ audioFile, isActive = false, className = '' }
       // Create source and connect
       sourceRef.current = audioContext.createBufferSource();
       sourceRef.current.buffer = audioBuffer;
-      sourceRef.current.connect(analyserRef.current);
-      analyserRef.current.connect(audioContext.destination);
+      
+      // Connect audio graph
+      sourceRef.current.connect(splitterRef.current);
+      splitterRef.current.connect(analyserLeftRef.current, 0);
+      splitterRef.current.connect(analyserRightRef.current, 1);
+      
+      // Connect to destination for playback
+      sourceRef.current.connect(audioContext.destination);
       
       // Start analysis loop
       startVisualization();
@@ -61,17 +86,22 @@ export function SpectrumAnalyzer({ audioFile, isActive = false, className = '' }
   };
 
   const startVisualization = () => {
-    if (!analyserRef.current) return;
+    if (!analyserLeftRef.current || !analyserRightRef.current) return;
     
-    const bufferLength = analyserRef.current.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
+    const bufferLength = analyserLeftRef.current.frequencyBinCount;
+    const leftData = new Uint8Array(bufferLength);
+    const rightData = new Uint8Array(bufferLength);
     
     const animate = () => {
-      if (!analyserRef.current || !canvasRef.current) return;
+      if (!analyserLeftRef.current || !analyserRightRef.current || !canvasRef.current) return;
       
-      analyserRef.current.getByteFrequencyData(dataArray);
-      setFrequencyData(new Uint8Array(dataArray));
-      drawSpectrum(dataArray);
+      analyserLeftRef.current.getByteFrequencyData(leftData);
+      analyserRightRef.current.getByteFrequencyData(rightData);
+      
+      setLeftChannelData(new Uint8Array(leftData));
+      setRightChannelData(new Uint8Array(rightData));
+      
+      drawProfessionalSpectrum(leftData, rightData);
       
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -79,7 +109,7 @@ export function SpectrumAnalyzer({ audioFile, isActive = false, className = '' }
     animate();
   };
 
-  const drawSpectrum = (dataArray: Uint8Array) => {
+  const drawProfessionalSpectrum = (leftData: Uint8Array, rightData: Uint8Array) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
@@ -89,58 +119,133 @@ export function SpectrumAnalyzer({ audioFile, isActive = false, className = '' }
     const width = canvas.width;
     const height = canvas.height;
     
-    // Clear canvas
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    // Clear canvas with dark background
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
     
-    // Draw spectrum bars
-    const barWidth = width / dataArray.length;
-    const barGap = 1;
+    // Draw professional grid
+    drawProfessionalGrid(ctx, width, height);
     
-    for (let i = 0; i < dataArray.length; i++) {
-      const barHeight = (dataArray[i] / 255) * height * 0.8;
-      const x = i * barWidth;
-      const y = height - barHeight;
-      
-      // Color based on frequency range
-      let hue = 120; // Green for low frequencies
-      if (i > dataArray.length * 0.3) hue = 60; // Yellow for mid
-      if (i > dataArray.length * 0.7) hue = 0; // Red for high
-      
-      const alpha = 0.3 + (dataArray[i] / 255) * 0.7;
-      ctx.fillStyle = `hsla(${hue}, 100%, 50%, ${alpha})`;
-      
-      // Draw bar with glow effect
-      ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
-      ctx.shadowBlur = 5;
-      ctx.fillRect(x, y, barWidth - barGap, barHeight);
-      ctx.shadowBlur = 0;
+    // Draw frequency response curves
+    if (showChannels) {
+      drawFrequencyResponse(ctx, leftData, width, height, '#00ffff', 'Left'); // Cyan for left
+      drawFrequencyResponse(ctx, rightData, width, height, '#ff8c00', 'Right'); // Orange for right
+    } else {
+      // Combine channels for mono display
+      const combinedData = new Uint8Array(leftData.length);
+      for (let i = 0; i < leftData.length; i++) {
+        combinedData[i] = Math.max(leftData[i], rightData[i]);
+      }
+      drawFrequencyResponse(ctx, combinedData, width, height, '#00ff7f', 'Average');
     }
     
-    // Draw frequency grid lines
-    ctx.strokeStyle = 'rgba(0, 255, 127, 0.1)';
+    // Draw frequency and dB labels
+    drawFrequencyLabels(ctx, width, height);
+  };
+  
+  const drawProfessionalGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = 'rgba(0, 255, 127, 0.15)';
     ctx.lineWidth = 1;
     
-    // Horizontal lines (dB levels)
-    for (let i = 1; i < 4; i++) {
-      const y = (height / 4) * i;
+    // Horizontal dB lines (-90, -60, -30, 0 dB)
+    const dbLevels = [-90, -60, -30, 0];
+    dbLevels.forEach(db => {
+      const y = height - ((db + 90) / 90) * height;
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
       ctx.stroke();
-    }
+      
+      // dB labels
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.font = '10px "Fira Code", monospace';
+      ctx.fillText(`${db} dB`, 5, y - 2);
+    });
     
-    // Vertical lines (frequency markers)
-    const freqMarkers = [100, 1000, 10000]; // Hz
-    const nyquist = 22050; // Assuming 44.1kHz sample rate
+    // Vertical frequency lines (logarithmic scale)
+    const freqMarkers = [10, 22, 47, 100, 220, 470, 1000, 2200, 4700, 10000, 22000];
+    const logScale = (freq: number) => {
+      const minLog = Math.log10(10);
+      const maxLog = Math.log10(22000);
+      return (Math.log10(freq) - minLog) / (maxLog - minLog) * width;
+    };
     
     freqMarkers.forEach(freq => {
-      const x = (freq / nyquist) * width;
-      if (x < width) {
+      const x = logScale(freq);
+      if (x >= 0 && x <= width) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
         ctx.stroke();
+      }
+    });
+  };
+  
+  const drawFrequencyResponse = (
+    ctx: CanvasRenderingContext2D, 
+    data: Uint8Array, 
+    width: number, 
+    height: number, 
+    color: string,
+    label: string
+  ) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 3;
+    
+    // Use logarithmic frequency scale
+    const logScale = (index: number) => {
+      const freq = (index / data.length) * 22050; // Assuming 44.1kHz sample rate
+      const minLog = Math.log10(10);
+      const maxLog = Math.log10(22000);
+      return Math.max(0, (Math.log10(Math.max(10, freq)) - minLog) / (maxLog - minLog) * width);
+    };
+    
+    ctx.beginPath();
+    
+    for (let i = 1; i < data.length / 2; i++) { // Only use first half (up to Nyquist)
+      const x = logScale(i);
+      const dbValue = data[i] > 0 ? 20 * Math.log10(data[i] / 255) : -90;
+      const y = height - ((dbValue + 90) / 90) * height;
+      
+      if (i === 1) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    // Add filled area under curve with transparency
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = color;
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  };
+  
+  const drawFrequencyLabels = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.font = '10px "Fira Code", monospace';
+    
+    const freqLabels = [10, 22, 47, 100, 220, 470, 1000, 2200, 4700, 10000, 22000];
+    const logScale = (freq: number) => {
+      const minLog = Math.log10(10);
+      const maxLog = Math.log10(22000);
+      return (Math.log10(freq) - minLog) / (maxLog - minLog) * width;
+    };
+    
+    freqLabels.forEach(freq => {
+      const x = logScale(freq);
+      if (x >= 30 && x <= width - 30) {
+        const label = freq >= 1000 ? `${freq / 1000}k` : `${freq}`;
+        const textWidth = ctx.measureText(label).width;
+        ctx.fillText(label, x - textWidth / 2, height - 5);
       }
     });
   };
@@ -159,66 +264,151 @@ export function SpectrumAnalyzer({ audioFile, isActive = false, className = '' }
     setIsAnalyzing(false);
   };
 
-  // Fallback visualization when no audio
-  const generateFallbackData = () => {
-    return Array.from({ length: 32 }, (_, i) => {
-      const base = Math.sin(Date.now() * 0.001 + i * 0.2) * 50 + 50;
-      const noise = Math.random() * 20;
-      return Math.max(10, Math.min(90, base + noise));
+  // Professional fallback visualization
+  const generateProfessionalFallbackData = () => {
+    const time = Date.now() * 0.001;
+    return Array.from({ length: 512 }, (_, i) => {
+      const freq = (i / 512) * 22050;
+      let amplitude = 0;
+      
+      // Simulate realistic frequency response
+      if (freq < 60) {
+        amplitude = 30 + Math.sin(time + i * 0.1) * 15; // Low frequencies
+      } else if (freq < 250) {
+        amplitude = 60 + Math.sin(time * 0.8 + i * 0.05) * 20; // Low-mid
+      } else if (freq < 2000) {
+        amplitude = 80 + Math.sin(time * 1.2 + i * 0.03) * 25; // Mid frequencies
+      } else if (freq < 8000) {
+        amplitude = 65 + Math.sin(time * 0.6 + i * 0.02) * 20; // High-mid
+      } else {
+        amplitude = 40 + Math.sin(time * 0.4 + i * 0.01) * 15; // High frequencies
+      }
+      
+      return Math.max(5, Math.min(255, amplitude + Math.random() * 10));
     });
   };
 
-  const fallbackData = generateFallbackData();
+  const fallbackLeftData = generateProfessionalFallbackData();
+  const fallbackRightData = generateProfessionalFallbackData().map(v => v * 0.9 + Math.random() * 10);
+
+  // Update canvas when data changes
+  useEffect(() => {
+    if (!isAnalyzing) {
+      // Draw fallback data
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          drawProfessionalSpectrum(
+            new Uint8Array(fallbackLeftData), 
+            new Uint8Array(fallbackRightData)
+          );
+        }
+      }
+    }
+  }, [isAnalyzing]);
 
   return (
     <div className={`relative ${className}`}>
-      <div className="absolute inset-0 bg-black/50 border border-accent-primary/30 rounded p-4">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-mono text-sm text-accent-primary">Spectrum Analyzer</h4>
-          <div className="text-xs font-mono text-text-muted">
-            {isAnalyzing ? 'LIVE' : 'DEMO'}
+      <div className="bg-black/90 border border-cyan-500/30 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <h4 className="font-mono text-sm text-cyan-400 font-bold tracking-wider">SPECTRUM ANALYZER</h4>
+            <div className="flex items-center space-x-2 text-xs font-mono">
+              <button 
+                className={`px-2 py-1 rounded text-xs ${
+                  mode === 'instant' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                }`}
+              >
+                Instant
+              </button>
+              <button 
+                className={`px-2 py-1 rounded text-xs ${
+                  mode === 'peak' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                }`}
+              >
+                Peak
+              </button>
+              <button 
+                className={`px-2 py-1 rounded text-xs ${
+                  mode === 'average' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                }`}
+              >
+                Average
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            {showChannels && (
+              <div className="flex items-center space-x-3 text-xs font-mono">
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                  <span className="text-cyan-400">Left</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                  <span className="text-orange-400">Right</span>
+                </div>
+              </div>
+            )}
+            <div className="text-xs font-mono text-cyan-400/60">
+              {isAnalyzing ? 'LIVE' : 'DEMO'}
+            </div>
           </div>
         </div>
         
-        {/* Real-time canvas */}
-        <canvas
-          ref={canvasRef}
-          width={400}
-          height={120}
-          className="w-full h-full"
-          style={{ 
-            background: 'transparent',
-            imageRendering: 'pixelated'
-          }}
-        />
-        
-        {/* Fallback visualization */}
-        {!isAnalyzing && (
-          <div className="absolute inset-4 top-8 flex items-end space-x-1">
-            {fallbackData.map((height, i) => (
-              <motion.div
-                key={i}
-                className="bg-accent-primary/60 flex-1 rounded-t"
-                style={{ height: `${height}%` }}
-                animate={{ 
-                  height: `${height + Math.sin(Date.now() * 0.002 + i * 0.3) * 10}%`,
-                  opacity: [0.4, 0.8, 0.4]
-                }}
-                transition={{ 
-                  duration: 2,
-                  repeat: Infinity,
-                  delay: i * 0.1
-                }}
-              />
-            ))}
+        {/* Professional spectrum canvas */}
+        <div className="bg-black border border-cyan-500/20 rounded relative">
+          <canvas
+            ref={canvasRef}
+            width={800}
+            height={300}
+            className="w-full"
+            style={{ 
+              height: '300px',
+              imageRendering: 'crisp-edges'
+            }}
+          />
+          
+          {/* Channel display controls */}
+          <div className="absolute top-2 right-2 flex items-center space-x-2">
+            <button 
+              className="text-xs font-mono text-cyan-400/60 hover:text-cyan-400"
+              onClick={() => {}}
+            >
+              ⊡ Left
+            </button>
+            <button 
+              className="text-xs font-mono text-orange-400/60 hover:text-orange-400"
+              onClick={() => {}}
+            >
+              ⊡ Right
+            </button>
+            <button 
+              className="text-xs font-mono text-emerald-400/60 hover:text-emerald-400"
+              onClick={() => {}}
+            >
+              ⊡ Max
+            </button>
+            <button 
+              className="text-xs font-mono text-yellow-400/60 hover:text-yellow-400"
+              onClick={() => {}}
+            >
+              ⊡ Average
+            </button>
           </div>
-        )}
+        </div>
         
-        {/* Frequency labels */}
-        <div className="absolute bottom-1 left-4 right-4 flex justify-between text-xs font-mono text-text-muted">
-          <span>20Hz</span>
-          <span>1kHz</span>
-          <span>20kHz</span>
+        {/* Analysis status */}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-cyan-500/20">
+          <div className="flex items-center space-x-4 text-xs font-mono">
+            <span className="text-cyan-400">FFT: 1024</span>
+            <span className="text-cyan-400">Window: Hann</span>
+            <span className="text-cyan-400">Overlap: 75%</span>
+          </div>
+          <div className="text-xs font-mono text-cyan-400/60">
+            {isAnalyzing ? 'Real-time Analysis' : 'Demo Mode'}
+          </div>
         </div>
       </div>
     </div>

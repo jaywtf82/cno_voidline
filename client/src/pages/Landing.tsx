@@ -22,13 +22,15 @@ import { SpectrumAnalyzer } from "@/components/audio/SpectrumAnalyzer";
 import { WaveformComparison } from "@/components/audio/WaveformComparison";
 import { OptimizedAudioProcessor } from "@/lib/audio/optimizedAudioProcessor";
 import { useLocation } from "wouter";
+import { AnalysisProgress } from "@/components/audio/AnalysisProgress";
+import { LiveSystemFeed } from "@/components/system/LiveSystemFeed";
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [glitchTrigger, setGlitchTrigger] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
 
   // Mock audio parameters with animated values
@@ -98,8 +100,7 @@ export default function Landing() {
 
   const handleLogin = async () => {
     try {
-      await login();
-      navigate('/console');
+      window.location.href = '/api/login';
     } catch (error) {
       console.error('Login failed:', error);
     }
@@ -275,7 +276,39 @@ export default function Landing() {
             </div>
           </TerminalWindow>
 
-          {/* System Status */}
+          {/* Analysis Progress and Live System Feed */}
+          {isProcessing && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <AnalysisProgress 
+                isAnalyzing={isProcessing}
+                progress={analysisProgress}
+                currentStage="Analyzing audio spectrum..."
+              />
+              <LiveSystemFeed isActive={isProcessing} />
+            </div>
+          )}
+          
+          {/* Audio Analysis Results */}
+          {analysisComplete && audioAnalysis && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="space-y-6">
+                <SpectrumAnalyzer 
+                  audioFile={selectedFile || undefined}
+                  isActive={isPlaying}
+                  showChannels={true}
+                  mode="instant"
+                />
+              </div>
+              <div className="space-y-6">
+                <WaveformComparison 
+                  originalFile={selectedFile || undefined}
+                  isProcessing={false}
+                  showChannels={true}
+                />
+                <LiveSystemFeed isActive={true} />
+              </div>
+            </div>
+          )}
 
         </motion.div>
 
@@ -424,91 +457,6 @@ export default function Landing() {
           </motion.div>
         </div>
 
-        {/* Pricing Section */}
-        <motion.div 
-          className="mb-16"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          <div className="text-center mb-12">
-            <div className="text-2xl font-mono font-bold mb-4" style={{ color: 'var(--color-accent)' }}>
-              $ Transmission Pricing
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Payload Plan */}
-            <div className="terminal-window p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-mono font-bold mb-2">Payload</h3>
-                <div className="text-sm text-gray-400">15 Day Free Trial</div>
-              </div>
-
-              <div className="text-4xl font-mono font-bold mb-6">Free</div>
-
-              <div className="space-y-3 mb-8 font-mono text-sm">
-                <div>&gt; 3 AI Masters</div>
-                <div>&gt; WAV & MP3 Exports</div>
-                <div>&gt; Standard Delivery</div>
-              </div>
-
-              <button className="btn btn-secondary w-full">
-                Start Trial
-              </button>
-            </div>
-
-            {/* Orbital Pack - Most Popular */}
-            <div className="terminal-window p-6 relative">
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <span className="bg-green-500 text-black px-3 py-1 rounded text-xs font-mono font-bold">
-                  MOST POPULAR
-                </span>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="text-lg font-mono font-bold mb-2">Orbital Pack</h3>
-                <div className="text-sm text-gray-400">Ideal for EPs and albums, providing better value.</div>
-              </div>
-
-              <div className="text-4xl font-mono font-bold mb-2">₹ 599</div>
-              <div className="text-sm text-gray-400 mb-6">/ month</div>
-
-              <div className="space-y-3 mb-8 font-mono text-sm">
-                <div>&gt; 15 AI Masters / month</div>
-                <div>&gt; All Formats (WAV, MP3, FLAC)</div>
-                <div>&gt; Priority Queue</div>
-                <div>&gt; Reference Tracks</div>
-              </div>
-
-              <button className="btn btn-primary w-full">
-                Select Plan
-              </button>
-            </div>
-
-            {/* Voidline Unlimited */}
-            <div className="terminal-window p-6">
-              <div className="mb-4">
-                <h3 className="text-lg font-mono font-bold mb-2">Voidline Unlimited</h3>
-                <div className="text-sm text-gray-400">For the prolific producer and professional studios.</div>
-              </div>
-
-              <div className="text-4xl font-mono font-bold mb-2">₹ 999</div>
-              <div className="text-sm text-gray-400 mb-6">/ year</div>
-
-              <div className="space-y-3 mb-8 font-mono text-sm">
-                <div>&gt; Unlimited AI Masters</div>
-                <div>&gt; All Formats &amp; Features</div>
-                <div>&gt; Highest Priority Access</div>
-                <div>&gt; Dedicated Support Channel</div>
-              </div>
-
-              <button className="btn btn-secondary w-full">
-                Select Plan
-              </button>
-            </div>
-          </div>
-        </motion.div>
 
         {/* Footer */}
         <div className="border-t pt-8 text-center font-mono text-sm text-gray-400" 

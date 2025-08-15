@@ -22,6 +22,10 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { useAudioStore } from "@/lib/stores/audioStore";
 import { usePresetStore } from "@/lib/stores/presetStore";
 import { AudioEngine } from "@/modules/audio/AudioEngine";
+import { SpectrumAnalyzer } from "@/components/audio/SpectrumAnalyzer";
+import { WaveformComparison } from "@/components/audio/WaveformComparison";
+import { AnalysisProgress } from "@/components/audio/AnalysisProgress";
+import { LiveSystemFeed } from "@/components/system/LiveSystemFeed";
 import type { Preset, ExportFormatType, AnalysisResults, PresetParameters } from "@shared/schema";
 
 export default function Console() {
@@ -402,6 +406,31 @@ export default function Console() {
           {/* Main Console Grid */}
           {audioFile && (
             <>
+              {/* Professional Audio Analysis Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                {/* Spectrum Analyzer */}
+                <div className="lg:col-span-2">
+                  <SpectrumAnalyzer 
+                    audioFile={audioFile}
+                    isActive={isPlaying}
+                    showChannels={true}
+                    mode="instant"
+                  />
+                </div>
+                
+                {/* Live System Feed */}
+                <LiveSystemFeed isActive={isPlaying} />
+              </div>
+              
+              {/* Waveform Analysis */}
+              <div className="mb-8">
+                <WaveformComparison 
+                  originalFile={audioFile}
+                  isProcessing={analyzeAudioMutation.isPending}
+                  showChannels={true}
+                />
+              </div>
+
               {/* Playback Controls */}
               <div className="flex justify-center mb-8">
                 <Button
@@ -544,13 +573,19 @@ export default function Console() {
                 
                 {!presetsLoading && presetsData && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {presetsData.builtIn?.slice(0, 3).map((preset: Preset) => (
-                      <PresetTile
-                        key={preset.id}
-                        preset={preset}
-                        onApply={handleApplyPreset}
-                      />
-                    ))}
+                    {(presetsData as any)?.builtIn && Array.isArray((presetsData as any).builtIn) ? 
+                      (presetsData as any).builtIn.slice(0, 3).map((preset: Preset) => (
+                        <PresetTile
+                          key={preset.id}
+                          preset={preset}
+                          onApply={handleApplyPreset}
+                        />
+                      )) : (
+                        <div className="col-span-3 text-center text-gray-400 font-mono text-sm">
+                          No presets available
+                        </div>
+                      )
+                    }
                   </div>
                 )}
               </div>

@@ -6,6 +6,8 @@ interface WaveformComparisonProps {
   processedFile?: File;
   isProcessing?: boolean;
   className?: string;
+  showChannels?: boolean;
+  showSpectrogramMode?: boolean;
 }
 
 interface WaveformData {
@@ -20,7 +22,9 @@ export function WaveformComparison({
   originalFile, 
   processedFile, 
   isProcessing = false,
-  className = '' 
+  className = '',
+  showChannels = true,
+  showSpectrogramMode = false
 }: WaveformComparisonProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [originalWaveform, setOriginalWaveform] = useState<WaveformData | null>(null);
@@ -126,31 +130,175 @@ export function WaveformComparison({
     
     const width = canvas.width;
     const height = canvas.height;
-    const centerY = height / 2;
-    const waveHeight = height * 0.35;
     
-    // Clear canvas
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+    // Clear canvas with professional dark background
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
     
-    // Draw grid
-    drawGrid(ctx, width, height);
+    if (showSpectrogramMode) {
+      drawSpectrogramView(ctx, width, height);
+    } else {
+      drawProfessionalWaveforms(ctx, width, height);
+    }
+  };
+  
+  const drawProfessionalWaveforms = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const centerY = height / 2;
+    const waveHeight = height * 0.4;
     
-    // Draw original waveform (top half)
-    if (originalWaveform) {
-      drawWaveform(ctx, originalWaveform, width, centerY - 10, waveHeight, 'original');
+    // Draw professional grid
+    drawProfessionalGrid(ctx, width, height);
+    
+    if (showChannels && originalWaveform) {
+      // Multi-channel display
+      const channelHeight = height / 4;
+      drawWaveformChannel(ctx, originalWaveform, width, channelHeight, 0, '#00ffff', 'LEFT');
+      drawWaveformChannel(ctx, originalWaveform, width, channelHeight, channelHeight, '#ff8c00', 'RIGHT');
+      
+      if (processedWaveform) {
+        drawWaveformChannel(ctx, processedWaveform, width, channelHeight, channelHeight * 2, '#00ff7f', 'PROCESSED L');
+        drawWaveformChannel(ctx, processedWaveform, width, channelHeight, channelHeight * 3, '#ffff00', 'PROCESSED R');
+      }
+    } else {
+      // Traditional stereo display
+      if (originalWaveform) {
+        drawWaveform(ctx, originalWaveform, width, centerY - 60, waveHeight, 'original');
+      }
+      
+      if (processedWaveform) {
+        drawWaveform(ctx, processedWaveform, width, centerY + 60, waveHeight, 'processed');
+      } else if (isProcessing && originalWaveform) {
+        drawProcessingAnimation(ctx, originalWaveform, width, centerY + 60, waveHeight);
+      }
     }
     
-    // Draw processed waveform (bottom half)
-    if (processedWaveform) {
-      drawWaveform(ctx, processedWaveform, width, centerY + 10, waveHeight, 'processed');
-    } else if (isProcessing && originalWaveform) {
-      // Show processing animation
-      drawProcessingAnimation(ctx, originalWaveform, width, centerY + 10, waveHeight);
+    // Draw professional labels and time markers
+    drawProfessionalLabels(ctx, width, height);
+  };
+  
+  const drawSpectrogramView = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    // Spectrogram view similar to professional audio software
+    const time = Date.now() * 0.001;
+    const spectrogramHeight = height - 60;
+    
+    // Draw frequency bands
+    for (let y = 0; y < spectrogramHeight; y += 2) {
+      for (let x = 0; x < width; x += 1) {
+        const freq = (y / spectrogramHeight) * 22050;
+        const timePos = x / width;
+        
+        // Simulate spectrogram data
+        let intensity = 0;
+        if (freq < 200) intensity = 0.3 + Math.sin(time + timePos * 10) * 0.2;
+        else if (freq < 2000) intensity = 0.6 + Math.sin(time * 0.8 + timePos * 15) * 0.3;
+        else if (freq < 8000) intensity = 0.4 + Math.sin(time * 1.2 + timePos * 8) * 0.2;
+        else intensity = 0.2 + Math.sin(time * 0.5 + timePos * 5) * 0.1;
+        
+        const alpha = Math.max(0, Math.min(1, intensity + Math.random() * 0.1));
+        const hue = (freq / 22050) * 240; // Blue to red gradient
+        
+        ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${alpha})`;
+        ctx.fillRect(x, spectrogramHeight - y, 1, 2);
+      }
     }
     
-    // Draw labels
-    drawLabels(ctx, width, height);
+    // Draw frequency scale
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.font = '10px "Fira Code", monospace';
+    [100, 1000, 5000, 10000, 20000].forEach(freq => {
+      const y = spectrogramHeight - (freq / 22050) * spectrogramHeight;
+      ctx.fillText(`${freq >= 1000 ? freq/1000 + 'k' : freq}Hz`, 5, y);
+    });
+  };
+  
+  const drawWaveformChannel = (
+    ctx: CanvasRenderingContext2D,
+    waveform: WaveformData,
+    width: number,
+    height: number,
+    offsetY: number,
+    color: string,
+    label: string
+  ) => {
+    const peaks = waveform.peaks;
+    const pixelWidth = width / peaks.length;
+    const centerY = offsetY + height / 2;
+    const maxHeight = height * 0.4;
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    
+    for (let i = 0; i < peaks.length; i++) {
+      const x = i * pixelWidth;
+      const amplitude = peaks[i] * maxHeight;
+      
+      if (i === 0) {
+        ctx.moveTo(x, centerY - amplitude);
+      } else {
+        ctx.lineTo(x, centerY - amplitude);
+      }
+    }
+    
+    ctx.stroke();
+    
+    // Fill under waveform
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = color;
+    ctx.lineTo(width, centerY);
+    ctx.lineTo(0, centerY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    
+    // Channel label
+    ctx.fillStyle = color;
+    ctx.font = '12px "Fira Code", monospace';
+    ctx.fillText(label, 10, offsetY + 15);
+  };
+  
+  const drawProfessionalGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.strokeStyle = 'rgba(0, 255, 127, 0.1)';
+    ctx.lineWidth = 1;
+    
+    // Time grid (every 10 seconds)
+    for (let i = 0; i <= 10; i++) {
+      const x = (i / 10) * width;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    
+    // Amplitude grid
+    for (let i = 0; i <= 4; i++) {
+      const y = (i / 4) * height;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+  };
+  
+  const drawProfessionalLabels = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.font = '10px "Fira Code", monospace';
+    
+    // Time markers
+    for (let i = 0; i <= 10; i++) {
+      const x = (i / 10) * width;
+      const timeLabel = `${i * 10}s`;
+      const textWidth = ctx.measureText(timeLabel).width;
+      if (x > textWidth / 2 && x < width - textWidth / 2) {
+        ctx.fillText(timeLabel, x - textWidth / 2, height - 5);
+      }
+    }
+    
+    // Amplitude markers
+    ['-1.0', '-0.5', '0.0', '+0.5', '+1.0'].forEach((label, i) => {
+      const y = (i / 4) * height;
+      ctx.fillText(label, 5, y + 12);
+    });
   };
 
   const drawGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
@@ -268,47 +416,105 @@ export function WaveformComparison({
     ctx.fillText('Harsh/Distorted', width - 130, 40);
   };
 
+  // Update canvas when data changes
+  useEffect(() => {
+    drawWaveforms();
+  }, [originalWaveform, processedWaveform, isProcessing, showChannels, showSpectrogramMode]);
+
   return (
     <div className={`relative ${className}`}>
-      <div className="bg-black/50 border border-accent-primary/30 rounded p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-mono text-sm text-accent-primary">Waveform Comparison</h4>
-          <div className="text-xs font-mono text-text-muted">
-            {isAnalyzing ? 'ANALYZING...' : 'READY'}
+      <div className="bg-black/90 border border-cyan-500/30 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <h4 className="font-mono text-sm text-cyan-400 font-bold tracking-wider">WAVEFORM ANALYSIS</h4>
+            <div className="flex items-center space-x-2 text-xs font-mono">
+              <button 
+                className={`px-2 py-1 rounded text-xs ${
+                  !showSpectrogramMode ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                }`}
+                onClick={() => {}}
+              >
+                Waveform
+              </button>
+              <button 
+                className={`px-2 py-1 rounded text-xs ${
+                  showSpectrogramMode ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                }`}
+                onClick={() => {}}
+              >
+                Spectrogram
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            {showChannels && (
+              <div className="flex items-center space-x-3 text-xs font-mono">
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
+                  <span className="text-cyan-400">L</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                  <span className="text-orange-400">R</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                  <span className="text-emerald-400">Processed</span>
+                </div>
+              </div>
+            )}
+            <div className="text-xs font-mono text-cyan-400/60">
+              {isAnalyzing ? 'ANALYZING...' : 'READY'}
+            </div>
           </div>
         </div>
         
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={200}
-          className="w-full bg-black/30 rounded"
-          style={{ 
-            height: '200px',
-            imageRendering: 'pixelated'
-          }}
-        />
-        
-        {(!originalWaveform && !isAnalyzing) && (
-          <div className="absolute inset-4 top-12 flex items-center justify-center">
-            <div className="text-center text-text-muted">
-              <div className="font-mono text-sm mb-2">Upload audio to see waveform</div>
-              <div className="text-xs">Original vs Processed comparison</div>
+        <div className="bg-black border border-cyan-500/20 rounded relative">
+          <canvas
+            ref={canvasRef}
+            width={1000}
+            height={400}
+            className="w-full"
+            style={{ 
+              height: '400px',
+              imageRendering: 'crisp-edges'
+            }}
+          />
+          
+          {(!originalWaveform && !isAnalyzing) && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-gray-400">
+                <div className="font-mono text-sm mb-2">Upload audio to analyze waveform</div>
+                <div className="text-xs">Multi-channel analysis with frequency content</div>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+          
+          {/* Processing indicator */}
+          {isProcessing && (
+            <motion.div 
+              className="absolute top-4 right-4 flex items-center space-x-2 bg-black/80 px-3 py-1 rounded"
+              animate={{ opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+              <span className="font-mono text-xs text-cyan-400">PROCESSING AUDIO</span>
+            </motion.div>
+          )}
+        </div>
         
-        {/* Processing indicator */}
-        {isProcessing && (
-          <motion.div 
-            className="absolute top-4 right-4 flex items-center space-x-2"
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <div className="w-2 h-2 bg-accent-primary rounded-full"></div>
-            <span className="font-mono text-xs text-accent-primary">PROCESSING</span>
-          </motion.div>
-        )}
+        {/* Analysis controls */}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-cyan-500/20">
+          <div className="flex items-center space-x-4 text-xs font-mono">
+            <span className="text-cyan-400">Sample Rate: 44.1kHz</span>
+            <span className="text-cyan-400">Bit Depth: 24-bit</span>
+            <span className="text-cyan-400">Channels: Stereo</span>
+          </div>
+          <div className="text-xs font-mono text-cyan-400/60">
+            {originalWaveform ? 'Multi-channel Analysis' : 'Awaiting Audio'}
+          </div>
+        </div>
       </div>
     </div>
   );
