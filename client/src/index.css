@@ -5,7 +5,7 @@
 @import './styles/voidline-skin.css';
 @import './styles/overlays.css';
 @import './styles/layout.css';
-
+@import './styles/responsive-grid.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

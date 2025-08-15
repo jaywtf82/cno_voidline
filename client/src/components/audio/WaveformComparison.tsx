@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { attachHiDPICanvas } from "@/lib/ui/resizeCanvas";
 import { motion } from 'framer-motion';
 
 interface WaveformComparisonProps {
@@ -27,6 +28,11 @@ export function WaveformComparison({
   showSpectrogramMode = false
 }: WaveformComparisonProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const detach = attachHiDPICanvas(canvasRef.current);
+    return detach;
+  }, []);
   const [originalWaveform, setOriginalWaveform] = useState<WaveformData | null>(null);
   const [processedWaveform, setProcessedWaveform] = useState<WaveformData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -613,14 +619,12 @@ export function WaveformComparison({
           </div>
         </div>
         
-        <div className="bg-black border border-cyan-500/20 rounded relative">
+        <div className="bg-black border border-cyan-500/20 rounded relative visual" style={{ ['--visual-h' as any]:'400px' }}>
           <canvas
             ref={canvasRef}
-            width={1000}
-            height={400}
             className="w-full"
             style={{ 
-              height: '400px',
+              height: '100%',
               imageRendering: 'crisp-edges'
             }}
           />

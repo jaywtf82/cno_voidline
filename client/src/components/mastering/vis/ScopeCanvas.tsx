@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { attachHiDPICanvas } from "@/lib/ui/resizeCanvas";
 
 interface ScopeCanvasProps {
   width: number;
@@ -17,6 +18,11 @@ export function ScopeCanvas({ width, height, isActive }: ScopeCanvasProps) {
     left: new Array(256).fill(0),
     right: new Array(256).fill(0)
   });
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const detach = attachHiDPICanvas(canvasRef.current);
+    return detach;
+  }, []);
   
   // Generate realistic stereo scope data
   const generateScopeData = () => {
@@ -51,6 +57,9 @@ export function ScopeCanvas({ width, height, isActive }: ScopeCanvasProps) {
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
     
     // Clear canvas
     ctx.fillStyle = 'rgba(10, 10, 10, 1)';
@@ -194,10 +203,9 @@ export function ScopeCanvas({ width, height, isActive }: ScopeCanvasProps) {
   
   return (
     <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      className="border border-terminal-border rounded-md bg-terminal-bg"
-    />
+        ref={canvasRef}
+        className="border border-terminal-border rounded-md bg-terminal-bg"
+        style={{ width, height }}
+      />
   );
 }

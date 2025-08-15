@@ -19,7 +19,7 @@ export function AppShell({ children, className = '' }: AppShellProps) {
       <AppHeader />
       
       {/* Main content area */}
-      <main className={`relative ${className}`}>
+      <main className={`app-main relative ${className}`}>
         {children}
       </main>
       

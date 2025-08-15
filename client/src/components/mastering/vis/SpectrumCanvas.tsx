@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { attachHiDPICanvas } from "@/lib/ui/resizeCanvas";
 
 interface SpectrumCanvasProps {
   width: number;
@@ -14,6 +15,11 @@ export function SpectrumCanvas({ width, height, isActive }: SpectrumCanvasProps)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const [spectrumData, setSpectrumData] = useState<Float32Array>(new Float32Array(512));
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const detach = attachHiDPICanvas(canvasRef.current);
+    return detach;
+  }, []);
   
   // Generate realistic spectrum data
   const generateSpectrumData = (): Float32Array => {
@@ -48,6 +54,9 @@ export function SpectrumCanvas({ width, height, isActive }: SpectrumCanvasProps)
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
     
     // Clear canvas
     ctx.fillStyle = 'rgba(10, 10, 10, 1)';
@@ -164,10 +173,9 @@ export function SpectrumCanvas({ width, height, isActive }: SpectrumCanvasProps)
   
   return (
     <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      className="border border-terminal-border rounded-md bg-terminal-bg"
-    />
+        ref={canvasRef}
+        className="border border-terminal-border rounded-md bg-terminal-bg"
+        style={{ width, height }}
+      />
   );
 }

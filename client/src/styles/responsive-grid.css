@@ -1,0 +1,54 @@
+/* Global safety nets */
+* { min-width: 0; } /* prevent flex/grid overflow */
+img, canvas, svg, video { max-width: 100%; height: auto; display: block; }
+[data-scroll] { overflow: auto; overscroll-behavior: contain; }
+
+/* Auto grid: fills rows with equal-width cards, wraps gracefully */
+.auto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-min, 280px), 1fr));
+  gap: var(--gap, 1rem);
+  align-items: stretch;
+}
+
+/* Dense packing for varied sizes (never overlaps) */
+.auto-grid.dense { grid-auto-flow: row dense; }
+
+/* Card: flex column so headers/footers pin; content grows safely */
+.card {
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, transparent), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px var(--shadow);
+  min-height: var(--card-min-h, 220px); /* stable height floor to avoid jank */
+}
+
+.card__hd { padding: .9rem 1rem; border-bottom: 1px solid var(--border); display:flex; gap:.6rem; align-items:center; }
+.card__bd { padding: 1rem; flex: 1 1 auto; contain: content; } /* contain isolates paints/layout */
+.card__ft { padding: .75rem 1rem; border-top: 1px solid var(--border); }
+
+/* Live visual containers reserve space (no layout shift) */
+.visual { position: relative; height: var(--visual-h, 240px); }
+.visual.is-small { --visual-h: 160px; }
+.visual.is-tall  { --visual-h: 320px; }
+
+/* Canvas fills container; high-DPI controlled via JS ResizeObserver */
+.visual > canvas, .visual > svg { position:absolute; inset:0; width:100%; height:100%; }
+
+/* Metric rows that can grow shrink without breaking alignment */
+.row { display:flex; flex-wrap: wrap; gap:.5rem 1rem; }
+.row > * { flex: 1 1 160px; min-width: 140px; }
+
+/* Truncation utilities */
+.trunc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.break { word-wrap: break-word; overflow-wrap: anywhere; }
+
+/* Masonry-like fallback for uneven heights (keeps alignment tidy) */
+.masonry { column-width: var(--col, 320px); column-gap: var(--gap, 1rem); }
+.masonry > .card { break-inside: avoid; margin: 0 0 var(--gap, 1rem); }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

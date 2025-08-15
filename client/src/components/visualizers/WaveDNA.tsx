@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { attachHiDPICanvas } from "@/lib/ui/resizeCanvas";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -169,22 +170,11 @@ export function WaveDNA({
   };
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    // Set canvas size
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    }
-
+    if (!canvasRef.current) return;
+    const detach = attachHiDPICanvas(canvasRef.current);
     draw();
-
     return () => {
+      detach();
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
