@@ -32,22 +32,23 @@ interface AnalysisData {
 }
 
 interface PersistentAnalysisCardProps {
-  analysisId: string;
+  analysisId?: string;
+  analysisData?: AnalysisData;
   className?: string;
 }
 
-export function PersistentAnalysisCard({ analysisId, className = '' }: PersistentAnalysisCardProps) {
+export function PersistentAnalysisCard({ analysisId, analysisData, className = '' }: PersistentAnalysisCardProps) {
   const [, navigate] = useLocation();
   const getAnalysis = useAudioStore((state) => state.getAnalysis);
   
-  const analysis = getAnalysis(analysisId);
+  const analysis = analysisData || (analysisId ? getAnalysis(analysisId) : null);
 
   if (!analysis) {
     return null;
   }
 
   const handleStartMastering = () => {
-    navigate(`/mastering?id=${analysisId}`);
+    navigate(`/mastering?id=${analysis?.id || analysisId || 'current_analysis'}`);
   };
 
   return (
@@ -57,14 +58,14 @@ export function PersistentAnalysisCard({ analysisId, className = '' }: Persisten
       transition={{ duration: 0.6 }}
       className={`w-full ${className}`}
     >
-      <Card className="bg-black/90 border-cyan-500/30 p-6">
+      <Card className="bg-black/90 border-green-500/30 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-mono text-lg text-cyan-400 font-bold tracking-wider">
+          <h3 className="font-mono text-lg text-green-400 font-bold tracking-wider">
             {analysis.id} — TECHNICAL ANALYSIS
           </h3>
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-            <span className="font-mono text-xs text-cyan-400">PERSISTENT</span>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="font-mono text-xs text-green-400">PERSISTENT</span>
           </div>
         </div>
 
@@ -110,7 +111,7 @@ export function PersistentAnalysisCard({ analysisId, className = '' }: Persisten
 
         {/* Band energy analysis */}
         <div className="mb-6">
-          <h4 className="font-mono text-sm text-cyan-400 mb-3">Relative band energy (dB; 0 = loudest band):</h4>
+          <h4 className="font-mono text-sm text-green-400 mb-3">Relative band energy (dB; 0 = loudest band):</h4>
           <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono text-sm">
               <div className="flex justify-between">
@@ -147,12 +148,12 @@ export function PersistentAnalysisCard({ analysisId, className = '' }: Persisten
 
         {/* Mix notes */}
         <div className="mb-6">
-          <h4 className="font-mono text-sm text-cyan-400 mb-3">Mix notes:</h4>
+          <h4 className="font-mono text-sm text-green-400 mb-3">Mix notes:</h4>
           <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
             <ul className="space-y-2 text-sm text-gray-300">
               {analysis.mix_notes.map((note, index) => (
                 <li key={index} className="flex items-start">
-                  <span className="text-cyan-400 mr-2">-</span>
+                  <span className="text-green-400 mr-2">-</span>
                   <span className="flex-1">{note}</span>
                 </li>
               ))}
@@ -162,7 +163,7 @@ export function PersistentAnalysisCard({ analysisId, className = '' }: Persisten
 
         {/* Targets */}
         <div className="mb-6">
-          <h4 className="font-mono text-sm text-cyan-400 mb-3">Targets:</h4>
+          <h4 className="font-mono text-sm text-green-400 mb-3">Targets:</h4>
           <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-sm">
               <div>
@@ -185,7 +186,7 @@ export function PersistentAnalysisCard({ analysisId, className = '' }: Persisten
         <div className="flex justify-end">
           <Button
             onClick={handleStartMastering}
-            className="bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-mono font-bold px-6 py-2 rounded-lg transition-all duration-300 shadow-lg shadow-cyan-500/25"
+            className="bg-gradient-to-r from-green-500 to-green-400 hover:from-green-400 hover:to-green-300 text-black font-mono font-bold px-6 py-2 rounded-lg transition-all duration-300 shadow-lg shadow-green-500/25"
           >
             Start Mastering Session
           </Button>
