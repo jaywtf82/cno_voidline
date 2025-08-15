@@ -290,16 +290,20 @@ export default function Landing() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
           >
-            <NeonCard className="animated-item" style={{ animationDelay: '0.9s' }}>
-              <NeonCardHeader>
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 1:</div>
-                  <div className="text-white font-bold">Analysis</div>
-                  <div className="text-gray-400 font-mono text-sm">CORE: DECONSTRUCT</div>
+            <div className="terminal-window animated-item" style={{ animationDelay: '0.9s' }}>
+              <div className="terminal-header px-4 py-2 mb-4 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 1: Analysis</div>
+                  <div className="text-white font-bold text-sm">CORE: DECONSTRUCT</div>
                 </div>
-              </NeonCardHeader>
-              <NeonCardContent>
-                <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
+                <div className="flex space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+              </div>
+              <div className="p-6 pt-0"></div>
+              <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
                 <p className="text-gray-400 mb-6 text-sm">
                   AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.
                 </p>
@@ -320,8 +324,8 @@ export default function Landing() {
                     ))}
                   </div>
                 </div>
-              </NeonCardContent>
-            </NeonCard>
+              </div>
+            </div>
           </motion.div>
 
           {/* Phase 2: Enhancement */}
@@ -330,15 +334,19 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <NeonCard className="animated-item" style={{ animationDelay: '1.2s' }}>
-              <NeonCardHeader>
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 2:</div>
-                  <div className="text-white font-bold">Enhancement</div>
-                  <div className="text-gray-400 font-mono text-sm">CORE: REBUILD</div>
+            <div className="terminal-window animated-item" style={{ animationDelay: '1.2s' }}>
+              <div className="terminal-header px-4 py-2 mb-4 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 2: Enhancement</div>
+                  <div className="text-white font-bold text-sm">CORE: REBUILD</div>
                 </div>
-              </NeonCardHeader>
-              <NeonCardContent>
+                <div className="flex space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+              </div>
+              <div className="p-6 pt-0"></div>
                 <h3 className="text-lg font-bold mb-3">Intelligent Reconstruction</h3>
                 <p className="text-gray-400 mb-6 text-sm">
                   The AI rebuilds the audio, applying precise, calculated enhancements.
@@ -389,8 +397,8 @@ export default function Landing() {
                     </div>
                   </div>
                 </div>
-              </NeonCardContent>
-            </NeonCard>
+              </div>
+            </div>
           </motion.div>
 
           {/* Phase 3: Transmission */}
@@ -399,15 +407,19 @@ export default function Landing() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            <NeonCard className="animated-item" style={{ animationDelay: '1.5s' }}>
-              <NeonCardHeader>
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 3:</div>
-                  <div className="text-white font-bold">Transmission</div>
-                  <div className="text-gray-400 font-mono text-sm">CORE: TRANSPORT</div>
+            <div className="terminal-window animated-item" style={{ animationDelay: '1.5s' }}>
+              <div className="terminal-header px-4 py-2 mb-4 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 3: Transmission</div>
+                  <div className="text-white font-bold text-sm">CORE: TRANSPORT</div>
                 </div>
-              </NeonCardHeader>
-              <NeonCardContent>
+                <div className="flex space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                </div>
+              </div>
+              <div className="p-6 pt-0"></div>
                 <h3 className="text-lg font-bold mb-3">Interstellar Transmission</h3>
                 <p className="text-gray-400 mb-6 text-sm">
                   The final master signal is crafted for a powerful and clear transmission.
@@ -425,8 +437,8 @@ export default function Landing() {
                     Signal Strength: Optimal
                   </div>
                 </div>
-              </NeonCardContent>
-            </NeonCard>
+              </div>
+            </div>
           </motion.div>
         </div>
 
