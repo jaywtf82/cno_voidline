@@ -1,3 +1,4 @@
+
 <!-- Voidline — Cinematic Console (SMIL, 1080×1920) -->
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920" aria-label="Voidline AI mastering console — cinematic scenes">
 
@@ -16,13 +17,25 @@
       <stop offset="1"  stop-color="#07090B"/>
     </linearGradient>
     <pattern id="grid60" width="60" height="60" patternUnits="userSpaceOnUse">
-      <path d="M60 0H0V60" fill="none" stroke="#0F1214" stroke-opacity=".25" stroke-width="1"/>
+      <path d="M60 0H0V60" fill="none" stroke="#0F1214" stroke-opacity=".3" stroke-width="1"/>
     </pattern>
 
-    <!-- EFFECTS -->
-    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="6" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <!-- ENHANCED EFFECTS -->
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="intensiveGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 2 0"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
 
     <!-- BRAND -->
@@ -37,27 +50,52 @@
       </g>
     </symbol>
 
-    <!-- RADAR (ambient HUD) -->
+    <!-- ENHANCED RADAR (ambient HUD) -->
     <symbol id="radarHUD" viewBox="-240 -240 480 480">
-      <circle r="200" fill="none" stroke="#2A2E31" stroke-width="2"/>
-      <circle r="140" fill="none" stroke="#2A2E31" stroke-width="2"/>
-      <circle r="90"  fill="none" stroke="#2A2E31" stroke-width="2"/>
-      <g opacity=".65">
-        <path d="M0,0 L200,0 A200,200 0 0 1 0,0 Z" fill="#34E491">
-          <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="6s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values=".28;.9;.28" dur="2s" repeatCount="indefinite"/>
+      <circle r="200" fill="none" stroke="#2A2E31" stroke-width="1.5" opacity="0.8"/>
+      <circle r="140" fill="none" stroke="#2A2E31" stroke-width="1.5" opacity="0.6"/>
+      <circle r="90"  fill="none" stroke="#2A2E31" stroke-width="1.5" opacity="0.4"/>
+      
+      <!-- Enhanced sweeping beam -->
+      <g opacity="0.85">
+        <path d="M0,0 L200,0 A200,200 0 0 1 141.42,141.42 Z" fill="url(#radarGradient)">
+          <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="4s" repeatCount="indefinite"/>
         </path>
       </g>
+      
+      <!-- Pulse effect -->
+      <circle r="20" fill="#34E491" opacity="0.6">
+        <animate attributeName="r" values="20;200;20" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
+      </circle>
     </symbol>
 
-    <!-- WAVE MORPH -->
+    <!-- Radar gradient -->
+    <radialGradient id="radarGradient">
+      <stop offset="0%" stop-color="#34E491" stop-opacity="0.8"/>
+      <stop offset="70%" stop-color="#34E491" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#34E491" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- ENHANCED WAVE MORPH -->
     <symbol id="morphWave" viewBox="0 0 960 180">
-      <path fill="none" stroke="#34E491" stroke-width="3"
+      <path fill="none" stroke="#34E491" stroke-width="2.5" opacity="0.9"
         d="M0,90 C120,40 240,140 360,90 480,40 600,140 720,90 840,40 960,140 960,90">
-        <animate attributeName="d" dur="6s" repeatCount="indefinite"
+        <animate attributeName="d" dur="4s" repeatCount="indefinite"
           values="M0,90 C120,40 240,140 360,90 480,40 600,140 720,90 840,40 960,140 960,90;
                   M0,90 C120,140 240,40 360,90 480,140 600,40 720,90 840,140 960,40 960,90;
+                  M0,90 C120,60 240,120 360,90 480,60 600,120 720,90 840,60 960,120 960,90;
                   M0,90 C120,40 240,140 360,90 480,40 600,140 720,90 840,40 960,140 960,90"/>
+        <animate attributeName="opacity" values="0.9;0.6;1;0.9" dur="4s" repeatCount="indefinite"/>
+      </path>
+      
+      <!-- Secondary wave for depth -->
+      <path fill="none" stroke="#34E491" stroke-width="1.5" opacity="0.4"
+        d="M0,90 C120,50 240,130 360,90 480,50 600,130 720,90 840,50 960,130 960,90">
+        <animate attributeName="d" dur="6s" repeatCount="indefinite"
+          values="M0,90 C120,50 240,130 360,90 480,50 600,130 720,90 840,50 960,130 960,90;
+                  M0,90 C120,130 240,50 360,90 480,130 600,50 720,90 840,130 960,50 960,90;
+                  M0,90 C120,50 240,130 360,90 480,50 600,130 720,90 840,50 960,130 960,90"/>
       </path>
     </symbol>
 
@@ -65,40 +103,40 @@
     <clipPath id="safe"><rect x="40" y="160" width="1000" height="1680" rx="12"/></clipPath>
     <clipPath id="panelBodyClip"><rect x="0" y="0" width="924" height="1468" rx="10"/></clipPath>
 
-    <!-- TYPEWRITER masks (fixed to user space for reliable reveal) -->
+    <!-- OPTIMIZED TYPEWRITER masks -->
     <mask id="tw1" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
       <rect x="0" y="0" width="0" height="28" fill="#fff">
-        <animate attributeName="width" from="0" to="520" dur="0.82s" begin="0s" fill="freeze"/>
+        <animate attributeName="width" from="0" to="520" dur="0.6s" begin="0s" fill="freeze"/>
       </rect>
     </mask>
     <mask id="tw2" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
       <rect x="0" y="0" width="0" height="28" fill="#fff">
-        <animate attributeName="width" from="0" to="520" dur="1.60s" begin="0.84s" fill="freeze"/>
+        <animate attributeName="width" from="0" to="520" dur="1.2s" begin="0.7s" fill="freeze"/>
       </rect>
     </mask>
     <mask id="tw3" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
       <rect x="0" y="0" width="0" height="28" fill="#fff">
-        <animate attributeName="width" from="0" to="520" dur="1.90s" begin="2.56s" fill="freeze"/>
+        <animate attributeName="width" from="0" to="520" dur="1.4s" begin="2.0s" fill="freeze"/>
       </rect>
     </mask>
     <mask id="tw4" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
       <rect x="0" y="0" width="0" height="28" fill="#fff">
-        <animate attributeName="width" from="0" to="520" dur="0.84s" begin="4.50s" fill="freeze"/>
+        <animate attributeName="width" from="0" to="520" dur="0.7s" begin="3.5s" fill="freeze"/>
       </rect>
     </mask>
     <mask id="tw5" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
       <rect x="0" y="0" width="0" height="26" fill="#fff">
-        <animate attributeName="width" from="0" to="860" dur="1.10s" begin="0s" fill="freeze"/>
+        <animate attributeName="width" from="0" to="860" dur="0.8s" begin="0s" fill="freeze"/>
       </rect>
     </mask>
     <mask id="tw6" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
       <rect x="0" y="0" width="0" height="26" fill="#fff">
-        <animate attributeName="width" from="0" to="860" dur="1.10s" begin="1.20s" fill="freeze"/>
+        <animate attributeName="width" from="0" to="860" dur="0.9s" begin="0.9s" fill="freeze"/>
       </rect>
     </mask>
     <mask id="tw7" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse">
       <rect x="0" y="0" width="0" height="26" fill="#fff">
-        <animate attributeName="width" from="0" to="860" dur="1.10s" begin="2.40s" fill="freeze"/>
+        <animate attributeName="width" from="0" to="860" dur="1.0s" begin="1.9s" fill="freeze"/>
       </rect>
     </mask>
   </defs>
@@ -109,64 +147,82 @@
 
   <!-- ======= HEADER ======= -->
   <g id="top_header">
-    <rect x="0" y="0" width="1080" height="140" fill="#232427"/>
+    <rect x="0" y="0" width="1080" height="140" fill="#1A1D21" stroke="#2A2E31" stroke-width="1"/>
     <use href="#brand-logo" x="60" y="22" width="220" height="60"/>
-    <text x="1040" y="92" text-anchor="end" class="mono" font-size="20" fill="#DADADA" opacity=".85">./ ai-mastering-core</text>
+    <text x="1040" y="92" text-anchor="end" class="mono" font-size="20" fill="#E1E5E9" opacity=".9">./ ai-mastering-core</text>
   </g>
 
   <!-- ======= TERMINAL PANEL ======= -->
   <g clip-path="url(#safe)">
     <!-- panel shell -->
     <g transform="translate(60,180)">
-      <rect x="0" y="0" width="960" height="1560" rx="14" fill="#101317" stroke="#1C1F22"/>
+      <rect x="0" y="0" width="960" height="1560" rx="14" fill="#0F1216" stroke="#1E2226" stroke-width="1.5"/>
 
       <!-- chrome -->
       <g>
-        <rect x="0" y="0" width="960" height="56" rx="14" fill="#12151A"/>
-        <circle cx="24" cy="28" r="6" fill="#FF5F56"/>
-        <circle cx="44" cy="28" r="6" fill="#FFBD2E"/>
-        <circle cx="64" cy="28" r="6" fill="#27C93F"/>
-        <text x="90" y="35" class="mono" font-size="16" fill="#9AA4A6">voidline@console — bash</text>
+        <rect x="0" y="0" width="960" height="56" rx="14" fill="#14181C" stroke="#242831" stroke-width="1"/>
+        <circle cx="24" cy="28" r="6" fill="#FF5F56" opacity="0.9"/>
+        <circle cx="44" cy="28" r="6" fill="#FFBD2E" opacity="0.9"/>
+        <circle cx="64" cy="28" r="6" fill="#27C93F" opacity="0.9"/>
+        <text x="90" y="35" class="mono" font-size="16" fill="#B4BCC2">voidline@console — bash</text>
 
-        <!-- tiny scene markers -->
+        <!-- Enhanced scene markers -->
         <g transform="translate(830,18)">
-          <rect x="-2" y="-2" width="110" height="28" rx="6" fill="#0E1115" stroke="#1C1F22"/>
+          <rect x="-2" y="-2" width="110" height="28" rx="6" fill="#101418" stroke="#1E2226"/>
           <g fill="#3C4044">
-            <circle cx="8"  cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+            <circle cx="8"  cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
-            <circle cx="20" cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#3C4044;#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044"/>
+            <circle cx="20" cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite" begin="1s"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite" begin="1s"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
-            <circle cx="32" cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#3C4044;#3C4044;#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044"/>
+            <circle cx="32" cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite" begin="2s"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite" begin="2s"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
-            <circle cx="44" cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#3C4044;#3C4044;#3C4044;#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044"/>
+            <circle cx="44" cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite" begin="3s"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite" begin="3s"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
-            <circle cx="56" cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#3C4044;#3C4044;#3C4044;#3C4044;#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044"/>
+            <circle cx="56" cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite" begin="4s"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite" begin="4s"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
-            <circle cx="68" cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044"/>
+            <circle cx="68" cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite" begin="5s"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite" begin="5s"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
-            <circle cx="80" cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491;#3C4044;#3C4044;#3C4044;#3C4044"/>
+            <circle cx="80" cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite" begin="6s"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite" begin="6s"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
-            <circle cx="92" cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491;#3C4044;#3C4044;#3C4044"/>
+            <circle cx="92" cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite" begin="7s"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite" begin="7s"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
-            <circle cx="104" cy="12" r="4">
-              <animate attributeName="fill" dur="60s" repeatCount="indefinite"
-                       values="#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491;#3C4044;#3C4044"/>
+            <circle cx="104" cy="12" r="3" opacity="0.8">
+              <animate attributeName="fill" dur="8s" repeatCount="indefinite" begin="8s"
+                       values="#34E491;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#3C4044;#34E491"/>
+              <animate attributeName="opacity" dur="8s" repeatCount="indefinite" begin="8s"
+                       values="1;0.3;0.3;0.3;0.3;0.3;0.3;0.3;1"/>
             </circle>
           </g>
         </g>
@@ -174,64 +230,64 @@
 
       <!-- panel body area -->
       <g id="panelBody" transform="translate(18,74)" clip-path="url(#panelBodyClip)">
-        <rect x="0" y="0" width="924" height="1468" rx="10" fill="#0E1115" stroke="#1A1D20"/>
+        <rect x="0" y="0" width="924" height="1468" rx="10" fill="#0B0F13" stroke="#1A1E22" stroke-width="1"/>
 
-        <!-- Ambient HUD, subtle and behind -->
-        <g transform="translate(700,1120)" opacity=".28">
+        <!-- Enhanced Ambient HUD -->
+        <g transform="translate(700,1120)" opacity="0.35">
           <use href="#radarHUD" width="360" height="360"/>
         </g>
 
         <!-- Layout: left column x=24 w=560, right column x=608 w=340, v-gap=20 -->
         <!-- Row 1 -->
         <g transform="translate(24,24)">
-          <rect width="560" height="220" rx="12" fill="#101317" stroke="#1C1F22"/>
+          <rect width="560" height="220" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
           <g transform="translate(18,26)">
-            <text class="mono" font-size="24" fill="#34E491">$ ./ai-mastering-core --init</text>
-            <g class="mono" font-size="20" fill="#DADADA">
+            <text class="mono" font-size="24" fill="#34E491" filter="url(#softGlow)">$ ./ai-mastering-core --init</text>
+            <g class="mono" font-size="19" fill="#E1E5E9">
               <text x="0" y="56">Welcome, producer. Advanced AI is calibrated and ready to analyze your audio.</text>
               <text x="0" y="84">Upload a track to begin mastering and unlock its full sonic potential.</text>
             </g>
             <g transform="translate(0,152)">
               <g>
-                <rect width="210" height="36" rx="8" fill="#34E491" filter="url(#softGlow)"/>
+                <rect width="210" height="36" rx="8" fill="#34E491" filter="url(#intensiveGlow)"/>
                 <text x="105" y="24" text-anchor="middle" class="ui" font-size="18" font-weight="700" fill="#0B0C0E">Start Mastering</text>
               </g>
               <g transform="translate(230,0)">
-                <rect width="300" height="36" rx="8" fill="#161A1E" stroke="#24292D"/>
-                <text x="150" y="24" text-anchor="middle" class="ui" font-size="18" font-weight="600" fill="#DADADA">Upload Audio File …</text>
+                <rect width="300" height="36" rx="8" fill="#161A1E" stroke="#2A2E32" stroke-width="1"/>
+                <text x="150" y="24" text-anchor="middle" class="ui" font-size="18" font-weight="600" fill="#E1E5E9">Upload Audio File …</text>
               </g>
             </g>
           </g>
         </g>
 
         <g transform="translate(608,24)">
-          <rect width="340" height="220" rx="12" fill="#101317" stroke="#1C1F22"/>
-          <g transform="translate(16,20)" class="mono" font-size="20">
+          <rect width="340" height="220" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
+          <g transform="translate(16,20)" class="mono" font-size="19">
             <g>
-              <rect width="308" height="44" rx="10" fill="#14181C" stroke="#202428"/>
-              <text x="14" y="28" fill="#9AA4A6">integrity</text>
-              <text x="294" y="28" text-anchor="end" fill="#34E491">
+              <rect width="308" height="44" rx="10" fill="#14181C" stroke="#242832" stroke-width="1"/>
+              <text x="14" y="28" fill="#B4BCC2">integrity</text>
+              <text x="294" y="28" text-anchor="end" fill="#34E491" filter="url(#softGlow)">
                 98%
-                <set attributeName="textContent" to="99%" begin="1.2s;4.2s"/>
-                <set attributeName="textContent" to="98%" begin="1.5s;4.5s"/>
+                <animate attributeName="textContent" dur="5s" repeatCount="indefinite"
+                         values="98%;99%;100%;99%;98%"/>
               </text>
             </g>
             <g transform="translate(0,58)">
-              <rect width="308" height="44" rx="10" fill="#14181C" stroke="#202428"/>
-              <text x="14" y="28" fill="#9AA4A6">latency</text>
-              <text x="294" y="28" text-anchor="end" fill="#34E491">
+              <rect width="308" height="44" rx="10" fill="#14181C" stroke="#242832" stroke-width="1"/>
+              <text x="14" y="28" fill="#B4BCC2">latency</text>
+              <text x="294" y="28" text-anchor="end" fill="#34E491" filter="url(#softGlow)">
                 18 ms
-                <set attributeName="textContent" to="22 ms" begin="2.2s"/>
-                <set attributeName="textContent" to="16 ms" begin="3.6s"/>
+                <animate attributeName="textContent" dur="3s" repeatCount="indefinite"
+                         values="18 ms;22 ms;16 ms;19 ms;18 ms"/>
               </text>
             </g>
             <g transform="translate(0,116)">
-              <rect width="308" height="44" rx="10" fill="#14181C" stroke="#202428"/>
-              <text x="14" y="28" fill="#9AA4A6">throughput</text>
-              <text x="294" y="28" text-anchor="end" fill="#34E491">
+              <rect width="308" height="44" rx="10" fill="#14181C" stroke="#242832" stroke-width="1"/>
+              <text x="14" y="28" fill="#B4BCC2">throughput</text>
+              <text x="294" y="28" text-anchor="end" fill="#34E491" filter="url(#softGlow)">
                 1.2 Gb/s
-                <set attributeName="textContent" to="1.5 Gb/s" begin="2.8s"/>
-                <set attributeName="textContent" to="1.3 Gb/s" begin="4.0s"/>
+                <animate attributeName="textContent" dur="4s" repeatCount="indefinite"
+                         values="1.2 Gb/s;1.5 Gb/s;1.8 Gb/s;1.3 Gb/s;1.2 Gb/s"/>
               </text>
             </g>
           </g>
@@ -239,65 +295,63 @@
 
         <!-- Row 2 -->
         <g transform="translate(24,264)">
-          <rect width="560" height="220" rx="12" fill="#101317" stroke="#1C1F22"/>
+          <rect width="560" height="220" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
           <g transform="translate(18,24)">
-            <text class="mono" font-size="22" fill="#34E491">$ Live System Feed</text>
-            <g transform="translate(0,30)" class="mono" font-size="20">
+            <text class="mono" font-size="22" fill="#34E491" filter="url(#softGlow)">$ Live System Feed</text>
+            <g transform="translate(0,30)" class="mono" font-size="19">
               <g transform="translate(0,0)">
                 <rect x="0" y="-18" width="524" height="26" fill="none"/>
-                <text y="0" mask="url(#tw1)" fill="#DADADA">[STATUS] AI core initialized and stable.</text>
+                <text y="0" mask="url(#tw1)" fill="#E1E5E9">[STATUS] AI core initialized and stable.</text>
               </g>
               <g transform="translate(0,30)">
                 <rect x="0" y="-18" width="524" height="26" fill="none"/>
-                <text y="0" mask="url(#tw2)" fill="#DADADA">[LINK] Neural connection nominal. Channels synchronized.</text>
+                <text y="0" mask="url(#tw2)" fill="#E1E5E9">[LINK] Neural connection nominal. Channels synchronized.</text>
               </g>
               <g transform="translate(0,60)">
                 <rect x="0" y="-18" width="524" height="26" fill="none"/>
-                <text y="0" mask="url(#tw3)" fill="#F6C177">[ALERT] Solar flare activity detected — uplink integrity at 98%.</text>
+                <text y="0" mask="url(#tw3)" fill="#FFB366">[ALERT] Solar flare activity detected — uplink integrity at 98%.</text>
               </g>
               <g transform="translate(0,90)">
                 <rect x="0" y="-18" width="524" height="26" fill="none"/>
-                <text y="0" mask="url(#tw4)" fill="#DADADA">[READY] System awaiting your command.</text>
+                <text y="0" mask="url(#tw4)" fill="#E1E5E9">[READY] System awaiting your command.</text>
               </g>
             </g>
-            <text x="0" y="170" class="mono" font-size="16" fill="#9AA4A6">Tip: Drag & drop to acquire signal lock. Status auto-updates appear here.</text>
+            <text x="0" y="170" class="mono" font-size="16" fill="#B4BCC2">Tip: Drag & drop to acquire signal lock. Status auto-updates appear here.</text>
           </g>
         </g>
 
         <g transform="translate(608,264)">
-          <rect width="340" height="220" rx="12" fill="#101317" stroke="#1C1F22"/>
+          <rect width="340" height="220" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
           <g transform="translate(26,14)">
             <use href="#radarHUD" width="288" height="288"/>
-            <text x="144" y="196" text-anchor="middle" class="mono" font-size="18" fill="#9AA4A6">Acquisition</text>
+            <text x="144" y="196" text-anchor="middle" class="mono" font-size="18" fill="#B4BCC2">Acquisition</text>
           </g>
         </g>
 
         <!-- Row 3 -->
         <g transform="translate(24,504)">
-          <rect width="560" height="220" rx="12" fill="#101317" stroke="#1C1F22"/>
+          <rect width="560" height="220" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
           <g transform="translate(20,20)">
             <use href="#morphWave" width="520" height="180"/>
           </g>
         </g>
 
         <g transform="translate(608,504)">
-          <rect width="340" height="220" rx="12" fill="#101317" stroke="#1C1F22"/>
+          <rect width="340" height="220" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
           <g transform="translate(16,26)">
-            <text class="mono" font-size="18" fill="#9AA4A6">transfer</text>
+            <text class="mono" font-size="18" fill="#B4BCC2">transfer</text>
             <g transform="translate(0,20)">
-              <rect width="308" height="18" rx="9" fill="#14181C" stroke="#202428"/>
+              <rect width="308" height="18" rx="9" fill="#14181C" stroke="#242832" stroke-width="1"/>
               <rect x="2" y="2" width="0" height="14" rx="7" fill="#34E491" filter="url(#softGlow)">
-                <animate attributeName="width" values="0;304;304;0" keyTimes="0;0.6;0.9;1" dur="6s" repeatCount="indefinite"/>
+                <animate attributeName="width" values="0;304;304;50;0" keyTimes="0;0.4;0.7;0.9;1" dur="5s" repeatCount="indefinite"/>
               </rect>
             </g>
-            <text x="308" y="64" text-anchor="end" class="mono" font-size="20" fill="#34E491">
+            <text x="308" y="64" text-anchor="end" class="mono" font-size="20" fill="#34E491" filter="url(#softGlow)">
               0%
-              <set attributeName="textContent" to="38%" begin="0.8s"/>
-              <set attributeName="textContent" to="72%" begin="2.2s"/>
-              <set attributeName="textContent" to="100%" begin="3.6s"/>
-              <set attributeName="textContent" to="0%" begin="5.5s"/>
+              <animate attributeName="textContent" dur="5s" repeatCount="indefinite"
+                       values="0%;25%;65%;100%;15%;0%"/>
             </text>
-            <g transform="translate(0,52)" fill="#23282C">
+            <g transform="translate(0,52)" fill="#2A2E32">
               <rect x="61"  y="0" width="2" height="12"/>
               <rect x="122" y="0" width="2" height="12"/>
               <rect x="183" y="0" width="2" height="12"/>
@@ -308,96 +362,94 @@
 
         <!-- Row 4 -->
         <g transform="translate(24,744)">
-          <rect width="560" height="320" rx="12" fill="#101317" stroke="#1C1F22"/>
+          <rect width="560" height="320" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
           <g transform="translate(16,20)" class="ui">
             <!-- Card 1 -->
             <g transform="translate(0,0)">
-              <rect width="168" height="260" rx="12" fill="#11161A" stroke="#1E2226"/>
+              <rect width="168" height="260" rx="12" fill="#12161A" stroke="#202428" stroke-width="1"/>
               <text x="12" y="26" font-size="14" fill="#34E491">Core: Deconstruct</text>
-              <text x="12" y="48" font-size="18" fill="#DADADA">Analysis</text>
+              <text x="12" y="48" font-size="18" fill="#E1E5E9">Analysis</text>
               <g transform="translate(8,66)"><use href="#morphWave" width="152" height="120"/></g>
-              <text x="12" y="206" font-size="14" fill="#9AA4A6">Dynamics, frequency, stereo image.</text>
+              <text x="12" y="206" font-size="14" fill="#B4BCC2">Dynamics, frequency, stereo image.</text>
             </g>
             <!-- Card 2 -->
             <g transform="translate(184,0)">
-              <rect width="168" height="260" rx="12" fill="#11161A" stroke="#1E2226"/>
+              <rect width="168" height="260" rx="12" fill="#12161A" stroke="#202428" stroke-width="1"/>
               <text x="12" y="26" font-size="14" fill="#34E491">Core: Rebuild</text>
-              <text x="12" y="48" font-size="18" fill="#DADADA">Enhancement</text>
-              <g transform="translate(16,72)" opacity=".85">
-                <circle cx="68" cy="24" r="22" fill="none" stroke="#34E491"/>
+              <text x="12" y="48" font-size="18" fill="#E1E5E9">Enhancement</text>
+              <g transform="translate(16,72)" opacity="0.9">
+                <circle cx="68" cy="24" r="22" fill="none" stroke="#34E491" stroke-width="2"/>
                 <rect x="40" y="66" width="56" height="8" rx="4" fill="#34E491"/>
                 <rect x="28" y="86" width="80" height="8" rx="4" fill="#34E491"/>
               </g>
-              <text x="12" y="206" font-size="14" fill="#9AA4A6">EQ, dynamics, clarity.</text>
+              <text x="12" y="206" font-size="14" fill="#B4BCC2">EQ, dynamics, clarity.</text>
             </g>
             <!-- Card 3 -->
             <g transform="translate(368,0)">
-              <rect width="168" height="260" rx="12" fill="#11161A" stroke="#1E2226"/>
+              <rect width="168" height="260" rx="12" fill="#12161A" stroke="#202428" stroke-width="1"/>
               <text x="12" y="26" font-size="14" fill="#34E491">Core: Transmit</text>
-              <text x="12" y="48" font-size="18" fill="#DADADA">Transmission</text>
+              <text x="12" y="48" font-size="18" fill="#E1E5E9">Transmission</text>
               <g transform="translate(16,68)">
-                <rect width="136" height="64" rx="8" fill="#0F1316" stroke="#1E2226"/>
-                <circle cx="12" cy="32" r="6" fill="#FFB23E"/>
+                <rect width="136" height="64" rx="8" fill="#0E1216" stroke="#1E2226" stroke-width="1"/>
+                <circle cx="12" cy="32" r="6" fill="#FFB366"/>
                 <rect x="24" y="28" width="100" height="8" rx="4" fill="#34E491">
-                  <animate attributeName="width" values="30;110;60;120;30" dur="3.2s" repeatCount="indefinite"/>
+                  <animate attributeName="width" values="30;110;60;120;30" dur="2.8s" repeatCount="indefinite"/>
                 </rect>
               </g>
-              <text x="12" y="206" font-size="14" fill="#9AA4A6">Robust, clean output.</text>
+              <text x="12" y="206" font-size="14" fill="#B4BCC2">Robust, clean output.</text>
             </g>
-            <text x="0" y="292" class="mono" font-size="16" fill="#9AA4A6">Phases of the AI mastering process</text>
+            <text x="0" y="292" class="mono" font-size="16" fill="#B4BCC2">Phases of the AI mastering process</text>
           </g>
         </g>
 
         <g transform="translate(608,744)">
-          <rect width="340" height="320" rx="12" fill="#101317" stroke="#1C1F22"/>
+          <rect width="340" height="320" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
           <g transform="translate(16,20)">
-            <text class="mono" font-size="18" fill="#9AA4A6">signal strength</text>
-            <text x="0" y="68" class="ui" font-size="64" font-weight="800" fill="#DADADA">
+            <text class="mono" font-size="18" fill="#B4BCC2">signal strength</text>
+            <text x="0" y="68" class="ui" font-size="64" font-weight="800" fill="#E1E5E9" filter="url(#softGlow)">
               84
-              <set attributeName="textContent" to="90" begin="1.0s"/>
-              <set attributeName="textContent" to="92" begin="2.0s"/>
-              <set attributeName="textContent" to="89" begin="3.0s"/>
-              <set attributeName="textContent" to="93" begin="4.0s"/>
+              <animate attributeName="textContent" dur="6s" repeatCount="indefinite"
+                       values="84;90;92;89;93;87;84"/>
             </text>
             <g transform="translate(0,90)" fill="#34E491">
               <rect x="0"  y="40" width="12" height="24">
-                <animate attributeName="height" values="24;62;38;52;24" dur="2.2s" repeatCount="indefinite"/>
-                <animate attributeName="y"      values="40;2;28;16;40" dur="2.2s" repeatCount="indefinite"/>
+                <animate attributeName="height" values="24;62;38;52;24" dur="2.0s" repeatCount="indefinite"/>
+                <animate attributeName="y"      values="40;2;28;16;40" dur="2.0s" repeatCount="indefinite"/>
               </rect>
               <rect x="18" y="20" width="12" height="44">
-                <animate attributeName="height" values="44;28;66;34;44" dur="2.0s" repeatCount="indefinite"/>
-                <animate attributeName="y"      values="20;36;-2;30;20" dur="2.0s" repeatCount="indefinite"/>
+                <animate attributeName="height" values="44;28;66;34;44" dur="1.8s" repeatCount="indefinite"/>
+                <animate attributeName="y"      values="20;36;-2;30;20" dur="1.8s" repeatCount="indefinite"/>
               </rect>
               <rect x="36" y="28" width="12" height="36">
-                <animate attributeName="height" values="36;58;24;66;36" dur="2.6s" repeatCount="indefinite"/>
-                <animate attributeName="y"      values="28;6;40;-2;28" dur="2.6s" repeatCount="indefinite"/>
+                <animate attributeName="height" values="36;58;24;66;36" dur="2.3s" repeatCount="indefinite"/>
+                <animate attributeName="y"      values="28;6;40;-2;28" dur="2.3s" repeatCount="indefinite"/>
               </rect>
               <rect x="54" y="12" width="12" height="52">
-                <animate attributeName="height" values="52;34;68;24;52" dur="2.4s" repeatCount="indefinite"/>
-                <animate attributeName="y"      values="12;30;-4;40;12" dur="2.4s" repeatCount="indefinite"/>
+                <animate attributeName="height" values="52;34;68;24;52" dur="2.1s" repeatCount="indefinite"/>
+                <animate attributeName="y"      values="12;30;-4;40;12" dur="2.1s" repeatCount="indefinite"/>
               </rect>
             </g>
             <g transform="translate(0,208)" class="mono" font-size="16">
               <g>
-                <rect width="132" height="30" rx="8" fill="#14181C" stroke="#202428"/>
+                <rect width="132" height="30" rx="8" fill="#14181C" stroke="#242832" stroke-width="1"/>
                 <text x="66" y="20" text-anchor="middle" fill="#34E491">stable</text>
               </g>
               <g transform="translate(146,0)">
-                <rect width="162" height="30" rx="8" fill="#14181C" stroke="#202428"/>
-                <text x="81" y="20" text-anchor="middle" fill="#DADADA">priority: high</text>
+                <rect width="162" height="30" rx="8" fill="#14181C" stroke="#242832" stroke-width="1"/>
+                <text x="81" y="20" text-anchor="middle" fill="#E1E5E9">priority: high</text>
               </g>
             </g>
           </g>
         </g>
 
-        <!-- Row 5 — Full-width activity log to utilize remaining space -->
+        <!-- Row 5 — Full-width activity log -->
         <g transform="translate(24,1084)">
-          <rect width="876" height="300" rx="12" fill="#101317" stroke="#1C1F22"/>
+          <rect width="876" height="300" rx="12" fill="#0F1317" stroke="#1E2428" stroke-width="1"/>
           <g transform="translate(16,22)">
-            <text class="mono" font-size="18" fill="#9AA4A6">activity log</text>
+            <text class="mono" font-size="18" fill="#B4BCC2">activity log</text>
 
-            <!-- Three long lines with typewriter masks to ensure no overflow -->
-            <g transform="translate(0,28)" class="mono" font-size="18" fill="#C7CDD1">
+            <!-- Three long lines with enhanced typewriter masks -->
+            <g transform="translate(0,28)" class="mono" font-size="18" fill="#E1E5E9">
               <g transform="translate(0,0)">
                 <rect x="0" y="-18" width="844" height="22" fill="none"/>
                 <text y="0" mask="url(#tw5)">[10:24:03] Loader: Scanned 2,184 frames • peak -2.3 dBFS • LUFS -14.2 • crest 10.8 dB</text>
@@ -412,14 +464,14 @@
               </g>
             </g>
 
-            <!-- Two-column key/value list -->
-            <g transform="translate(0,140)" class="mono" font-size="16" fill="#9AA4A6">
-              <text x="0"   y="0">preset</text><text x="160" y="0" fill="#DADADA">Cinematic Wide v3</text>
-              <text x="0"   y="24">target</text><text x="160" y="24" fill="#DADADA">-14 LUFS, -1 dBTP</text>
-              <text x="0"   y="48">export</text><text x="160" y="48" fill="#DADADA">24-bit WAV, 48 kHz</text>
-              <text x="420" y="0">mid/side</text><text x="580" y="0" fill="#DADADA">balanced</text>
-              <text x="420" y="24">dynamics</text><text x="580" y="24" fill="#DADADA">gentle</text>
-              <text x="420" y="48">enhance</text><text x="580" y="48" fill="#DADADA">+8%</text>
+            <!-- Enhanced two-column key/value list -->
+            <g transform="translate(0,140)" class="mono" font-size="16" fill="#B4BCC2">
+              <text x="0"   y="0">preset</text><text x="160" y="0" fill="#E1E5E9">Cinematic Wide v3</text>
+              <text x="0"   y="24">target</text><text x="160" y="24" fill="#E1E5E9">-14 LUFS, -1 dBTP</text>
+              <text x="0"   y="48">export</text><text x="160" y="48" fill="#E1E5E9">24-bit WAV, 48 kHz</text>
+              <text x="420" y="0">mid/side</text><text x="580" y="0" fill="#E1E5E9">balanced</text>
+              <text x="420" y="24">dynamics</text><text x="580" y="24" fill="#E1E5E9">gentle</text>
+              <text x="420" y="48">enhance</text><text x="580" y="48" fill="#E1E5E9">+8%</text>
             </g>
           </g>
         </g>
