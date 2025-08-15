@@ -27,6 +27,7 @@ import { WaveformComparison } from "@/components/audio/WaveformComparison";
 import { AnalysisProgress } from "@/components/audio/AnalysisProgress";
 import { LiveSystemFeed } from "@/components/system/LiveSystemFeed";
 import type { Preset, ExportFormatType, AnalysisResults, PresetParameters } from "@shared/schema";
+import { useLocation } from 'wouter';
 
 export default function Console() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -249,7 +250,7 @@ export default function Console() {
   // Handle file upload
   const handleFileUpload = useCallback(async (file: File) => {
     setAudioFile(file);
-    
+
     // Create project
     createProjectMutation.mutate({
       name: file.name.replace(/\.[^/.]+$/, ""),
@@ -285,7 +286,7 @@ export default function Console() {
   const handleApplyPreset = useCallback((preset: Preset) => {
     const params = preset.parameters as PresetParameters;
     setProcessingParams(params);
-    
+
     if (currentProject) {
       updateProjectMutation.mutate({
         id: currentProject,
@@ -345,7 +346,7 @@ export default function Console() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Logo className="h-8" />
-            
+
             <div className="flex items-center space-x-6">
               <Button
                 variant="ghost"
@@ -417,11 +418,11 @@ export default function Console() {
                     mode="instant"
                   />
                 </div>
-                
+
                 {/* Live System Feed */}
                 <LiveSystemFeed isActive={isPlaying} />
               </div>
-              
+
               {/* Waveform Analysis */}
               <div className="mb-8">
                 <WaveformComparison 
@@ -452,18 +453,18 @@ export default function Console() {
                     isActive={isPlaying}
                   />
                 </NeonCard>
-                
+
                 {/* Center Panel - WaveDNA Visualizer */}
                 <div className="lg:col-span-2">
                   <NeonCard variant="terminal" className="p-6">
                     <WaveDNA isPlaying={isPlaying} />
                   </NeonCard>
                 </div>
-                
+
                 {/* Right Panel - Dynamic Faders */}
                 <NeonCard variant="terminal" className="p-6">
                   <h3 className="font-mono text-accent-primary mb-4 text-sm">DYNAMIC FADERS</h3>
-                  
+
                   <div className="space-y-6">
                     <Fader
                       label="LUFS"
@@ -501,7 +502,7 @@ export default function Console() {
                     />
                   </div>
                 </NeonCard>
-                
+
                 {/* Bottom Left - Phase Lock Grid */}
                 <NeonCard variant="terminal" className="p-6">
                   <PhaseGrid 
@@ -509,12 +510,12 @@ export default function Console() {
                     isActive={isPlaying}
                   />
                 </NeonCard>
-                
+
                 {/* Bottom Center - Signal Modulation */}
                 <div className="lg:col-span-2">
                   <NeonCard variant="terminal" className="p-6">
                     <h3 className="font-mono text-accent-primary mb-4 text-sm">SIGNAL MODULATION ZONE</h3>
-                    
+
                     <div className="grid grid-cols-5 gap-4">
                       <Knob
                         label="Harmonic"
@@ -544,7 +545,7 @@ export default function Console() {
                     </div>
                   </NeonCard>
                 </div>
-                
+
                 {/* Bottom Right - Mission Status */}
                 <NeonCard variant="terminal" className="p-6">
                   <MissionBar
@@ -554,7 +555,7 @@ export default function Console() {
                   />
                 </NeonCard>
               </div>
-              
+
               {/* Noise Floor Tracker */}
               <NeonCard variant="terminal" className="p-6 mb-8">
                 <VoidlineMeter
@@ -570,7 +571,7 @@ export default function Console() {
                   <h2 className="text-3xl font-bold mb-4 glow-text">BLACKROOM PROFILES</h2>
                   <p className="text-text-secondary">AI-crafted presets for every sonic environment</p>
                 </div>
-                
+
                 {!presetsLoading && presetsData && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {(presetsData as any)?.builtIn && Array.isArray((presetsData as any).builtIn) ? 
