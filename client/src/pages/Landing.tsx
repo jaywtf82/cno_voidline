@@ -478,8 +478,9 @@ export default function Landing() {
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Authentication Modal */}
+    {/* Authentication Modal */}
       {import.meta.env.VITE_REQUIRE_AUTH === 'true' && (
         <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
           <DialogContent className="terminal-window text-white border-none">
