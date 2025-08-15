@@ -16,9 +16,8 @@ function Router() {
 
   return (
     <Switch>
-      {/* Always show MockingPage as default for demo purposes */}
-      <Route path="/" component={MockingPage} />
-      <Route path="/mocking" component={MockingPage} />
+      {/* Default landing page with full interface */}
+      <Route path="/" component={Landing} />
       
       {/* Authentication-protected routes */}
       {isLoading ? (
@@ -37,6 +36,9 @@ function Router() {
           <Route path="/console" component={Console} />
         </>
       )}
+      
+      {/* Demo/Testing routes */}
+      <Route path="/mocking" component={MockingPage} />
       
       <Route component={NotFound} />
     </Switch>

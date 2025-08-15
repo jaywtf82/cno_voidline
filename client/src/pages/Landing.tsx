@@ -1,21 +1,74 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { NeonCard } from "@/components/ui/neon-card";
+import { NeonCard, NeonCardHeader, NeonCardTitle, NeonCardContent } from "@/components/ui/neon-card";
 import { Logo } from "@/components/Logo";
 import { GlitchWord } from "@/components/effects/GlitchWord";
+import { WaveDNA } from "@/components/visualizers/WaveDNA";
+import { StereoRadar } from "@/components/visualizers/StereoRadar";
+import { PhaseGrid } from "@/components/visualizers/PhaseGrid";
+import { VoidlineMeter } from "@/components/meters/VoidlineMeter";
+import { Fader } from "@/components/controls/Fader";
+import { Knob } from "@/components/controls/Knob";
+import { PresetTile } from "@/components/presets/PresetTile";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
-import { WaveDNA } from "@/components/visualizers/WaveDNA";
+import { motion } from "framer-motion";
+import { Play, Pause, Square, Volume2, Settings, Zap, Target, Waves } from "lucide-react";
 
 export default function Landing() {
-  const [selectedTheme, setSelectedTheme] = useState<"classic" | "matrix" | "cyberpunk" | "retro">("classic");
-  const [showUpload, setShowUpload] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [glitchTrigger, setGlitchTrigger] = useState(false);
   const { theme, setTheme } = useTheme();
   const { isAuthenticated } = useAuth();
 
-  const handleThemeChange = (newTheme: typeof selectedTheme) => {
-    setSelectedTheme(newTheme);
-    setTheme(newTheme);
+  // Mock audio parameters with animated values
+  const [mockData, setMockData] = useState({
+    harmonicBoost: 45,
+    subweight: 32,
+    transientPunch: 78,
+    airlift: 56,
+    spatialFlux: 63,
+    compression: { threshold: -18.5, ratio: 3.2, attack: 12.3, release: 85.7 },
+    eq: { lowShelf: 2.3, highShelf: 1.8 },
+    stereo: { width: 1.2, bassMonoFreq: 125 },
+    levels: { peak: -3.2, rms: -12.4, lufs: -16.8 },
+    analysis: { dynamicRange: 8.2, stereoWidth: 78, phaseCorrelation: 0.92 }
+  });
+
+  // Animate values periodically
+  useEffect(() => {
+    if (!isPlaying) return;
+    
+    const interval = setInterval(() => {
+      setMockData(prev => ({
+        ...prev,
+        harmonicBoost: Math.max(0, Math.min(100, prev.harmonicBoost + (Math.random() - 0.5) * 10)),
+        subweight: Math.max(0, Math.min(100, prev.subweight + (Math.random() - 0.5) * 8)),
+        transientPunch: Math.max(0, Math.min(100, prev.transientPunch + (Math.random() - 0.5) * 12)),
+        airlift: Math.max(0, Math.min(100, prev.airlift + (Math.random() - 0.5) * 6)),
+        spatialFlux: Math.max(0, Math.min(100, prev.spatialFlux + (Math.random() - 0.5) * 9)),
+        levels: {
+          peak: Math.max(-20, Math.min(0, prev.levels.peak + (Math.random() - 0.5) * 2)),
+          rms: Math.max(-30, Math.min(-5, prev.levels.rms + (Math.random() - 0.5) * 1.5)),
+          lufs: Math.max(-25, Math.min(-10, prev.levels.lufs + (Math.random() - 0.5) * 1))
+        },
+        analysis: {
+          dynamicRange: Math.max(3, Math.min(15, prev.analysis.dynamicRange + (Math.random() - 0.5) * 0.5)),
+          stereoWidth: Math.max(40, Math.min(100, prev.analysis.stereoWidth + (Math.random() - 0.5) * 5)),
+          phaseCorrelation: Math.max(0.3, Math.min(1, prev.analysis.phaseCorrelation + (Math.random() - 0.5) * 0.1))
+        }
+      }));
+      setCurrentTime(prev => prev + 0.1);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  const togglePlayback = () => {
+    setIsPlaying(!isPlaying);
+    setGlitchTrigger(true);
   };
 
   const handleLogin = () => {
@@ -30,174 +83,159 @@ export default function Landing() {
     }
   };
 
+  const mockPresets = [
+    { name: "CLUB_MASTER", category: "Club", description: "High energy club master", isActive: false },
+    { name: "VINYL_WARM", category: "Vinyl", description: "Warm vinyl simulation", isActive: true },
+    { name: "STREAMING_LOUD", category: "Streaming", description: "Optimized for streaming", isActive: false },
+    { name: "RADIO_READY", category: "Radio", description: "Broadcast ready", isActive: false }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface-dark to-surface-darker text-text-primary overflow-x-hidden">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-sm border-b border-accent-primary/20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Logo className="h-8" />
-            </div>
-            
-            <div className="flex items-center space-x-6">
-              <a 
-                href="#" 
-                className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-                data-testid="link-home"
-              >
-                /home
-              </a>
-              <a 
-                href="#features" 
-                className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-                data-testid="link-features"
-              >
-                /features
-              </a>
-              <a 
-                href="#pricing" 
-                className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-                data-testid="link-pricing"
-              >
-                /pricing
-              </a>
-              <a 
-                href="#docs" 
-                className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
-                data-testid="link-docs"
-              >
-                /docs
-              </a>
-              {!isAuthenticated && (
-                <Button
-                  variant="outline"
-                  onClick={handleLogin}
-                  className="font-mono text-sm"
-                  data-testid="button-login"
-                >
-                  Login
-                </Button>
-              )}
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-surface-dark to-surface-darker text-text-primary p-6">
+      {/* Header */}
+      <motion.div 
+        className="flex items-center justify-between mb-8"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="flex items-center space-x-4">
+          <Logo className="h-8" />
+          <div className="border-l border-accent-primary/30 pl-4">
+            <h1 className="font-mono text-2xl text-accent-primary">
+              <GlitchWord trigger={glitchTrigger} intensity="medium">
+                ./ai-mastering-core --init
+              </GlitchWord>
+            </h1>
+            <p className="font-mono text-sm text-text-muted">Frequencies aligned. Stillness remains.</p>
           </div>
         </div>
-      </nav>
+        
+        <div className="flex items-center space-x-4">
+          {/* Navigation Links */}
+          <div className="flex items-center space-x-6">
+            <a 
+              href="#" 
+              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
+              data-testid="link-home"
+            >
+              /home
+            </a>
+            <a 
+              href="#features" 
+              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
+              data-testid="link-features"
+            >
+              /features
+            </a>
+            <a 
+              href="#pricing" 
+              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
+              data-testid="link-pricing"
+            >
+              /pricing
+            </a>
+            <a 
+              href="#docs" 
+              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
+              data-testid="link-docs"
+            >
+              /docs
+            </a>
+            <a 
+              href="#logs" 
+              className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
+              data-testid="link-logs"
+            >
+              /logs
+            </a>
+          </div>
+          
+          {/* Login Button */}
+          {!isAuthenticated && (
+            <Button
+              variant="outline"
+              onClick={handleLogin}
+              className="font-mono text-sm"
+              data-testid="button-login"
+            >
+              Login
+            </Button>
+          )}
+          
+          {/* System Status */}
+          <div className="font-mono text-xs text-accent-primary border border-accent-primary/30 px-3 py-1 rounded">
+            ● ● ●
+          </div>
+        </div>
+      </motion.div>
 
       {/* Hero Section */}
-      <section className="pt-20 min-h-screen">
-        <div className="max-w-7xl mx-auto px-6 py-16">
-          <div className="text-center mb-16">
-            <div className="font-mono text-accent-primary text-lg mb-4">
-              $ ./ai-mastering-core --init
-            </div>
-            
-            <h1 className="text-5xl font-bold mb-6">
-              <GlitchWord 
-                autoTrigger 
-                autoInterval={5000} 
-                intensity="medium"
-                className="glow-text"
-              >
-                AI MASTERING
-              </GlitchWord>{" "}
-              CONSOLE
-            </h1>
-            
-            <p className="text-xl text-text-secondary mb-8 max-w-3xl mx-auto">
-              Welcome, producer. Our advanced AI is ready to analyze and enhance your audio. Upload your track to begin 
-              the mastering process and unlock its full sonic potential.
-            </p>
-            
-            <div className="flex justify-center space-x-4 mb-12">
-              <Button 
-                size="lg"
-                onClick={handleStartMastering}
-                className="neon-button font-bold px-8 py-3"
-                data-testid="button-start-mastering"
-              >
-                Start Mastering
-              </Button>
-              <Button 
-                variant="outline"
-                size="lg"
-                onClick={() => setShowUpload(true)}
-                className="neon-button-outline px-8 py-3"
-                data-testid="button-upload-audio"
-              >
-                Upload Audio File...
-              </Button>
-            </div>
-            
-            {/* System Status */}
-            <NeonCard variant="terminal" className="p-4 max-w-2xl mx-auto text-left">
-              <div className="font-mono text-sm space-y-2">
-                <div className="text-accent-primary">% Live System Feed:</div>
-                <div className="text-text-muted">[STATUS] AI core initialized and stable.</div>
-                <div className="text-text-muted">[STATUS] Neural network connection is nominal.</div>
-                <div className="text-yellow-400">[ALERT] Solar flare activity detected. Uplink integrity at 96%.</div>
-                <div className="text-accent-primary">System is ready for your command</div>
-              </div>
-            </NeonCard>
+      <motion.div 
+        className="text-center mb-12"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.2 }}
+      >
+        <div className="font-mono text-accent-primary text-lg mb-4">
+          $ ./ai-mastering-core --init
+        </div>
+        
+        <p className="text-lg text-text-secondary mb-8 max-w-3xl mx-auto">
+          Welcome, producer. Our advanced AI is ready to analyze and enhance your audio. Upload your track to begin 
+          the mastering process and unlock its full sonic potential.
+        </p>
+        
+        <div className="flex justify-center space-x-4 mb-12">
+          <Button 
+            size="lg"
+            onClick={handleStartMastering}
+            className="neon-button font-bold px-8 py-3 bg-accent-primary hover:bg-accent-primary/80 text-black"
+            data-testid="button-start-mastering"
+          >
+            Start Mastering
+          </Button>
+          <Button 
+            variant="outline"
+            size="lg"
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="neon-button-outline px-8 py-3 border-accent-primary/30 hover:border-accent-primary text-accent-primary"
+            data-testid="button-upload-audio"
+          >
+            Upload Audio File...
+          </Button>
+        </div>
+        
+        {/* System Status */}
+        <NeonCard variant="terminal" className="p-4 max-w-2xl mx-auto text-left">
+          <div className="font-mono text-sm space-y-2">
+            <div className="text-accent-primary">$ Live System Feed:</div>
+            <div className="text-text-muted">[STATUS] AI core initialized and stable.</div>
+            <div className="text-text-muted">[STATUS] Neural network connection is nominal.</div>
+            <div className="text-yellow-400">[ALERT] Solar flare activity detected. Uplink integrity at 96%.</div>
+            <div className="text-accent-primary">System is ready for your command</div>
           </div>
-          
-          {/* Theme Selector */}
-          <div className="mb-16">
-            <NeonCard variant="terminal" className="p-4 max-w-2xl mx-auto">
-              <div className="font-mono text-sm mb-3 text-accent-primary">$ select-theme --mode</div>
-              <div className="flex flex-wrap gap-4 justify-center">
-                <Button
-                  variant={theme === "classic" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleThemeChange("classic")}
-                  className="font-mono text-sm"
-                  data-testid="button-theme-classic"
-                >
-                  Classic Terminal
-                </Button>
-                <Button
-                  variant={theme === "matrix" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleThemeChange("matrix")}
-                  className="font-mono text-sm"
-                  data-testid="button-theme-matrix"
-                >
-                  Matrix
-                </Button>
-                <Button
-                  variant={theme === "cyberpunk" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleThemeChange("cyberpunk")}
-                  className="font-mono text-sm"
-                  data-testid="button-theme-cyberpunk"
-                >
-                  Cyberpunk
-                </Button>
-                <Button
-                  variant={theme === "retro" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleThemeChange("retro")}
-                  className="font-mono text-sm"
-                  data-testid="button-theme-retro"
-                >
-                  Retro
-                </Button>
-              </div>
-            </NeonCard>
-          </div>
-          
-          {/* Three Phase Workflow */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16" id="features">
-            {/* Phase 1: Analysis */}
-            <NeonCard variant="terminal" className="p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="text-accent-primary font-mono text-lg">Phase 1:</div>
-                <div className="text-text-primary font-bold">Analysis</div>
-                <div className="text-text-muted font-mono text-sm">CORE: DECONSTRUCT</div>
-              </div>
-              
-              <h3 className="text-xl font-bold mb-3">Deep Signal Deconstruction</h3>
-              <p className="text-text-secondary mb-6">
+        </NeonCard>
+      </motion.div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-12 gap-6 mb-16" id="features">
+        
+        {/* Left Panel - Transport & Controls */}
+        <motion.div 
+          className="col-span-3"
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+        >
+          <NeonCard variant="terminal" className="mb-6">
+            <NeonCardHeader>
+              <NeonCardTitle>Phase 1: Analysis</NeonCardTitle>
+              <div className="text-xs text-text-muted font-mono">CORE: DECONSTRUCT</div>
+            </NeonCardHeader>
+            <NeonCardContent>
+              <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
+              <p className="text-text-secondary mb-6 text-sm">
                 AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.
               </p>
               
@@ -207,7 +245,7 @@ export default function Landing() {
                   {Array.from({ length: 8 }, (_, i) => (
                     <div
                       key={i}
-                      className="spectrum-bar flex-1 animate-signal-scan"
+                      className="bg-accent-primary flex-1 animate-signal-scan"
                       style={{
                         height: `${Math.random() * 80 + 20}%`,
                         animationDelay: `${i * 0.1}s`,
@@ -216,97 +254,449 @@ export default function Landing() {
                   ))}
                 </div>
               </div>
-            </NeonCard>
-            
-            {/* Phase 2: Enhancement */}
-            <NeonCard variant="terminal" className="p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="text-accent-primary font-mono text-lg">Phase 2:</div>
-                <div className="text-text-primary font-bold">Enhancement</div>
-                <div className="text-text-muted font-mono text-sm">CORE: REBUILD</div>
-              </div>
-              
-              <h3 className="text-xl font-bold mb-3">Intelligent Reconstruction</h3>
-              <p className="text-text-secondary mb-6">
-                The AI rebuilds the audio, applying precise, calculated enhancements.
-              </p>
-              
-              {/* Neural Module Display */}
-              <div className="bg-black/50 p-4 rounded">
-                <div className="font-mono text-sm mb-2">neural module v9.4.1</div>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
-                    <div className="text-xs">Dynamics</div>
-                  </div>
-                  <div>
-                    <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
-                    <div className="text-xs">Stereo</div>
-                  </div>
-                  <div>
-                    <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
-                    <div className="text-xs">EQ Balance</div>
-                  </div>
-                </div>
-              </div>
-            </NeonCard>
-            
-            {/* Phase 3: Transmission */}
-            <NeonCard variant="terminal" className="p-6">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="text-accent-primary font-mono text-lg">Phase 3:</div>
-                <div className="text-text-primary font-bold">
-                  <GlitchWord autoTrigger autoInterval={7000} intensity="low">
-                    Transmission
-                  </GlitchWord>
-                </div>
-                <div className="text-text-muted font-mono text-sm">CORE: TRANSPORT</div>
-              </div>
-              
-              <h3 className="text-xl font-bold mb-3">Interstellar Transmission</h3>
-              <p className="text-text-secondary mb-6">
-                The final master signal is crafted for a powerful and clear transmission.
-              </p>
-              
-              {/* Signal Bars */}
-              <div className="bg-black/50 p-4 rounded">
-                <div className="flex items-end justify-center space-x-2 h-16">
-                  <div className="w-3 h-8 bg-accent-primary"></div>
-                  <div className="w-3 h-12 bg-accent-primary"></div>
-                  <div className="w-3 h-16 bg-yellow-400"></div>
-                  <div className="w-3 h-14 bg-accent-primary"></div>
-                </div>
-              </div>
-            </NeonCard>
-          </div>
+            </NeonCardContent>
+          </NeonCard>
 
-          {/* WaveDNA Preview */}
-          <div className="mb-16">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-4 glow-text">WAVEDNA PREVIEW</h2>
-              <p className="text-text-secondary">Experience our advanced audio visualization technology</p>
+          {/* Processing Controls */}
+          <NeonCard variant="terminal">
+            <NeonCardHeader>
+              <NeonCardTitle>
+                <div className="flex items-center space-x-2">
+                  <Zap className="h-4 w-4" />
+                  <span>PROCESSING</span>
+                </div>
+              </NeonCardTitle>
+            </NeonCardHeader>
+            <NeonCardContent>
+              <div className="space-y-4">
+                <Knob
+                  label="Harmonic Boost"
+                  value={mockData.harmonicBoost}
+                  onChange={() => {}}
+                  min={0}
+                  max={100}
+                  unit="%"
+                />
+                <Knob
+                  label="Subweight"
+                  value={mockData.subweight}
+                  onChange={() => {}}
+                  min={0}
+                  max={100}
+                  unit="%"
+                />
+                <Knob
+                  label="Transient Punch"
+                  value={mockData.transientPunch}
+                  onChange={() => {}}
+                  min={0}
+                  max={100}
+                  unit="%"
+                />
+                <Knob
+                  label="Airlift"
+                  value={mockData.airlift}
+                  onChange={() => {}}
+                  min={0}
+                  max={100}
+                  unit="%"
+                />
+              </div>
+            </NeonCardContent>
+          </NeonCard>
+        </motion.div>
+
+        {/* Center Panel - Visualizers */}
+        <motion.div 
+          className="col-span-6"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
+          <div className="space-y-6">
+            {/* WaveDNA Visualizer */}
+            <WaveDNA isPlaying={isPlaying} className="h-64" />
+            
+            <div className="grid grid-cols-2 gap-4">
+              {/* Phase 2: Enhancement */}
+              <NeonCard variant="terminal" className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="text-accent-primary font-mono text-lg">Phase 2:</div>
+                  <div className="text-text-primary font-bold">Enhancement</div>
+                  <div className="text-text-muted font-mono text-sm">CORE: REBUILD</div>
+                </div>
+                
+                <h3 className="text-lg font-bold mb-3">Intelligent Reconstruction</h3>
+                <p className="text-text-secondary mb-6 text-sm">
+                  The AI rebuilds the audio, applying precise, calculated enhancements.
+                </p>
+                
+                {/* Neural Module Display */}
+                <div className="bg-black/50 p-4 rounded">
+                  <div className="font-mono text-sm mb-2">neural module v9.4.1</div>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
+                      <div className="text-xs">Dynamics</div>
+                    </div>
+                    <div>
+                      <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
+                      <div className="text-xs">Stereo</div>
+                    </div>
+                    <div>
+                      <div className="w-8 h-8 bg-accent-primary/30 border border-accent-primary rounded mx-auto mb-1"></div>
+                      <div className="text-xs">EQ Balance</div>
+                    </div>
+                  </div>
+                </div>
+              </NeonCard>
+              
+              {/* Phase 3: Transmission */}
+              <NeonCard variant="terminal" className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="text-accent-primary font-mono text-lg">Phase 3:</div>
+                  <div className="text-text-primary font-bold">
+                    <GlitchWord autoTrigger autoInterval={7000} intensity="low">
+                      Transmission
+                    </GlitchWord>
+                  </div>
+                  <div className="text-text-muted font-mono text-sm">CORE: TRANSPORT</div>
+                </div>
+                
+                <h3 className="text-lg font-bold mb-3">Interstellar Transmission</h3>
+                <p className="text-text-secondary mb-6 text-sm">
+                  The final master signal is crafted for a powerful and clear transmission.
+                </p>
+                
+                {/* Signal Bars */}
+                <div className="bg-black/50 p-4 rounded">
+                  <div className="flex items-end justify-center space-x-2 h-16">
+                    <div className="w-3 h-8 bg-accent-primary"></div>
+                    <div className="w-3 h-12 bg-accent-primary"></div>
+                    <div className="w-3 h-16 bg-yellow-400"></div>
+                    <div className="w-3 h-14 bg-accent-primary"></div>
+                  </div>
+                </div>
+              </NeonCard>
             </div>
-            <NeonCard variant="glow" className="max-w-4xl mx-auto">
-              <WaveDNA isPlaying={true} className="h-64" />
-            </NeonCard>
+            
+            {/* Level Meters */}
+            <VoidlineMeter 
+              level={mockData.levels.peak}
+              headroom={Math.abs(mockData.levels.peak)}
+              noiseFloor={-65.2}
+            />
           </div>
+        </motion.div>
+
+        {/* Right Panel - Presets & Analysis */}
+        <motion.div 
+          className="col-span-3"
+          initial={{ opacity: 0, x: 30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.3 }}
+        >
+          {/* Presets */}
+          <NeonCard variant="terminal" className="mb-6">
+            <NeonCardHeader>
+              <NeonCardTitle>
+                <div className="flex items-center space-x-2">
+                  <Target className="h-4 w-4" />
+                  <span>PRESETS</span>
+                </div>
+              </NeonCardTitle>
+            </NeonCardHeader>
+            <NeonCardContent>
+              <div className="space-y-3">
+                {mockPresets.map((preset, index) => (
+                  <motion.div
+                    key={preset.name}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <PresetTile
+                      preset={{
+                        id: index.toString(),
+                        name: preset.name,
+                        category: preset.category,
+                        description: preset.description,
+                        codeName: preset.name,
+                        userId: null,
+                        parameters: {
+                          harmonicBoost: mockData.harmonicBoost,
+                          subweight: mockData.subweight,
+                          transientPunch: mockData.transientPunch,
+                          airlift: mockData.airlift,
+                          spatialFlux: mockData.spatialFlux,
+                          compression: mockData.compression,
+                          eq: {
+                            lowShelf: { frequency: 100, gain: mockData.eq.lowShelf },
+                            highShelf: { frequency: 8000, gain: mockData.eq.highShelf }
+                          },
+                          stereo: mockData.stereo
+                        },
+                        isBuiltIn: true,
+                        isPublic: true,
+                        usageCount: Math.floor(Math.random() * 1000),
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                      }}
+                      isActive={preset.isActive}
+                      onApply={() => {}}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </NeonCardContent>
+          </NeonCard>
+
+          {/* Live Analysis */}
+          <NeonCard variant="terminal">
+            <NeonCardHeader>
+              <NeonCardTitle>
+                <div className="flex items-center space-x-2">
+                  <Waves className="h-4 w-4" />
+                  <span>ANALYSIS</span>
+                </div>
+              </NeonCardTitle>
+            </NeonCardHeader>
+            <NeonCardContent>
+              <div className="space-y-4 font-mono text-sm">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-text-muted">PEAK:</span>
+                    <div className="text-accent-primary font-semibold" data-testid="text-peak">
+                      {mockData.levels.peak.toFixed(1)} dB
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">RMS:</span>
+                    <div className="text-accent-primary font-semibold" data-testid="text-rms">
+                      {mockData.levels.rms.toFixed(1)} dB
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-text-muted">LUFS:</span>
+                    <div className="text-accent-primary font-semibold" data-testid="text-lufs">
+                      {mockData.levels.lufs.toFixed(1)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">LRA:</span>
+                    <div className="text-accent-primary font-semibold" data-testid="text-lra">
+                      {mockData.analysis.dynamicRange.toFixed(1)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-accent-primary/20 pt-4">
+                  <div className="text-text-muted mb-2">STEREO FIELD</div>
+                  <div className="flex justify-between items-center">
+                    <span>Width:</span>
+                    <span className="text-accent-primary" data-testid="text-stereo-width">
+                      {mockData.analysis.stereoWidth.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Correlation:</span>
+                    <span className="text-accent-primary" data-testid="text-phase-correlation">
+                      {mockData.analysis.phaseCorrelation.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t border-accent-primary/20 pt-4">
+                  <div className="text-text-muted mb-2">COMPRESSION</div>
+                  <div className="flex justify-between items-center">
+                    <span>Threshold:</span>
+                    <span className="text-accent-primary" data-testid="text-comp-threshold">
+                      {mockData.compression.threshold.toFixed(1)} dB
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Ratio:</span>
+                    <span className="text-accent-primary" data-testid="text-comp-ratio">
+                      {mockData.compression.ratio.toFixed(1)}:1
+                    </span>
+                  </div>
+                </div>
+
+                {/* Voidline Score */}
+                <div className="border-t border-accent-primary/20 pt-4">
+                  <div className="text-center">
+                    <div className="text-text-muted text-xs mb-1">VOIDLINE SCORE</div>
+                    <motion.div 
+                      className="text-2xl font-bold text-accent-primary"
+                      animate={{ scale: isPlaying ? [1, 1.1, 1] : 1 }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      data-testid="text-voidline-score"
+                    >
+                      {(85 + Math.random() * 10).toFixed(1)}
+                    </motion.div>
+                    <div className="text-xs text-text-muted">Professional Grade</div>
+                  </div>
+                </div>
+              </div>
+            </NeonCardContent>
+          </NeonCard>
+        </motion.div>
+      </div>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="mb-16">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold mb-4 text-accent-primary font-mono">$ Transmission Pricing</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {/* Payload - Free */}
+          <NeonCard variant="terminal" className="p-6">
+            <div className="mb-4">
+              <h3 className="text-xl font-bold mb-2">Payload</h3>
+              <p className="text-text-muted text-sm">15 Day Free Trial</p>
+            </div>
+            
+            <div className="text-3xl font-bold mb-6">Free</div>
+            
+            <ul className="space-y-2 text-sm mb-8">
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                3 AI Masters
+              </li>
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                WAV & MP3 Exports
+              </li>
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                Standard Delivery
+              </li>
+            </ul>
+            
+            <Button 
+              variant="outline" 
+              className="w-full font-mono border-accent-primary/30 hover:border-accent-primary text-accent-primary"
+            >
+              Start Trial
+            </Button>
+          </NeonCard>
+
+          {/* Orbital Pack - Most Popular */}
+          <NeonCard variant="terminal" className="p-6 border-accent-primary">
+            <div className="mb-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold">Orbital Pack</h3>
+                <span className="bg-accent-primary text-black px-2 py-1 text-xs font-bold rounded">MOST POPULAR</span>
+              </div>
+              <p className="text-text-muted text-sm">Ideal for EPs and albums, providing better value.</p>
+            </div>
+            
+            <div className="mb-6">
+              <span className="text-3xl font-bold">₹ 599</span>
+              <span className="text-text-muted"> / month</span>
+            </div>
+            
+            <ul className="space-y-2 text-sm mb-8">
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                15 AI Masters / month
+              </li>
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                All Formats (WAV, MP3, FLAC)
+              </li>
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                Priority Queue
+              </li>
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                Reference Tracks
+              </li>
+            </ul>
+            
+            <Button 
+              className="w-full font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
+            >
+              Select Plan
+            </Button>
+          </NeonCard>
+
+          {/* Voidline Unlimited */}
+          <NeonCard variant="terminal" className="p-6">
+            <div className="mb-4">
+              <h3 className="text-xl font-bold mb-2">Voidline Unlimited</h3>
+              <p className="text-text-muted text-sm">For the prolific producer and professional studios.</p>
+            </div>
+            
+            <div className="mb-6">
+              <span className="text-3xl font-bold">₹ 999</span>
+              <span className="text-text-muted"> / year</span>
+            </div>
+            
+            <ul className="space-y-2 text-sm mb-8">
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                Unlimited AI Masters
+              </li>
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                All Formats & Features
+              </li>
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                Highest Priority Access
+              </li>
+              <li className="flex items-center">
+                <span className="text-accent-primary mr-2">></span>
+                Dedicated Support Channel
+              </li>
+            </ul>
+            
+            <Button 
+              variant="outline"
+              className="w-full font-mono border-accent-primary/30 hover:border-accent-primary text-accent-primary"
+            >
+              Select Plan
+            </Button>
+          </NeonCard>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-accent-primary/20 py-8">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between">
-            <div className="font-mono text-text-muted">
-              Frequencies aligned. Silence remains.
+      {/* Footer Status Bar */}
+      <motion.div 
+        className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm border-t border-accent-primary/20 p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <div className="flex items-center justify-between font-mono text-xs">
+          <div className="flex space-x-6">
+            <div className="text-text-muted">
+              Designed & Developed by <span className="text-accent-primary">(AusLegitimus007)</span>
             </div>
-            <div className="flex space-x-6 text-sm font-mono text-text-muted">
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <div className="text-text-muted">
               <a href="#" className="hover:text-accent-primary">Privacy Policy</a>
+            </div>
+            <div className="text-text-muted">
               <a href="#" className="hover:text-accent-primary">Terms of Service</a>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ backgroundColor: 'var(--theme-primary)' }}
+              />
+              <span className="text-accent-primary">READY</span>
             </div>
           </div>
         </div>
-      </footer>
+      </motion.div>
     </div>
   );
 }
