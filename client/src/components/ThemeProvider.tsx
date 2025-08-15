@@ -103,8 +103,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
     },
     onError: (error) => {
-      // Silently fail for theme updates
-      console.warn("Theme update failed:", error);
+      console.error("Failed to load theme:", error);
     },
   });
 

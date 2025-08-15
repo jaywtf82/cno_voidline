@@ -563,15 +563,15 @@ export default function Landing() {
             
             <ul className="space-y-2 text-sm mb-8">
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 3 AI Masters
               </li>
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 WAV & MP3 Exports
               </li>
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 Standard Delivery
               </li>
             </ul>
@@ -601,19 +601,19 @@ export default function Landing() {
             
             <ul className="space-y-2 text-sm mb-8">
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 15 AI Masters / month
               </li>
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 All Formats (WAV, MP3, FLAC)
               </li>
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 Priority Queue
               </li>
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 Reference Tracks
               </li>
             </ul>
@@ -639,19 +639,19 @@ export default function Landing() {
             
             <ul className="space-y-2 text-sm mb-8">
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 Unlimited AI Masters
               </li>
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 All Formats & Features
               </li>
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 Highest Priority Access
               </li>
               <li className="flex items-center">
-                <span className="text-accent-primary mr-2">></span>
+                <span className="text-accent-primary mr-2">&gt;</span>
                 Dedicated Support Channel
               </li>
             </ul>
