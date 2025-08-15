@@ -4,6 +4,9 @@
 @import './styles/theme.css';
 @import './styles/overlays.css';
 
+@import "./styles/voidline-skin.css";
+@import "./styles/overlays.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

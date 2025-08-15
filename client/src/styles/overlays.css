@@ -336,3 +336,102 @@
     opacity: 0;
   }
 }
+/* Card composition classes you can add in CSS without touching JSX */
+.card, .panel, .tile, .terminal-window, .neon-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px var(--shadow);
+  transition: transform .18s var(--tw-ease-out, ease), box-shadow .18s ease, outline-color .18s ease;
+}
+
+.card:hover, .panel:hover, .tile:hover, .terminal-window:hover, .neon-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.45), 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.button, .btn, button {
+  transition: transform .12s ease, filter .12s ease;
+}
+
+.button:hover, .btn:hover, button:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.button:active, .btn:active, button:active {
+  transform: translateY(0);
+}
+
+/* Apply new surface styling to existing components */
+.bg-card, .bg-surface-dark, .bg-surface-darker {
+  background: var(--bg-elev) !important;
+}
+
+.text-primary, .text-foreground {
+  color: var(--text) !important;
+}
+
+.text-secondary, .text-muted-foreground {
+  color: var(--muted) !important;
+}
+
+.border, .border-border {
+  border-color: var(--border) !important;
+}
+
+/* Override existing accent colors */
+.text-accent-primary, .text-green-500, .text-green-400 {
+  color: var(--accent) !important;
+}
+
+.bg-accent-primary, .bg-green-500, .bg-green-400 {
+  background-color: var(--accent) !important;
+}
+
+.border-accent-primary, .border-green-500 {
+  border-color: var(--accent) !important;
+}
+
+/* Subtle glow effects */
+.glow-accent {
+  box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* Terminal and console specific styling */
+.terminal-content, .console-content {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.terminal-header {
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Preset tiles and interactive elements */
+.preset-tile, [data-role="preset-tile"] {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all .18s ease;
+}
+
+.preset-tile:hover, [data-role="preset-tile"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+
+/* Visualizer containers */
+.visualizer-container, [data-role="visualizer"] {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+/* Meter components */
+.meter, .voidline-meter {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+}

@@ -11,15 +11,30 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       colors: {
+        // Voidline theme colors from CSS variables
+        bg: "var(--bg)",
+        surface: "var(--bg-elev)",
+        grid: "var(--grid)",
+        border: "var(--border)",
+        text: "var(--text)",
+        muted: "var(--muted)",
+        accent: {
+          DEFAULT: "var(--accent)",
+          600: "var(--accent-600)",
+          200: "var(--accent-200)",
+        },
+        warn: "var(--warn)",
+        info: "var(--info)",
+        danger: "var(--danger)",
         // Surface colors
         surface: {
-          dark: "#0B0C0E",
-          darker: "#07090B",
+          dark: "var(--bg)",
+          darker: "var(--bg-elev)",
         },
         // Terminal accent colors
         accent: {
-          primary: "#3FB950",
-          secondary: "#2EA043",
+          primary: "var(--accent)",
+          secondary: "var(--accent-600)",
           matrix: "#00FF41",
           cyber: "#00D4FF",
           purple: "#B794F6",
@@ -28,9 +43,9 @@ export default {
         },
         // Text colors
         text: {
-          primary: "#C9D1D9",
-          secondary: "#8B949E",
-          muted: "#6E7681",
+          primary: "var(--text)",
+          secondary: "var(--muted)",
+          muted: "var(--muted)",
         },
         // Theme variables
         background: "var(--background)",
@@ -123,6 +138,14 @@ export default {
         "glow-md": "0 0 20px var(--theme-glow)",
         "glow-lg": "0 0 30px var(--theme-glow-strong)",
         "terminal": "0 4px 20px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+        "card": "0 2px 12px var(--shadow)",
+        "card-hover": "0 8px 24px rgba(0,0,0,.45)",
+      },
+      backgroundImage: {
+        "voidline-surface": "linear-gradient(180deg, color-mix(in srgb, var(--bg-elev) 88%, transparent), var(--bg-elev))",
+      },
+      transitionTimingFunction: {
+        "void-snap": "cubic-bezier(.2,.6,.2,1)",
       },
       textShadow: {
         glow: "0 0 10px var(--theme-glow)",
