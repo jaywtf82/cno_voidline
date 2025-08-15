@@ -5,6 +5,7 @@ import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
 import { useAudioStore } from '@/lib/stores/audioStore';
+import { PhaseOneCard } from '@/components/analysis/PhaseOneCard';
 
 interface LogEntry {
   stage: 'Standard Analysis' | 'AI Refinement';
@@ -205,7 +206,17 @@ export default function Mastering() {
           </p>
         </motion.div>
 
-        {/* Phase 1 Cards Grid */}
+        {/* Phase 1 Overview Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mb-8"
+        >
+          <PhaseOneCard />
+        </motion.div>
+
+        {/* Phase 1 Analysis Progress Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {cards.map((card, index) => (
             <motion.div

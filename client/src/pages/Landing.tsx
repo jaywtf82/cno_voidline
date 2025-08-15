@@ -25,7 +25,6 @@ import { AnalysisProgress } from '@/components/audio/AnalysisProgress';
 import { AnalysisDataCard } from '@/components/audio/AnalysisDataCard';
 import { LiveSystemFeed } from '@/components/system/LiveSystemFeed';
 import { PersistentAnalysisCard } from '@/components/analysis/PersistentAnalysisCard';
-import { PhaseOneCard } from '@/components/analysis/PhaseOneCard';
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -325,7 +324,17 @@ export default function Landing() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
           >
-            <PhaseOneCard /> {/* Replaced with PhaseOneCard */}
+            <div className="bg-black/90 border border-cyan-500/30 rounded-lg p-8 text-center">
+              <h3 className="font-mono text-xl text-cyan-400 font-bold mb-4">
+                Phase 1 · Deep Signal Deconstruction
+              </h3>
+              <p className="text-gray-400 mb-6">
+                Experience advanced AI analysis when you start mastering your tracks.
+              </p>
+              <div className="text-sm text-gray-500 font-mono">
+                Upload audio to begin your mastering session
+              </div>
+            </div>
           </motion.div>
 
           {/* Phase 2: Enhancement */}
