@@ -57,10 +57,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="classic" storageKey="voidline-ui-theme">
-        <AppShell>
+        <TooltipProvider>
           <Router />
-        </AppShell>
-        <Toaster />
+          <Toaster />
+        </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

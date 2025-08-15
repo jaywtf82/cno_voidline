@@ -345,10 +345,51 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen relative z-10 max-w-7xl mx-auto px-6 py-8" style={{ 
-      fontFamily: "'Fira Code', monospace"
-    }}>
-        {/* Header is now handled by AppShell */}
+    <div className="min-h-screen bg-terminal-bg text-terminal-text overflow-x-hidden">
+      {/* Fixed Background Pattern */}
+      <div className="fixed inset-0 grid-pattern opacity-[0.02] pointer-events-none" />
+      
+      {/* Landing Page Header */}
+      <header className="app-header site-header" role="banner" aria-label="Primary">
+        <div className="header-inner terminal-window p-2">
+          <a href="/" className="brand group" aria-label="Homepage">
+            <span className="sig">[~]</span>
+            <div className="brand-copy">
+              <h1 className="brand-title">./C/No_Voidline</h1>
+              <p className="brand-sub">Frequencies attained. Stillness remains.</p>
+            </div>
+          </a>
+
+          <nav className="nav" aria-label="Main navigation">
+            <a className="nav-link" href="/" data-active="true">/home</a>
+            <a className="nav-link" href="/console">/console</a>
+            <a className="nav-link" href="/#features">/features</a>
+            <a className="nav-link" href="/#pricing">/pricing</a>
+            <a className="nav-link" href="/#docs">/docs</a>
+            <a className="nav-link" href="/#logs">/logs</a>
+          </nav>
+
+          <div className="actions">
+            {!isAuthenticated && (
+              <button
+                onClick={handleLogin}
+                className="btn btn-secondary hidden md:inline-block whitespace-nowrap"
+              >
+                Login
+              </button>
+            )}
+            <div className="header-lights" data-role="traffic-lights">
+              <span className="dot red" />
+              <span className="dot yellow" />
+              <span className="dot green" />
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8" style={{ 
+        fontFamily: "'Fira Code', monospace"
+      }}>
 
         {/* Hero Section - AI Mastering Upload */}
         <motion.div 
@@ -508,6 +549,7 @@ export default function Landing() {
           setAnalysisComplete(true);
         }}
       />
+      </div>
     </div>
   );
 }
