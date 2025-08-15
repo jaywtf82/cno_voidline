@@ -468,7 +468,7 @@ export default function Landing() {
              style={{ borderColor: 'var(--color-glass-border)' }}>
           <div className="flex items-center justify-between">
             <div>
-              designed and developed by <span style={{ color: 'var(--color-accent)' }}>[@dotslashrecords]</span>
+              designed and developed by <a href="/mocking" className="cursor-pointer hover:underline transition-all" style={{ color: 'var(--color-accent)' }} data-testid="link-dotslashrecords">[@dotslashrecords]</a>
             </div>
             <div className="flex items-center space-x-4">
               <a href="#" className="hover:text-white">Privacy Policy</a>

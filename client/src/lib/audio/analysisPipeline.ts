@@ -32,7 +32,11 @@ export class AnalysisPipeline {
   }
 
   async analyzeOffline(audioBuffer: AudioBuffer): Promise<AnalysisSummary> {
-    console.log('Starting offline analysis...');
+    console.log('Starting offline analysis...', {
+      sampleRate: audioBuffer.sampleRate,
+      channels: audioBuffer.numberOfChannels,
+      duration: audioBuffer.duration
+    });
 
     // Extract channel data
     const leftChannel = audioBuffer.getChannelData(0);
@@ -48,10 +52,10 @@ export class AnalysisPipeline {
     const clipCount = this.countClipping(leftChannel, rightChannel);
 
     // K-weighted LUFS calculation
-    const lufsMetrics = this.calculateLUFS(audioBuffer);
+    const lufsMetrics = this.calculateLUFS(leftChannel, rightChannel, audioBuffer.sampleRate);
 
     // True peak estimation (4x oversampling)
-    const dbtp = this.calculateTruePeak(audioBuffer);
+    const dbtp = this.calculateTruePeak(leftChannel, rightChannel);
 
     // PLR and PSR
     const plr = samplePeak - lufsMetrics.lufsI;
@@ -81,31 +85,20 @@ export class AnalysisPipeline {
     return results;
   }
 
-  async startRealTimeAnalysis(audioBuffer: AudioBuffer): Promise<void> {
+  async startRealtimeAnalysis(): Promise<void> {
     console.log('Starting real-time analysis...');
-
-    // Create source node
-    const sourceNode = this.audioContext.createBufferSource();
-    sourceNode.buffer = audioBuffer;
-
-    // Create worklet nodes
-    const lufsNode = new AudioWorkletNode(this.audioContext, 'lufs-processor');
-    const peaksNode = new AudioWorkletNode(this.audioContext, 'peaks-rms-processor');
-    const corrNode = new AudioWorkletNode(this.audioContext, 'correlation-processor');
-
-    // Store worklet nodes
-    this.workletNodes.set('lufs', lufsNode);
-    this.workletNodes.set('peaks', peaksNode);
-    this.workletNodes.set('correlation', corrNode);
-
-    // Connect audio graph
-    sourceNode.connect(lufsNode);
-    lufsNode.connect(peaksNode);
-    peaksNode.connect(corrNode);
-    corrNode.connect(this.audioContext.destination);
-
-    // Start playback
-    sourceNode.start();
+    
+    if (!this.audioContext) {
+      throw new Error('AudioContext not initialized');
+    }
+    
+    // Create analyser nodes for real-time analysis
+    const analyser = this.audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.8;
+    
+    // Store analyser for use by other components
+    this.workletNodes.set('analyser', analyser as any);
   }
 
   private calculateSamplePeak(leftChannel: Float32Array, rightChannel: Float32Array): number {
@@ -113,22 +106,19 @@ export class AnalysisPipeline {
     for (let i = 0; i < leftChannel.length; i++) {
       peak = Math.max(peak, Math.abs(leftChannel[i]), Math.abs(rightChannel[i]));
     }
-    return 20 * Math.log10(peak);
+    return peak > 0 ? 20 * Math.log10(peak) : -60;
   }
 
   private calculateRMS(leftChannel: Float32Array, rightChannel: Float32Array): number {
     let sum = 0;
-    const length = leftChannel.length + rightChannel.length;
+    const length = leftChannel.length;
 
-    for (let i = 0; i < leftChannel.length; i++) {
-      sum += leftChannel[i] * leftChannel[i];
-    }
-    for (let i = 0; i < rightChannel.length; i++) {
-      sum += rightChannel[i] * rightChannel[i];
+    for (let i = 0; i < length; i++) {
+      sum += leftChannel[i] * leftChannel[i] + rightChannel[i] * rightChannel[i];
     }
 
-    const rms = Math.sqrt(sum / length);
-    return 20 * Math.log10(rms);
+    const rms = Math.sqrt(sum / (2 * length));
+    return rms > 0 ? 20 * Math.log10(rms) : -60;
   }
 
   private calculateDC(channel: Float32Array): number {
@@ -136,10 +126,12 @@ export class AnalysisPipeline {
     for (let i = 0; i < channel.length; i++) {
       sum += channel[i];
     }
-    return sum / channel.length;
+    const dc = sum / channel.length;
+    return Math.abs(dc) > 0.001 ? 20 * Math.log10(Math.abs(dc)) : -60;
   }
 
   private calculateCorrelation(leftChannel: Float32Array, rightChannel: Float32Array): number {
+    if (leftChannel === rightChannel) return 1.0; // Mono signal
     if (leftChannel.length !== rightChannel.length) return 0;
 
     let sumL = 0, sumR = 0, sumLR = 0, sumL2 = 0, sumR2 = 0;
@@ -160,48 +152,127 @@ export class AnalysisPipeline {
   }
 
   private countClipping(leftChannel: Float32Array, rightChannel: Float32Array): number {
-    let count = 0;
-    const threshold = 0.99;
-
+    let clipCount = 0;
+    const threshold = 0.99; // Just below full scale
+    let previousClipped = false;
+    
     for (let i = 0; i < leftChannel.length; i++) {
-      if (Math.abs(leftChannel[i]) >= threshold) count++;
+      const isClipped = Math.abs(leftChannel[i]) >= threshold || Math.abs(rightChannel[i]) >= threshold;
+      
+      // Only count consecutive clipped samples as one clip event
+      if (isClipped && !previousClipped) {
+        clipCount++;
+      }
+      
+      previousClipped = isClipped;
     }
-    for (let i = 0; i < rightChannel.length; i++) {
-      if (Math.abs(rightChannel[i]) >= threshold) count++;
-    }
-
-    return count;
+    
+    return clipCount;
   }
 
-  private calculateLUFS(audioBuffer: AudioBuffer): {
+  private calculateLUFS(leftChannel: Float32Array, rightChannel: Float32Array, sampleRate: number): {
     lufsI: number;
     lufsS: number;
     lufsM: number;
     lra: number;
   } {
-    // Simplified LUFS calculation
-    // In production, this would implement full K-weighting and gating
-    const leftChannel = audioBuffer.getChannelData(0);
-    const rightChannel = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : leftChannel;
-
-    // Mock LUFS values based on RMS
-    const rms = this.calculateRMS(leftChannel, rightChannel);
-    const lufsI = rms - 5; // Rough approximation
-    const lufsS = lufsI + 0.5;
-    const lufsM = lufsI + 1.0;
-    const lra = 8.5; // Typical value
-
-    return { lufsI, lufsS, lufsM, lra };
+    const windowSize = Math.floor(sampleRate * 0.4); // 400ms window for momentary
+    const shortTermWindow = Math.floor(sampleRate * 3); // 3s window for short-term
+    const overlap = Math.floor(windowSize * 0.75); // 75% overlap
+    
+    const momentaryValues: number[] = [];
+    const shortTermValues: number[] = [];
+    
+    // Calculate momentary loudness (400ms windows)
+    for (let i = 0; i < leftChannel.length - windowSize; i += windowSize - overlap) {
+      const leftWindow = leftChannel.slice(i, i + windowSize);
+      const rightWindow = rightChannel.slice(i, i + windowSize);
+      
+      const loudness = this.calculateKWeightedLoudness(leftWindow, rightWindow, sampleRate);
+      if (loudness > -70) { // Gating threshold
+        momentaryValues.push(loudness);
+      }
+    }
+    
+    // Calculate short-term loudness (3s windows)
+    for (let i = 0; i < leftChannel.length - shortTermWindow; i += shortTermWindow / 2) {
+      const leftWindow = leftChannel.slice(i, i + shortTermWindow);
+      const rightWindow = rightChannel.slice(i, i + shortTermWindow);
+      
+      const loudness = this.calculateKWeightedLoudness(leftWindow, rightWindow, sampleRate);
+      if (loudness > -70) { // Gating threshold
+        shortTermValues.push(loudness);
+      }
+    }
+    
+    // Apply relative gating for integrated loudness
+    const ungatedIntegrated = this.meanLoudness(momentaryValues);
+    const relativeThreshold = ungatedIntegrated - 10; // -10 LU relative gate
+    const gatedValues = momentaryValues.filter(v => v >= relativeThreshold);
+    
+    const lufsI = gatedValues.length > 0 ? this.meanLoudness(gatedValues) : -70;
+    const lufsS = shortTermValues.length > 0 ? this.meanLoudness(shortTermValues.slice(-10)) : -70; // Last 10 values
+    const lufsM = momentaryValues.length > 0 ? momentaryValues[momentaryValues.length - 1] : -70;
+    
+    // Calculate LRA (Loudness Range)
+    const sortedShortTerm = [...shortTermValues].sort((a, b) => a - b);
+    const p10 = this.percentile(sortedShortTerm, 10);
+    const p95 = this.percentile(sortedShortTerm, 95);
+    const lra = p95 - p10;
+    
+    return {
+      lufsI: Math.round(lufsI * 10) / 10,
+      lufsS: Math.round(lufsS * 10) / 10,
+      lufsM: Math.round(lufsM * 10) / 10,
+      lra: Math.round(lra * 10) / 10
+    };
+  }
+  
+  private calculateKWeightedLoudness(leftChannel: Float32Array, rightChannel: Float32Array, sampleRate: number): number {
+    // Simplified K-weighting filter coefficients for 48kHz
+    // In production, you'd implement the full pre-filtering stage
+    
+    let sumL = 0, sumR = 0;
+    const length = leftChannel.length;
+    
+    // Apply simple K-weighting approximation
+    for (let i = 0; i < length; i++) {
+      const weightedL = leftChannel[i] * 0.691; // Left channel weighting
+      const weightedR = rightChannel[i] * 0.691; // Right channel weighting
+      
+      sumL += weightedL * weightedL;
+      sumR += weightedR * weightedR;
+    }
+    
+    const meanSquare = (sumL + sumR) / (2 * length);
+    return meanSquare > 0 ? -0.691 + 10 * Math.log10(meanSquare) : -70;
+  }
+  
+  private meanLoudness(values: number[]): number {
+    if (values.length === 0) return -70;
+    const sum = values.reduce((acc, val) => acc + Math.pow(10, val / 10), 0);
+    return 10 * Math.log10(sum / values.length);
+  }
+  
+  private percentile(sortedValues: number[], p: number): number {
+    if (sortedValues.length === 0) return -70;
+    const index = Math.floor((p / 100) * sortedValues.length);
+    return sortedValues[Math.min(index, sortedValues.length - 1)];
   }
 
-  private calculateTruePeak(audioBuffer: AudioBuffer): number {
-    // Simplified true peak estimation
-    // In production, this would implement 4x oversampling
-    const leftChannel = audioBuffer.getChannelData(0);
-    const rightChannel = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : leftChannel;
-
-    const samplePeak = this.calculateSamplePeak(leftChannel, rightChannel);
-    return samplePeak + 0.5; // Rough oversampling headroom
+  private calculateTruePeak(leftChannel: Float32Array, rightChannel: Float32Array): number {
+    // Simplified true peak with basic oversampling approximation
+    let maxPeak = 0;
+    
+    // Find sample peaks
+    for (let i = 0; i < leftChannel.length; i++) {
+      maxPeak = Math.max(maxPeak, Math.abs(leftChannel[i]), Math.abs(rightChannel[i]));
+    }
+    
+    // Apply oversampling correction factor (approximation)
+    const truePeak = maxPeak * 1.05; // Conservative estimate
+    
+    return truePeak > 0 ? 20 * Math.log10(truePeak) : -60;
   }
 
   getWorkletNode(type: string): AudioWorkletNode | undefined {
