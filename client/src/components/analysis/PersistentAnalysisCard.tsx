@@ -43,12 +43,38 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
   
   const analysis = analysisData || (analysisId ? getAnalysis(analysisId) : null);
 
-  if (!analysis) {
+  if (!analysis || typeof analysis !== 'object') {
     return null;
   }
 
+  // Ensure all required properties exist with fallbacks
+  const safeAnalysis = {
+    id: analysis.id || 'Unknown',
+    sr: analysis.sr || analysis.sampleRate || 44100,
+    ch: analysis.ch || analysis.channels || 2,
+    dur_s: analysis.dur_s || analysis.duration || 0,
+    peak_dbfs: analysis.peak_dbfs || analysis.peak || 0,
+    rms_mono_dbfs: analysis.rms_mono_dbfs || analysis.rms || 0,
+    crest_db: analysis.crest_db || analysis.crest || 0,
+    lufs_i: analysis.lufs_i !== undefined ? analysis.lufs_i : null,
+    bands: analysis.bands || {
+      sub_20_40: 0,
+      low_40_120: 0,
+      lowmid_120_300: 0,
+      mid_300_1500: 0,
+      highmid_1p5k_6k: 0,
+      high_6k_12k: 0,
+      air_12k_20k: 0
+    },
+    mix_notes: analysis.mix_notes || [],
+    targets: analysis.targets || {
+      club: { lufs_i_min: -8, lufs_i_max: -6, tp_max_dbTP: -1 },
+      stream: { lufs_i_min: -16, lufs_i_max: -14, tp_max_dbTP: -1 }
+    }
+  };
+
   const handleStartMastering = () => {
-    navigate(`/mastering?id=${analysis?.id || analysisId || 'current_analysis'}`);
+    navigate(`/mastering?id=${safeAnalysis?.id || analysisId || 'current_analysis'}`);
   };
 
   return (
@@ -61,7 +87,7 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
       <Card className="bg-black/90 border-green-500/30 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-mono text-lg text-green-400 font-bold tracking-wider">
-            {analysis.id} — TECHNICAL ANALYSIS
+            {safeAnalysis.id} — TECHNICAL ANALYSIS
           </h3>
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -74,25 +100,25 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
           <div className="space-y-2">
             <div className="flex items-center space-x-4 text-sm font-mono">
               <span className="text-gray-400">Sample rate:</span>
-              <span className="text-white">{analysis.sr} Hz</span>
+              <span className="text-white">{safeAnalysis.sr} Hz</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">Channels:</span>
-              <span className="text-white">{analysis.ch}</span>
+              <span className="text-white">{safeAnalysis.ch}</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">Duration:</span>
-              <span className="text-white">{analysis.dur_s.toFixed(2)} s</span>
+              <span className="text-white">{safeAnalysis.dur_s.toFixed(2)} s</span>
             </div>
           </div>
           <div className="space-y-2">
             <div className="flex items-center space-x-4 text-sm font-mono">
               <span className="text-gray-400">Peak:</span>
-              <span className="text-white">{analysis.peak_dbfs.toFixed(2)} dBFS</span>
+              <span className="text-white">{safeAnalysis.peak_dbfs.toFixed(2)} dBFS</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">RMS (mono):</span>
-              <span className="text-white">{analysis.rms_mono_dbfs.toFixed(2)} dBFS</span>
+              <span className="text-white">{safeAnalysis.rms_mono_dbfs.toFixed(2)} dBFS</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">Crest:</span>
-              <span className="text-white">{analysis.crest_db.toFixed(2)} dB</span>
+              <span className="text-white">{safeAnalysis.crest_db.toFixed(2)} dB</span>
             </div>
           </div>
         </div>
@@ -101,9 +127,9 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
         <div className="mb-6">
           <div className="text-sm font-mono text-gray-400">
             Integrated LUFS: <span className="text-yellow-400">
-              {analysis.lufs_i !== null ? `${analysis.lufs_i.toFixed(1)}` : '(pyloudnorm unavailable)'}
+              {safeAnalysis.lufs_i !== null ? `${safeAnalysis.lufs_i.toFixed(1)}` : '(pyloudnorm unavailable)'}
             </span>
-            {analysis.lufs_i === null && (
+            {safeAnalysis.lufs_i === null && (
               <span className="text-gray-500"> — use a meter in Live to verify final targets.</span>
             )}
           </div>
@@ -116,31 +142,31 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-400">sub_20_40:</span>
-                <span className="text-white">{analysis.bands.sub_20_40.toFixed(1)}</span>
+                <span className="text-white">{safeAnalysis.bands.sub_20_40.toFixed(1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">low_40_120:</span>
-                <span className="text-white">{analysis.bands.low_40_120 >= 0 ? '+' : ''}{analysis.bands.low_40_120.toFixed(1)}</span>
+                <span className="text-white">{safeAnalysis.bands.low_40_120 >= 0 ? '+' : ''}{safeAnalysis.bands.low_40_120.toFixed(1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">lowmid_120_300:</span>
-                <span className="text-white">{analysis.bands.lowmid_120_300.toFixed(1)}</span>
+                <span className="text-white">{safeAnalysis.bands.lowmid_120_300.toFixed(1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">mid_300_1500:</span>
-                <span className="text-white">{analysis.bands.mid_300_1500.toFixed(1)}</span>
+                <span className="text-white">{safeAnalysis.bands.mid_300_1500.toFixed(1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">highmid_1p5k_6k:</span>
-                <span className="text-white">{analysis.bands.highmid_1p5k_6k.toFixed(1)}</span>
+                <span className="text-white">{safeAnalysis.bands.highmid_1p5k_6k.toFixed(1)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">high_6k_12k:</span>
-                <span className="text-white">{analysis.bands.high_6k_12k.toFixed(1)}</span>
+                <span className="text-white">{safeAnalysis.bands.high_6k_12k.toFixed(1)}</span>
               </div>
               <div className="flex justify-between md:col-span-2">
                 <span className="text-gray-400">air_12k_20k:</span>
-                <span className="text-white">{analysis.bands.air_12k_20k.toFixed(1)}</span>
+                <span className="text-white">{safeAnalysis.bands.air_12k_20k.toFixed(1)}</span>
               </div>
             </div>
           </div>
@@ -151,7 +177,7 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
           <h4 className="font-mono text-sm text-green-400 mb-3">Mix notes:</h4>
           <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
             <ul className="space-y-2 text-sm text-gray-300">
-              {analysis.mix_notes.map((note, index) => (
+              {safeAnalysis.mix_notes.map((note, index) => (
                 <li key={index} className="flex items-start">
                   <span className="text-green-400 mr-2">-</span>
                   <span className="flex-1">{note}</span>
@@ -169,13 +195,13 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
               <div>
                 <div className="text-gray-400 mb-1">Club:</div>
                 <div className="text-white">
-                  {analysis.targets.club.lufs_i_min}..{analysis.targets.club.lufs_i_max} LUFS-I, TP ≤ {analysis.targets.club.tp_max_dbTP} dBTP
+                  {safeAnalysis.targets.club.lufs_i_min}..{safeAnalysis.targets.club.lufs_i_max} LUFS-I, TP ≤ {safeAnalysis.targets.club.tp_max_dbTP} dBTP
                 </div>
               </div>
               <div>
                 <div className="text-gray-400 mb-1">Streaming:</div>
                 <div className="text-white">
-                  {analysis.targets.stream.lufs_i_min}..{analysis.targets.stream.lufs_i_max} LUFS-I, TP ≤ {analysis.targets.stream.tp_max_dbTP} dBTP
+                  {safeAnalysis.targets.stream.lufs_i_min}..{safeAnalysis.targets.stream.lufs_i_max} LUFS-I, TP ≤ {safeAnalysis.targets.stream.tp_max_dbTP} dBTP
                 </div>
               </div>
             </div>
