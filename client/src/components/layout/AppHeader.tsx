@@ -30,8 +30,8 @@ export function AppHeader() {
         </a>
 
         <nav className="nav" aria-label="Main navigation">
-          <a className="nav-link" href="/" data-active={location === '/' ? 'true' : 'false'}>/home</a>
-          <a className="nav-link" href="/console" data-active={location === '/console' ? 'true' : 'false'}>/console</a>
+          <a className="nav-link" href="/" data-active={location === '/' ? 'true' : undefined}>/home</a>
+          <a className="nav-link" href="/console" data-active={location === '/console' ? 'true' : undefined}>/console</a>
           <a className="nav-link" href="/#features">/features</a>
           <a className="nav-link" href="/#pricing">/pricing</a>
           <a className="nav-link" href="/#docs">/docs</a>
@@ -42,7 +42,7 @@ export function AppHeader() {
           {!isAuthenticated && (
             <button
               onClick={handleLogin}
-              className="btn btn-ghost"
+              className="btn btn-secondary hidden md:inline-block whitespace-nowrap"
             >
               Login
             </button>
