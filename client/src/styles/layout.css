@@ -7,11 +7,11 @@
 }
 
 .app-header{
-  position: sticky; top: 0; z-index: 50;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 85%, transparent), transparent);
+  position: relative; /* detached from top */
+  z-index: 50;
+  background: transparent; /* no background */
   border-bottom: 0;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 4px 16px var(--shadow); /* subtler */
+  padding-top: 1rem; /* add some top spacing */
 }
 
 .header-inner{
@@ -65,38 +65,46 @@
   margin-top: 2px;
 }
 
-/* Nav pills: grey active chip, no press color */
-.nav{ display:none; align-items:center; gap:.35rem; }
+/* Nav pills: transparent background, minimal styling */
+.nav{ display:none; align-items:center; gap:.75rem; }
 @media (min-width: 768px){ .nav{ display:inline-flex; } }
 .nav-link{
   color: #9aa9b8;
   height: var(--ctl-h); line-height: calc(var(--ctl-h) - 2px);
   padding: 0 .55rem; border-radius: .6rem;
   display: inline-flex; align-items:center;
-  background: rgba(255,255,255,0.06);          /* subtle base */
-  transition: color .15s ease, background-color .15s ease, box-shadow .15s ease;
+  background: transparent;          /* remove background */
+  transition: color .15s ease;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.875rem;
+  text-decoration: none;
 }
-.nav-link:hover{ color:#e6edf6; background: rgba(255,255,255,.10); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+.nav-link:hover{ 
+  color: var(--accent); /* green on hover */
+  background: transparent; /* keep transparent */
+}
 .nav-link[data-active="true"]{
-  color:#e6edf6;
-  background: rgba(255,255,255,.12);           /* grey active pill (no green) */
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  color: var(--accent); /* green for active */
+  background: transparent; /* keep transparent */
 }
 
-/* Login button: outline mint, no press color */
+/* Login button: outline mint, matching reference */
 .actions{ display:inline-flex; align-items:center; gap:.6rem; }
 .btn.btn-secondary{
   height: var(--ctl-h);
   display:inline-flex; align-items:center; padding: 0 .9rem;
   border-radius: .7rem;
   color: var(--accent);
-  border: 1px solid rgba(63,185,80,.35);
+  border: 1px solid var(--accent);
   background: transparent;
-  box-shadow: 0 0 0 0 rgba(0,0,0,0);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-decoration: none;
 }
 .btn.btn-secondary:hover{
-  border-color: rgba(63,185,80,.65);
-  background: rgba(63,185,80,.06);             /* very light hover, not pressed */
+  border-color: var(--accent);
+  background: rgba(63,185,80,.06);
   color: var(--accent);
 }
 
@@ -106,8 +114,8 @@
   background: rgb(var(--surface-rgb) / .22); pointer-events:none; z-index:1;
 }
 
-/* Scroll area unchanged */
-.app-main{ height: calc(100dvh - var(--header-h)); overflow-y:auto; overscroll-behavior:contain; position:relative; z-index:1; padding:1rem; }
+/* Scroll area with adjusted height for detached header */
+.app-main{ height: calc(100dvh - 2rem); overflow-y:auto; overscroll-behavior:contain; position:relative; z-index:1; padding:1rem; }
 
 /* Grid background and vignette pinned to viewport */
 .app-shell::before {
