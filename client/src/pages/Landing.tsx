@@ -86,6 +86,7 @@ export default function Landing() {
   };
 
   const handleFileSelect = async (file: File) => {
+    console.log('File selected:', file.name);
     try {
       // Initialize AI mastering core
       await aiMasteringCore.initialize();
@@ -97,7 +98,6 @@ export default function Landing() {
       
       // Create mastering session
       const sessionId = await aiMasteringCore.createSession(audioBuffer);
-      
       console.log('Mastering session created:', sessionId);
       
       // Redirect to console for authenticated users, or show login
@@ -112,6 +112,8 @@ export default function Landing() {
       console.error('Failed to process audio file:', error);
     }
   };
+
+
 
   const mockPresets = [
     { name: "CLUB_MASTER", category: "Club", description: "High energy club master", isActive: false },
@@ -689,7 +691,7 @@ export default function Landing() {
         <div className="flex items-center justify-between font-mono text-xs">
           <div className="flex space-x-6">
             <div className="text-text-muted">
-              Designed & Developed by <span className="text-accent-primary">(AusLegitimus007)</span>
+              designed and developed by <span className="text-accent-primary">[@dotslashrecords]</span>
             </div>
           </div>
           

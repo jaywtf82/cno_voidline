@@ -7,6 +7,9 @@ C/No Voidline is a professional-grade AI audio mastering console with a cinemati
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Footer credit: "designed and developed by [@dotslashrecords]"
+Terminal window styling: Use macOS-style window chrome with colored dots
+Logo: Custom SVG from story.svg with terminal window integration
 
 ## System Architecture
 
@@ -26,7 +29,9 @@ Preferred communication style: Simple, everyday language.
 
 ### Audio Processing Engine
 - **Core**: Web Audio API with custom AudioWorklets for real-time DSP processing
+- **AI Mastering Core**: Advanced neural network for intelligent audio reconstruction and enhancement
 - **Features**: Multi-phase audio analysis (LUFS, dBTP, LRA, phase correlation), real-time EQ/compression/stereo processing
+- **AI Learning**: Continuous learning from user feedback and preference adaptation
 - **Export**: Offline rendering with progress tracking, supporting multiple professional formats
 - **Visualizations**: Real-time spectrum analysis, stereo imaging, and phase correlation displays
 
