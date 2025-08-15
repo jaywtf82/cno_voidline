@@ -343,6 +343,15 @@ export default function Console() {
             <Logo className="h-8" />
             
             <div className="flex items-center space-x-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.location.href = "/mocking"}
+                className="font-mono text-sm text-accent-primary hover:text-accent-primary/80"
+                data-testid="button-mocking"
+              >
+                /mocking
+              </Button>
               <div className="font-mono text-sm text-text-muted">
                 {user?.email}
               </div>

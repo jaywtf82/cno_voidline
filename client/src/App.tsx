@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import Console from "@/pages/Console";
+import MockingPage from "@/pages/MockingPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
         <>
           <Route path="/" component={Console} />
           <Route path="/console" component={Console} />
+          <Route path="/mocking" component={MockingPage} />
         </>
       )}
       <Route component={NotFound} />
