@@ -13,13 +13,33 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Auth middleware (configurable)
+  const requireAuth = process.env.VITE_REQUIRE_AUTH === 'true';
+  if (requireAuth) {
+    await setupAuth(app);
+  }
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes (only if auth is required)
+  const authMiddleware = requireAuth ? isAuthenticated : (req: any, res: any, next: any) => next();
+  
+  app.get('/api/auth/user', authMiddleware, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!requireAuth) {
+        // Return anonymous user when auth is disabled
+        return res.json({
+          id: 'anonymous',
+          email: 'anonymous@example.com',
+          firstName: 'Anonymous',
+          lastName: 'User',
+          preferences: { theme: 'classic', defaultExportFormat: 'streaming' }
+        });
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const user = await storage.getUser(userId);
       
       // Get user preferences
@@ -36,9 +56,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User preferences routes
-  app.get('/api/preferences', isAuthenticated, async (req: any, res) => {
+  app.get('/api/preferences', authMiddleware, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!requireAuth) {
+        // Return default preferences when auth is disabled
+        return res.json({ theme: 'classic', defaultExportFormat: 'streaming' });
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const preferences = await storage.getUserPreferences(userId);
       res.json(preferences || { theme: 'classic', defaultExportFormat: 'streaming' });
     } catch (error) {
@@ -47,9 +76,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/preferences', isAuthenticated, async (req: any, res) => {
+  app.post('/api/preferences', authMiddleware, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!requireAuth) {
+        // Return success but don't save when auth is disabled
+        return res.json(req.body);
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const validatedData = insertUserPreferenceSchema.parse({
         ...req.body,
         userId,
@@ -64,9 +102,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Project routes
-  app.get('/api/projects', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects', authMiddleware, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!requireAuth) {
+        // Return empty projects when auth is disabled
+        return res.json([]);
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const projects = await storage.getUserProjects(userId);
       res.json(projects);
     } catch (error) {

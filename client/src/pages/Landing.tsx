@@ -356,10 +356,14 @@ export default function Landing() {
                 <Button 
                   className="font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
                   onClick={() => {
-                    if (isAuthenticated) {
-                      window.location.href = `/console?session=${audioAnalysis.sessionId}`;
-                    } else {
+                    // Check if authentication is required (configurable)
+                    const requireAuth = import.meta.env.VITE_REQUIRE_AUTH === 'true';
+                    
+                    if (requireAuth && !isAuthenticated) {
                       setShowAuthModal(true);
+                    } else {
+                      // Start session regardless of auth status
+                      window.location.href = `/console?session=${audioAnalysis.sessionId}`;
                     }
                   }}
                 >
@@ -869,62 +873,64 @@ export default function Landing() {
       </motion.div>
       </div>
 
-      {/* Authentication Modal */}
-      <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
-        <DialogContent className="bg-surface-dark border border-primary/30 text-text-primary">
-          <DialogHeader>
-            <DialogTitle className="font-mono text-accent-primary text-center">
-              Start Mastering Session
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6 p-4">
-            <div className="text-center space-y-4">
-              <p className="text-text-secondary text-sm">
-                Choose how you'd like to proceed with your mastering session
-              </p>
-              
-              <div className="space-y-3">
-                <Button 
-                  className="w-full font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
-                  onClick={() => {
-                    localStorage.setItem('pendingSession', audioAnalysis?.sessionId || '');
-                    setShowAuthModal(false);
-                    handleLogin();
-                  }}
-                >
-                  Login / Register
-                </Button>
+      {/* Authentication Modal - Only shown when auth is required */}
+      {import.meta.env.VITE_REQUIRE_AUTH === 'true' && (
+        <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
+          <DialogContent className="bg-surface-dark border border-primary/30 text-text-primary">
+            <DialogHeader>
+              <DialogTitle className="font-mono text-accent-primary text-center">
+                Start Mastering Session
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6 p-4">
+              <div className="text-center space-y-4">
+                <p className="text-text-secondary text-sm">
+                  Choose how you'd like to proceed with your mastering session
+                </p>
                 
-                <Button 
-                  variant="outline"
-                  className="w-full font-mono border-accent-primary/50 hover:border-accent-primary text-accent-primary"
-                  onClick={() => {
-                    setShowAuthModal(false);
-                    window.location.href = `/console?session=${audioAnalysis?.sessionId}&demo=true`;
-                  }}
-                >
-                  Continue as Demo
-                </Button>
-              </div>
-              
-              <div className="text-xs text-text-muted space-y-2">
-                <div className="border-t border-primary/20 pt-3">
-                  <p><strong className="text-accent-primary">Login Benefits:</strong></p>
-                  <p>• Save your mastered tracks</p>
-                  <p>• Create custom presets</p>
-                  <p>• Access project history</p>
+                <div className="space-y-3">
+                  <Button 
+                    className="w-full font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
+                    onClick={() => {
+                      localStorage.setItem('pendingSession', audioAnalysis?.sessionId || '');
+                      setShowAuthModal(false);
+                      handleLogin();
+                    }}
+                  >
+                    Login / Register
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    className="w-full font-mono border-accent-primary/50 hover:border-accent-primary text-accent-primary"
+                    onClick={() => {
+                      setShowAuthModal(false);
+                      window.location.href = `/console?session=${audioAnalysis?.sessionId}&demo=true`;
+                    }}
+                  >
+                    Continue as Demo
+                  </Button>
                 </div>
-                <div className="pt-2">
-                  <p><strong className="text-yellow-400">Demo Mode:</strong></p>
-                  <p>• Try all features without saving</p>
-                  <p>• Perfect for testing the interface</p>
+                
+                <div className="text-xs text-text-muted space-y-2">
+                  <div className="border-t border-primary/20 pt-3">
+                    <p><strong className="text-accent-primary">Login Benefits:</strong></p>
+                    <p>• Save your mastered tracks</p>
+                    <p>• Create custom presets</p>
+                    <p>• Access project history</p>
+                  </div>
+                  <div className="pt-2">
+                    <p><strong className="text-yellow-400">Demo Mode:</strong></p>
+                    <p>• Try all features without saving</p>
+                    <p>• Perfect for testing the interface</p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

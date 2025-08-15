@@ -10,6 +10,9 @@ Preferred communication style: Simple, everyday language.
 Footer credit: "designed and developed by [@dotslashrecords]"
 Terminal window styling: Use macOS-style window chrome with colored dots
 Logo: Custom SVG from story.svg with terminal window integration
+**Authentication:** Configurable - can be disabled for open/demo deployments
+**Deployment:** Support for multiple free hosting platforms (GitHub Pages, Netlify, Vercel, Railway, Render)
+**Database:** Configurable storage backends (memory, SQLite, PostgreSQL)
 
 ## System Architecture
 
