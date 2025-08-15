@@ -16,8 +16,11 @@ import { AudioDropZone } from "@/components/upload/AudioDropZone";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
-import { Play, Pause, Square, Volume2, Settings, Zap, Target, Waves } from "lucide-react";
+import { Play, Pause, Square, Volume2, Settings, Zap, Target, Waves, Brain } from "lucide-react";
 import { aiMasteringCore } from "@/lib/audio/aiMasteringCore";
+import { SpectrumAnalyzer } from "@/components/audio/SpectrumAnalyzer";
+import { WaveformComparison } from "@/components/audio/WaveformComparison";
+import { OptimizedAudioProcessor } from "@/lib/audio/optimizedAudioProcessor";
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -152,9 +155,32 @@ export default function Landing() {
   // Mastering session state
   const [masteringActive, setMasteringActive] = useState(false);
   const [masteringProgress, setMasteringProgress] = useState(0);
+  const [masteringMode, setMasteringMode] = useState<'ai' | 'manual'>('ai');
   const [currentPreset, setCurrentPreset] = useState('intelligent');
   const [masteringTarget, setMasteringTarget] = useState('streaming');
   const [isExporting, setIsExporting] = useState(false);
+  const [processedAudioFile, setProcessedAudioFile] = useState<File | null>(null);
+
+  // Helper functions for mastering targets
+  const getTargetLUFS = (target: string) => {
+    const targets = {
+      streaming: '-14.0',
+      club: '-7.0',
+      vinyl: '-16.0',
+      radio: '-12.0'
+    };
+    return targets[target as keyof typeof targets] || '-14.0';
+  };
+
+  const getTargetPeak = (target: string) => {
+    const targets = {
+      streaming: '-1.0 dB',
+      club: '-0.5 dB',
+      vinyl: '-2.0 dB',
+      radio: '-0.8 dB'
+    };
+    return targets[target as keyof typeof targets] || '-1.0 dB';
+  };
 
   const mockPresets = [
     { name: "CLUB_MASTER", category: "Club", description: "High energy club master", isActive: false },
@@ -423,19 +449,53 @@ export default function Landing() {
                 
                 {/* Left Panel - Controls */}
                 <div className="space-y-6">
+                  {/* Mode Selection */}
                   <div>
-                    <h3 className="font-mono text-accent-primary mb-4">Mastering Target</h3>
+                    <h3 className="font-mono text-accent-primary mb-4">Processing Mode</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        variant={masteringMode === 'ai' ? "default" : "outline"}
+                        className={`font-mono text-xs p-3 h-auto flex flex-col items-center ${
+                          masteringMode === 'ai' 
+                            ? 'bg-accent-primary text-black' 
+                            : 'border-accent-primary/50 hover:border-accent-primary'
+                        }`}
+                        onClick={() => setMasteringMode('ai')}
+                      >
+                        <Brain className="h-4 w-4 mb-1" />
+                        <div className="font-bold">AI Mastering</div>
+                        <div className="text-xs opacity-70">Intelligent processing</div>
+                      </Button>
+                      <Button
+                        variant={masteringMode === 'manual' ? "default" : "outline"}
+                        className={`font-mono text-xs p-3 h-auto flex flex-col items-center ${
+                          masteringMode === 'manual' 
+                            ? 'bg-accent-primary text-black' 
+                            : 'border-accent-primary/50 hover:border-accent-primary'
+                        }`}
+                        onClick={() => setMasteringMode('manual')}
+                      >
+                        <Settings className="h-4 w-4 mb-1" />
+                        <div className="font-bold">Manual Control</div>
+                        <div className="text-xs opacity-70">Precise adjustments</div>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Target Selection */}
+                  <div>
+                    <h3 className="font-mono text-accent-primary mb-4">Output Target</h3>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { id: 'streaming', label: 'Streaming', desc: 'Spotify, Apple Music' },
-                        { id: 'club', label: 'Club', desc: 'High-energy, loud' },
-                        { id: 'vinyl', label: 'Vinyl', desc: 'Analog warmth' },
-                        { id: 'radio', label: 'Radio', desc: 'Broadcast ready' }
+                        { id: 'streaming', label: 'Streaming', desc: '-14 LUFS, -1.0 dBTP' },
+                        { id: 'club', label: 'Club', desc: '-7 LUFS, -0.5 dBTP' },
+                        { id: 'vinyl', label: 'Vinyl', desc: '-16 LUFS, Dynamic' },
+                        { id: 'radio', label: 'Radio', desc: '-12 LUFS, Limited' }
                       ].map((target) => (
                         <Button
                           key={target.id}
                           variant={masteringTarget === target.id ? "default" : "outline"}
-                          className={`font-mono text-xs p-3 h-auto flex flex-col items-start ${
+                          className={`font-mono text-xs p-2 h-auto flex flex-col items-start ${
                             masteringTarget === target.id 
                               ? 'bg-accent-primary text-black' 
                               : 'border-accent-primary/50 hover:border-accent-primary'
@@ -449,54 +509,73 @@ export default function Landing() {
                     </div>
                   </div>
                   
-                  <div>
-                    <h3 className="font-mono text-accent-primary mb-4">AI Preset</h3>
-                    <div className="space-y-2">
-                      {[
-                        { id: 'intelligent', label: 'Intelligent Auto', desc: 'AI analyzes and optimizes' },
-                        { id: 'transparent', label: 'Transparent', desc: 'Minimal coloration' },
-                        { id: 'warm', label: 'Analog Warm', desc: 'Vintage character' },
-                        { id: 'punchy', label: 'Punchy', desc: 'Enhanced dynamics' }
-                      ].map((preset) => (
-                        <Button
-                          key={preset.id}
-                          variant={currentPreset === preset.id ? "default" : "outline"}
-                          className={`w-full font-mono text-xs justify-start ${
-                            currentPreset === preset.id 
-                              ? 'bg-accent-primary text-black' 
-                              : 'border-accent-primary/50 hover:border-accent-primary'
-                          }`}
-                          onClick={() => setCurrentPreset(preset.id)}
-                        >
-                          <div>
-                            <div className="font-bold">{preset.label}</div>
-                            <div className="text-xs opacity-70">{preset.desc}</div>
-                          </div>
-                        </Button>
-                      ))}
+                  {/* AI Presets (only shown in AI mode) */}
+                  {masteringMode === 'ai' && (
+                    <div>
+                      <h3 className="font-mono text-accent-primary mb-4">AI Style</h3>
+                      <div className="space-y-2">
+                        {[
+                          { id: 'intelligent', label: 'Intelligent Auto', desc: 'Analyzes and adapts to content' },
+                          { id: 'transparent', label: 'Transparent', desc: 'Clean, minimal processing' },
+                          { id: 'warm', label: 'Analog Warm', desc: 'Vintage tube/tape character' },
+                          { id: 'punchy', label: 'Modern Punch', desc: 'Enhanced impact and clarity' }
+                        ].map((preset) => (
+                          <Button
+                            key={preset.id}
+                            variant={currentPreset === preset.id ? "default" : "outline"}
+                            className={`w-full font-mono text-xs justify-start p-2 h-auto ${
+                              currentPreset === preset.id 
+                                ? 'bg-accent-primary text-black' 
+                                : 'border-accent-primary/50 hover:border-accent-primary'
+                            }`}
+                            onClick={() => setCurrentPreset(preset.id)}
+                          >
+                            <div>
+                              <div className="font-bold">{preset.label}</div>
+                              <div className="text-xs opacity-70">{preset.desc}</div>
+                            </div>
+                          </Button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
-                  <div className="flex gap-4">
+                  {/* Processing Controls */}
+                  <div className="flex gap-3">
                     <Button 
                       className="flex-1 font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
-                      onClick={() => {
+                      onClick={async () => {
                         setMasteringProgress(0);
-                        // Simulate mastering process
-                        const interval = setInterval(() => {
-                          setMasteringProgress(prev => {
-                            if (prev >= 100) {
-                              clearInterval(interval);
-                              return 100;
-                            }
-                            return prev + 2;
-                          });
-                        }, 100);
+                        setProcessedAudioFile(null);
+                        
+                        // Optimized processing simulation
+                        const processingSteps = [
+                          { name: 'Analyzing...', duration: 500 },
+                          { name: 'Processing...', duration: 2000 },
+                          { name: 'Finalizing...', duration: 300 }
+                        ];
+                        
+                        let currentProgress = 0;
+                        for (const step of processingSteps) {
+                          const stepIncrement = step.duration / 50; // 50ms intervals
+                          const targetProgress = currentProgress + (step.duration / 3000) * 100;
+                          
+                          while (currentProgress < targetProgress) {
+                            await new Promise(resolve => setTimeout(resolve, 50));
+                            currentProgress = Math.min(targetProgress, currentProgress + 2);
+                            setMasteringProgress(currentProgress);
+                          }
+                        }
+                        
+                        // Simulate creating processed file
+                        if (selectedFile) {
+                          setProcessedAudioFile(selectedFile); // In real implementation, this would be the processed audio
+                        }
                       }}
                       disabled={masteringProgress > 0 && masteringProgress < 100}
                     >
-                      {masteringProgress === 0 ? 'Process Audio' : 
-                       masteringProgress < 100 ? `Processing ${masteringProgress}%` : 
+                      {masteringProgress === 0 ? `${masteringMode === 'ai' ? 'AI Process' : 'Process'}` : 
+                       masteringProgress < 100 ? `Processing ${masteringProgress.toFixed(0)}%` : 
                        'Complete'}
                     </Button>
                     
@@ -506,11 +585,18 @@ export default function Landing() {
                         className="font-mono border-accent-primary/50 hover:border-accent-primary"
                         onClick={() => {
                           setIsExporting(true);
-                          setTimeout(() => setIsExporting(false), 3000);
+                          setTimeout(() => {
+                            setIsExporting(false);
+                            // Simulate download
+                            const link = document.createElement('a');
+                            link.download = `mastered_${selectedFile?.name || 'audio'}.wav`;
+                            link.href = '#'; // In real implementation, this would be the processed audio blob URL
+                            link.click();
+                          }, 2000);
                         }}
                         disabled={isExporting}
                       >
-                        {isExporting ? 'Exporting...' : 'Export'}
+                        {isExporting ? 'Exporting...' : 'Export WAV'}
                       </Button>
                     )}
                   </div>
@@ -518,12 +604,12 @@ export default function Landing() {
                   {masteringProgress > 0 && (
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs font-mono">
-                        <span>Processing Progress</span>
-                        <span>{masteringProgress}%</span>
+                        <span>Progress</span>
+                        <span>{masteringProgress.toFixed(0)}%</span>
                       </div>
-                      <div className="w-full bg-surface-dark border border-accent-primary/30 rounded">
+                      <div className="w-full bg-surface-dark border border-accent-primary/30 rounded overflow-hidden">
                         <div 
-                          className="bg-accent-primary h-2 rounded transition-all duration-300"
+                          className="bg-accent-primary h-2 transition-all duration-150 ease-out"
                           style={{ width: `${masteringProgress}%` }}
                         />
                       </div>
@@ -531,41 +617,51 @@ export default function Landing() {
                   )}
                 </div>
                 
-                {/* Right Panel - Visualizer */}
+                {/* Right Panel - Visualizers */}
                 <div className="space-y-6">
-                  <div>
-                    <h3 className="font-mono text-accent-primary mb-4">Real-time Analysis</h3>
-                    <div className="bg-black/50 border border-accent-primary/30 rounded p-4 h-48 flex items-center justify-center">
-                      <div className="text-center text-text-muted">
-                        <div className="font-mono text-sm mb-2">Spectrum Analyzer</div>
-                        <div className="flex items-end space-x-1 justify-center h-20">
-                          {Array.from({ length: 16 }, (_, i) => (
-                            <div
-                              key={i}
-                              className="bg-accent-primary/50 w-2 animate-pulse"
-                              style={{ 
-                                height: `${20 + Math.sin(i * 0.5 + Date.now() * 0.01) * 20}px`,
-                                animationDelay: `${i * 100}ms`
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                  {/* Spectrum Analyzer */}
+                  <SpectrumAnalyzer
+                    audioFile={selectedFile || undefined}
+                    isActive={masteringProgress > 0}
+                    className="h-48"
+                  />
+                  
+                  {/* Waveform Comparison */}
+                  <WaveformComparison
+                    originalFile={selectedFile || undefined}
+                    processedFile={processedAudioFile || undefined}
+                    isProcessing={masteringProgress > 0 && masteringProgress < 100}
+                    className="h-40"
+                  />
+                  
+                  {/* Levels Display */}
+                  <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+                    <div className="space-y-1">
+                      <div className="text-accent-primary">Input</div>
+                      <div>LUFS: {audioAnalysis?.lufs?.toFixed(1) || '-23.1'}</div>
+                      <div>Peak: {audioAnalysis?.peak?.toFixed(1) || '-3.2'} dB</div>
+                      <div>RMS: {audioAnalysis?.rms?.toFixed(1) || '-18.5'} dB</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-accent-primary">Output</div>
+                      <div>LUFS: {masteringProgress === 100 ? getTargetLUFS(masteringTarget) : '---'}</div>
+                      <div>Peak: {masteringProgress === 100 ? getTargetPeak(masteringTarget) : '---'}</div>
+                      <div>RMS: {masteringProgress === 100 ? '-12.0 dB' : '---'}</div>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-                    <div className="space-y-1">
-                      <div className="text-accent-primary">Input Levels</div>
-                      <div>LUFS: {audioAnalysis?.lufs?.toFixed(1) || '-23.1'}</div>
-                      <div>Peak: {audioAnalysis?.peak?.toFixed(1) || '-3.2'} dB</div>
+                  {/* Quality Metrics */}
+                  {masteringProgress === 100 && (
+                    <div className="bg-black/30 border border-accent-primary/30 rounded p-3">
+                      <div className="text-xs font-mono text-accent-primary mb-2">QUALITY METRICS</div>
+                      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <div>Dynamic Range: {(12 + Math.random() * 3).toFixed(1)} LU</div>
+                        <div>Stereo Width: {(75 + Math.random() * 20).toFixed(0)}%</div>
+                        <div>Phase Correlation: {(0.85 + Math.random() * 0.1).toFixed(2)}</div>
+                        <div>Voidline Score: {(88 + Math.random() * 8).toFixed(1)}/100</div>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <div className="text-accent-primary">Output Levels</div>
-                      <div>LUFS: {masteringProgress === 100 ? '-14.0' : '---'}</div>
-                      <div>Peak: {masteringProgress === 100 ? '-1.0' : '---'} dB</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </NeonCardContent>
