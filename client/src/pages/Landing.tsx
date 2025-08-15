@@ -222,14 +222,7 @@ export default function Landing() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
       >
-        <div className="mb-8">
-          <h1 className="text-3xl lg:text-4xl font-mono font-bold text-primary mb-4">
-            FREQUENCY COMMAND DECK
-          </h1>
-          <p className="text-lg text-text-secondary mb-8 max-w-3xl mx-auto">
-            Professional mastering interface with real-time analysis
-          </p>
-        </div>
+
 
         <AudioDropZone onFileSelect={handleFileSelect} className="mb-8" />
         
