@@ -1,9 +1,16 @@
 :root{
-  --header-h: 64px;    /* slim header */
-  --ctl-h: 34px;       /* pill/login height */
-  --header-max: 1120px;/* center width similar to reference */
-  --brand-sub-size: 0.66rem;  /* ~3× smaller than title */
+  --header-h: clamp(48px, 8vh, 80px);    /* responsive header height */
+  --ctl-h: clamp(28px, 4vh, 40px);       /* responsive control height */
+  --header-max: clamp(320px, 95vw, 1200px);/* fully responsive width */
+  --brand-sub-size: clamp(0.6rem, 1.5vw, 0.8rem);  /* responsive subtitle */
+  --brand-title-size: clamp(0.9rem, 2.5vw, 1.1rem); /* responsive title */
+  --nav-font-size: clamp(0.75rem, 1.8vw, 0.875rem); /* responsive nav text */
   --brand-grey: #9aa9b8;      /* same family as nav grey */
+  --spacing-xs: clamp(0.25rem, 1vw, 0.5rem);
+  --spacing-sm: clamp(0.5rem, 2vw, 1rem);
+  --spacing-md: clamp(0.75rem, 3vw, 1.5rem);
+  --spacing-lg: clamp(1rem, 4vw, 2rem);
+  --spacing-xl: clamp(1.5rem, 6vw, 3rem);
 }
 
 .app-header{
@@ -11,18 +18,38 @@
   z-index: 50;
   background: transparent; /* no background */
   border-bottom: 0;
-  padding-top: 1rem; /* add some top spacing */
+  padding-top: var(--spacing-md); /* responsive top spacing */
+  padding-bottom: var(--spacing-sm);
+}
+
+/* Mobile header adjustments */
+@media (max-width: 768px) {
+  .app-header {
+    padding-top: var(--spacing-sm);
+  }
 }
 
 .header-inner{
-  width: clamp(320px, 92vw, var(--header-max));
+  width: var(--header-max);
   margin-inline: auto;           /* center horizontally */
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: .75rem;
+  gap: var(--spacing-sm);
   min-height: var(--header-h);
-  padding: 6px 12px;
+  padding: var(--spacing-xs) var(--spacing-sm);
   align-items: center;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .header-inner {
+    grid-template-columns: 1fr auto;
+    gap: var(--spacing-xs);
+  }
+  
+  .nav {
+    display: none !important; /* hide nav on mobile */
+  }
 }
 
 /* Header glass frame: thin, elegant */
@@ -46,18 +73,25 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Brand + baseline rhythm */
+/* Brand + baseline rhythm - fully responsive */
 .brand{
   display:grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto;
-  column-gap:.6rem; align-items:center; min-height: var(--ctl-h);
+  column-gap: var(--spacing-xs); align-items:center; min-height: var(--ctl-h);
 }
 .sig{
   color: var(--accent);           /* KEEP green */
   grid-row: 1 / span 2;           /* span both rows */
   align-self: center;             /* center vs title+subtitle */
+  font-size: var(--nav-font-size);
 }
 .brand-copy{ line-height: 1.05; }
-.brand-title{ color:#C8D2DF; font-weight:700; letter-spacing:.2px; grid-column:2; }
+.brand-title{ 
+  color:#C8D2DF; 
+  font-weight:700; 
+  letter-spacing:.2px; 
+  grid-column:2; 
+  font-size: var(--brand-title-size);
+}
 .brand-sub{
   color: var(--brand-grey);      /* grey like nav/button chips */
   font-size: var(--brand-sub-size);
@@ -65,19 +99,32 @@
   margin-top: 2px;
 }
 
-/* Nav pills: transparent background, minimal styling */
-.nav{ display:none; align-items:center; gap:.75rem; }
+/* Mobile brand adjustments */
+@media (max-width: 480px) {
+  .brand-sub {
+    display: none; /* hide subtitle on very small screens */
+  }
+}
+
+/* Nav pills: responsive transparent navigation */
+.nav{ display:none; align-items:center; gap: var(--spacing-xs); }
 @media (min-width: 768px){ .nav{ display:inline-flex; } }
+@media (min-width: 1024px){ .nav{ gap: var(--spacing-sm); } }
+
 .nav-link{
   color: #9aa9b8;
-  height: var(--ctl-h); line-height: calc(var(--ctl-h) - 2px);
-  padding: 0 .55rem; border-radius: .6rem;
-  display: inline-flex; align-items:center;
+  height: var(--ctl-h); 
+  line-height: calc(var(--ctl-h) - 2px);
+  padding: 0 var(--spacing-xs); 
+  border-radius: clamp(0.4rem, 1vw, 0.8rem);
+  display: inline-flex; 
+  align-items:center;
   background: transparent;          /* remove background */
   transition: color .15s ease;
   font-family: 'Fira Code', monospace;
-  font-size: 0.875rem;
+  font-size: var(--nav-font-size);
   text-decoration: none;
+  white-space: nowrap;
 }
 .nav-link:hover{ 
   color: var(--accent); /* green on hover */
@@ -88,24 +135,43 @@
   background: transparent; /* keep transparent */
 }
 
-/* Login button: outline mint, matching reference */
-.actions{ display:inline-flex; align-items:center; gap:.6rem; }
+/* Tablet responsive nav */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .nav-link {
+    padding: 0 var(--spacing-xs);
+    font-size: clamp(0.7rem, 1.5vw, 0.8rem);
+  }
+}
+
+/* Login button: responsive outline mint */
+.actions{ display:inline-flex; align-items:center; gap: var(--spacing-xs); }
 .btn.btn-secondary{
   height: var(--ctl-h);
-  display:inline-flex; align-items:center; padding: 0 .9rem;
-  border-radius: .7rem;
+  display:inline-flex; 
+  align-items:center; 
+  padding: 0 var(--spacing-sm);
+  border-radius: clamp(0.5rem, 1.2vw, 0.8rem);
   color: var(--accent);
   border: 1px solid var(--accent);
   background: transparent;
   font-family: 'Fira Code', monospace;
-  font-size: 0.875rem;
+  font-size: var(--nav-font-size);
   font-weight: 400;
   text-decoration: none;
+  white-space: nowrap;
 }
 .btn.btn-secondary:hover{
   border-color: var(--accent);
   background: rgba(63,185,80,.06);
   color: var(--accent);
+}
+
+/* Mobile button adjustments */
+@media (max-width: 480px) {
+  .btn.btn-secondary {
+    padding: 0 var(--spacing-xs);
+    font-size: clamp(0.7rem, 1.4vw, 0.8rem);
+  }
 }
 
 /* Hairline eraser under header */
@@ -114,8 +180,23 @@
   background: rgb(var(--surface-rgb) / .22); pointer-events:none; z-index:1;
 }
 
-/* Scroll area with adjusted height for detached header */
-.app-main{ height: calc(100dvh - 2rem); overflow-y:auto; overscroll-behavior:contain; position:relative; z-index:1; padding:1rem; }
+/* Scroll area with responsive adjustments for detached header */
+.app-main{ 
+  height: calc(100dvh - var(--header-h)); 
+  overflow-y:auto; 
+  overscroll-behavior:contain; 
+  position:relative; 
+  z-index:1; 
+  padding: var(--spacing-md);
+}
+
+/* Mobile main area adjustments */
+@media (max-width: 768px) {
+  .app-main {
+    padding: var(--spacing-sm);
+    height: calc(100dvh - var(--header-h) - 1rem);
+  }
+}
 
 /* Grid background and vignette pinned to viewport */
 .app-shell::before {
@@ -165,15 +246,15 @@
   border-radius: .75rem;
 }
 
-/* Header traffic lights */
+/* Header traffic lights - responsive */
 .header-lights {
   display: inline-flex;
-  gap: 6px;
+  gap: clamp(4px, 1vw, 8px);
 }
 
 .header-lights .dot {
-  width: 10px;
-  height: 10px;
+  width: clamp(8px, 1.5vw, 12px);
+  height: clamp(8px, 1.5vw, 12px);
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgba(0,0,0,.45) inset;
 }

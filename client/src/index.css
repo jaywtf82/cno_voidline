@@ -93,23 +93,66 @@
 }
 
 @layer utilities {
-  /* Responsive guards */
+  /* Comprehensive responsive grid system */
   .responsive-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: clamp(1rem, 3vw, 2rem);
+    width: 100%;
+    max-width: clamp(320px, 95vw, 1200px);
+    margin: 0 auto;
+    padding: clamp(0.5rem, 2vw, 1.5rem);
+  }
+
+  @media (min-width: 640px) {
+    .responsive-grid {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
   }
 
   @media (min-width: 768px) {
     .responsive-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     }
   }
 
   @media (min-width: 1024px) {
     .responsive-grid {
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     }
+  }
+
+  @media (min-width: 1280px) {
+    .responsive-grid {
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    }
+  }
+
+  /* Responsive text sizes */
+  .text-responsive-xs { font-size: clamp(0.7rem, 1.5vw, 0.875rem); }
+  .text-responsive-sm { font-size: clamp(0.8rem, 1.8vw, 1rem); }
+  .text-responsive-base { font-size: clamp(0.9rem, 2vw, 1.125rem); }
+  .text-responsive-lg { font-size: clamp(1.1rem, 2.5vw, 1.25rem); }
+  .text-responsive-xl { font-size: clamp(1.2rem, 3vw, 1.5rem); }
+  .text-responsive-2xl { font-size: clamp(1.4rem, 3.5vw, 1.875rem); }
+  .text-responsive-3xl { font-size: clamp(1.6rem, 4vw, 2.25rem); }
+  .text-responsive-4xl { font-size: clamp(2rem, 5vw, 3rem); }
+
+  /* Responsive spacing utilities */
+  .p-responsive { padding: clamp(0.5rem, 2vw, 1.5rem); }
+  .p-responsive-sm { padding: clamp(0.25rem, 1vw, 0.75rem); }
+  .p-responsive-lg { padding: clamp(1rem, 4vw, 2.5rem); }
+  
+  .m-responsive { margin: clamp(0.5rem, 2vw, 1.5rem); }
+  .m-responsive-sm { margin: clamp(0.25rem, 1vw, 0.75rem); }
+  .m-responsive-lg { margin: clamp(1rem, 4vw, 2.5rem); }
+
+  /* Responsive container */
+  .container-responsive {
+    width: 100%;
+    max-width: clamp(320px, 95vw, 1200px);
+    margin: 0 auto;
+    padding: 0 clamp(1rem, 3vw, 2rem);
   }
 
   /* Animation utilities */
