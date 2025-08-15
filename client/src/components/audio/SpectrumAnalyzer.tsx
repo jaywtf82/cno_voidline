@@ -259,6 +259,15 @@ export function SpectrumAnalyzer({
     curveGradient.addColorStop(0.5, color + '80');
     curveGradient.addColorStop(1, color + '40');
 
+    // Generate points data outside of the loop
+    const points: {x: number, y: number}[] = [];
+    for (let i = 1; i < data.length / 2; i++) {
+      const x = logScale(i);
+      const dbValue = data[i] > 0 ? 20 * Math.log10(data[i] / 255) : -120;
+      const y = height - ((dbValue + 120) / 120) * height;
+      points.push({x, y});
+    }
+
     // Draw multiple passes for glow effect
     for (let pass = 0; pass < 3; pass++) {
       ctx.strokeStyle = pass === 0 ? color : color + (pass === 1 ? '60' : '30');
@@ -267,16 +276,6 @@ export function SpectrumAnalyzer({
       ctx.shadowBlur = pass * 3;
 
       ctx.beginPath();
-
-      // Smooth curve using quadratic bezier
-      const points: {x: number, y: number}[] = [];
-
-      for (let i = 1; i < data.length / 2; i++) {
-        const x = logScale(i);
-        const dbValue = data[i] > 0 ? 20 * Math.log10(data[i] / 255) : -120;
-        const y = height - ((dbValue + 120) / 120) * height;
-        points.push({x, y});
-      }
 
       if (points.length > 2) {
         ctx.moveTo(points[0].x, points[0].y);
