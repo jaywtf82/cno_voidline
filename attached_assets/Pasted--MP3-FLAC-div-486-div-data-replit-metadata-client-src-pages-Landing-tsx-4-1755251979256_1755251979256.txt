@@ -1,0 +1,56 @@
+, MP3, FLAC)</div>
+  486|                  <div data-replit-metadata="client/src/pages/Landing.tsx:486:16" data-component-name="div">> Priority Queue</div>
+     |                                                                                                            ^
+  487|                  <div data-replit-metadata="client/src/pages/Landing.tsx:487:16" data-component-name="div">> Reference Tracks</div>
+  488|                </div>
+  
+  The character ">" is not valid inside a JSX element
+  485|                  <div data-replit-metadata="client/src/pages/Landing.tsx:485:16" data-component-name="div">> All Formats (WAV, MP3, FLAC)</div>
+  486|                  <div data-replit-metadata="client/src/pages/Landing.tsx:486:16" data-component-name="div">> Priority Queue</div>
+  487|                  <div data-replit-metadata="client/src/pages/Landing.tsx:487:16" data-component-name="div">> Reference Tracks</div>
+     |                                                                                                            ^
+  488|                </div>
+  489|                
+  
+  The character ">" is not valid inside a JSX element
+  504|                
+  505|                <div data-replit-metadata="client/src/pages/Landing.tsx:505:14" data-component-name="div" className="space-y-3 mb-8 font-mono text-sm">
+  506|                  <div data-replit-metadata="client/src/pages/Landing.tsx:506:16" data-component-name="div">> Unlimited AI Masters</div>
+     |                                                                                                            ^
+  507|                  <div data-replit-metadata="client/src/pages/Landing.tsx:507:16" data-component-name="div">> All Formats & Features</div>
+  508|                  <div data-replit-metadata="client/src/pages/Landing.tsx:508:16" data-component-name="div">> Highest Priority Access</div>
+  
+  The character ">" is not valid inside a JSX element
+  505|                <div data-replit-metadata="client/src/pages/Landing.tsx:505:14" data-component-name="div" className="space-y-3 mb-8 font-mono text-sm">
+  506|                  <div data-replit-metadata="client/src/pages/Landing.tsx:506:16" data-component-name="div">> Unlimited AI Masters</div>
+  507|                  <div data-replit-metadata="client/src/pages/Landing.tsx:507:16" data-component-name="div">> All Formats & Features</div>
+     |                                                                                                            ^
+  508|                  <div data-replit-metadata="client/src/pages/Landing.tsx:508:16" data-component-name="div">> Highest Priority Access</div>
+  509|                  <div data-replit-metadata="client/src/pages/Landing.tsx:509:16" data-component-name="div">> Dedicated Support Channel</div>
+  
+  The character ">" is not valid inside a JSX element
+  506|                  <div data-replit-metadata="client/src/pages/Landing.tsx:506:16" data-component-name="div">> Unlimited AI Masters</div>
+  507|                  <div data-replit-metadata="client/src/pages/Landing.tsx:507:16" data-component-name="div">> All Formats & Features</div>
+  508|                  <div data-replit-metadata="client/src/pages/Landing.tsx:508:16" data-component-name="div">> Highest Priority Access</div>
+     |                                                                                                            ^
+  509|                  <div data-replit-metadata="client/src/pages/Landing.tsx:509:16" data-component-name="div">> Dedicated Support Channel</div>
+  510|                </div>
+  
+  The character ">" is not valid inside a JSX element
+  507|                  <div data-replit-metadata="client/src/pages/Landing.tsx:507:16" data-component-name="div">> All Formats & Features</div>
+  508|                  <div data-replit-metadata="client/src/pages/Landing.tsx:508:16" data-component-name="div">> Highest Priority Access</div>
+  509|                  <div data-replit-metadata="client/src/pages/Landing.tsx:509:16" data-component-name="div">> Dedicated Support Channel</div>
+     |                                                                                                            ^
+  510|                </div>
+  511|                
+  
+      at failureErrorWithLog (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1472:15)
+      at /home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:755:50
+      at responseCallbacks.<computed> (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:622:9)
+      at handleIncomingPacket (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:677:12)
+      at Socket.readFromStdout (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:600:7)
+      at Socket.emit (node:events:524:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)

@@ -1,0 +1,127 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+9:44:34 AM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+9:44:43 AM [express] GET /api/auth/user 304 in 2ms :: {"id":"anonymous","email":"anonymous@example.c…
+9:44:43 AM [express] GET /api/preferences 304 in 0ms :: {"theme":"classic","defaultExportFormat":"st…
+9:45:40 AM [express] GET /api/auth/user 200 in 1ms :: {"id":"anonymous","email":"anonymous@example.c…
+9:45:41 AM [express] GET /api/preferences 304 in 1ms :: {"theme":"classic","defaultExportFormat":"st…
+9:45:41 AM [express] GET /api/auth/user 200 in 0ms :: {"id":"anonymous","email":"anonymous@example.c…
+9:45:41 AM [express] GET /api/auth/user 304 in 1ms :: {"id":"anonymous","email":"anonymous@example.c…
+9:45:42 AM [express] GET /api/preferences 304 in 0ms :: {"theme":"classic","defaultExportFormat":"st…
+9:45:42 AM [express] GET /api/preferences 304 in 0ms :: {"theme":"classic","defaultExportFormat":"st…
+9:49:31 AM [vite] hmr update /src/pages/Landing.tsx, /src/index.css?v=nUKyQHJ_pnaKKrfH8AHM9
+9:58:15 AM [vite] hmr update /src/pages/Landing.tsx, /src/index.css?v=nUKyQHJ_pnaKKrfH8AHM9 (x2)
+9:58:15 AM [vite] hmr update /src/index.css?v=nUKyQHJ_pnaKKrfH8AHM9
+9:58:16 AM [vite] Internal server error: Transform failed with 11 errors:
+/home/runner/workspace/client/src/pages/Landing.tsx:457:106: ERROR: The character ">" is not valid inside a JSX element
+/home/runner/workspace/client/src/pages/Landing.tsx:458:106: ERROR: The character ">" is not valid inside a JSX element
+/home/runner/workspace/client/src/pages/Landing.tsx:459:106: ERROR: The character ">" is not valid inside a JSX element
+/home/runner/workspace/client/src/pages/Landing.tsx:484:106: ERROR: The character ">" is not valid inside a JSX element
+/home/runner/workspace/client/src/pages/Landing.tsx:485:106: ERROR: The character ">" is not valid inside a JSX element
+...
+  Plugin: vite:esbuild
+  File: /home/runner/workspace/client/src/pages/Landing.tsx:457:21
+  
+  The character ">" is not valid inside a JSX element
+  455|                
+  456|                <div data-replit-metadata="client/src/pages/Landing.tsx:456:14" data-component-name="div" className="space-y-3 mb-8 font-mono text-sm">
+  457|                  <div data-replit-metadata="client/src/pages/Landing.tsx:457:16" data-component-name="div">> 3 AI Masters</div>
+     |                                                                                                            ^
+  458|                  <div data-replit-metadata="client/src/pages/Landing.tsx:458:16" data-component-name="div">> WAV & MP3 Exports</div>
+  459|                  <div data-replit-metadata="client/src/pages/Landing.tsx:459:16" data-component-name="div">> Standard Delivery</div>
+  
+  The character ">" is not valid inside a JSX element
+  456|                <div data-replit-metadata="client/src/pages/Landing.tsx:456:14" data-component-name="div" className="space-y-3 mb-8 font-mono text-sm">
+  457|                  <div data-replit-metadata="client/src/pages/Landing.tsx:457:16" data-component-name="div">> 3 AI Masters</div>
+  458|                  <div data-replit-metadata="client/src/pages/Landing.tsx:458:16" data-component-name="div">> WAV & MP3 Exports</div>
+     |                                                                                                            ^
+  459|                  <div data-replit-metadata="client/src/pages/Landing.tsx:459:16" data-component-name="div">> Standard Delivery</div>
+  460|                </div>
+  
+  The character ">" is not valid inside a JSX element
+  457|                  <div data-replit-metadata="client/src/pages/Landing.tsx:457:16" data-component-name="div">> 3 AI Masters</div>
+  458|                  <div data-replit-metadata="client/src/pages/Landing.tsx:458:16" data-component-name="div">> WAV & MP3 Exports</div>
+  459|                  <div data-replit-metadata="client/src/pages/Landing.tsx:459:16" data-component-name="div">> Standard Delivery</div>
+     |                                                                                                            ^
+  460|                </div>
+  461|                
+  
+  The character ">" is not valid inside a JSX element
+  482|                
+  483|                <div data-replit-metadata="client/src/pages/Landing.tsx:483:14" data-component-name="div" className="space-y-3 mb-8 font-mono text-sm">
+  484|                  <div data-replit-metadata="client/src/pages/Landing.tsx:484:16" data-component-name="div">> 15 AI Masters / month</div>
+     |                                                                                                            ^
+  485|                  <div data-replit-metadata="client/src/pages/Landing.tsx:485:16" data-component-name="div">> All Formats (WAV, MP3, FLAC)</div>
+  486|                  <div data-replit-metadata="client/src/pages/Landing.tsx:486:16" data-component-name="div">> Priority Queue</div>
+  
+  The character ">" is not valid inside a JSX element
+  483|                <div data-replit-metadata="client/src/pages/Landing.tsx:483:14" data-component-name="div" className="space-y-3 mb-8 font-mono text-sm">
+  484|                  <div data-replit-metadata="client/src/pages/Landing.tsx:484:16" data-component-name="div">> 15 AI Masters / month</div>
+  485|                  <div data-replit-metadata="client/src/pages/Landing.tsx:485:16" data-component-name="div">> All Formats (WAV, MP3, FLAC)</div>
+     |                                                                                                            ^
+  486|                  <div data-replit-metadata="client/src/pages/Landing.tsx:486:16" data-component-name="div">> Priority Queue</div>
+  487|                  <div data-replit-metadata="client/src/pages/Landing.tsx:487:16" data-component-name="div">> Reference Tracks</div>
+  
+  The character ">" is not valid inside a JSX element
+  484|                  <div data-replit-metadata="client/src/pages/Landing.tsx:484:16" data-component-name="div">> 15 AI Masters / month</div>
+  485|                  <div data-replit-metadata="client/src/pages/Landing.tsx:485:16" data-component-name="div">> All Formats (WAV, MP3, FLAC)</div>
+  486|                  <div data-replit-metadata="client/src/pages/Landing.tsx:486:16" data-component-name="div">> Priority Queue</div>
+     |                                                                                                            ^
+  487|                  <div data-replit-metadata="client/src/pages/Landing.tsx:487:16" data-component-name="div">> Reference Tracks</div>
+  488|                </div>
+  
+  The character ">" is not valid inside a JSX element
+  485|                  <div data-replit-metadata="client/src/pages/Landing.tsx:485:16" data-component-name="div">> All Formats (WAV, MP3, FLAC)</div>
+  486|                  <div data-replit-metadata="client/src/pages/Landing.tsx:486:16" data-component-name="div">> Priority Queue</div>
+  487|                  <div data-replit-metadata="client/src/pages/Landing.tsx:487:16" data-component-name="div">> Reference Tracks</div>
+     |                                                                                                            ^
+  488|                </div>
+  489|                
+  
+  The character ">" is not valid inside a JSX element
+  504|                
+  505|                <div data-replit-metadata="client/src/pages/Landing.tsx:505:14" data-component-name="div" className="space-y-3 mb-8 font-mono text-sm">
+  506|                  <div data-replit-metadata="client/src/pages/Landing.tsx:506:16" data-component-name="div">> Unlimited AI Masters</div>
+     |                                                                                                            ^
+  507|                  <div data-replit-metadata="client/src/pages/Landing.tsx:507:16" data-component-name="div">> All Formats & Features</div>
+  508|                  <div data-replit-metadata="client/src/pages/Landing.tsx:508:16" data-component-name="div">> Highest Priority Access</div>
+  
+  The character ">" is not valid inside a JSX element
+  505|                <div data-replit-metadata="client/src/pages/Landing.tsx:505:14" data-component-name="div" className="space-y-3 mb-8 font-mono text-sm">
+  506|                  <div data-replit-metadata="client/src/pages/Landing.tsx:506:16" data-component-name="div">> Unlimited AI Masters</div>
+  507|                  <div data-replit-metadata="client/src/pages/Landing.tsx:507:16" data-component-name="div">> All Formats & Features</div>
+     |                                                                                                            ^
+  508|                  <div data-replit-metadata="client/src/pages/Landing.tsx:508:16" data-component-name="div">> Highest Priority Access</div>
+  509|                  <div data-replit-metadata="client/src/pages/Landing.tsx:509:16" data-component-name="div">> Dedicated Support Channel</div>
+  
+  The character ">" is not valid inside a JSX element
+  506|                  <div data-replit-metadata="client/src/pages/Landing.tsx:506:16" data-component-name="div">> Unlimited AI Masters</div>
+  507|                  <div data-replit-metadata="client/src/pages/Landing.tsx:507:16" data-component-name="div">> All Formats & Features</div>
+  508|                  <div data-replit-metadata="client/src/pages/Landing.tsx:508:16" data-component-name="div">> Highest Priority Access</div>
+     |                                                                                                            ^
+  509|                  <div data-replit-metadata="client/src/pages/Landing.tsx:509:16" data-component-name="div">> Dedicated Support Channel</div>
+  510|                </div>
+  
+  The character ">" is not valid inside a JSX element
+  507|                  <div data-replit-metadata="client/src/pages/Landing.tsx:507:16" data-component-name="div">> All Formats & Features</div>
+  508|                  <div data-replit-metadata="client/src/pages/Landing.tsx:508:16" data-component-name="div">> Highest Priority Access</div>
+  509|                  <div data-replit-metadata="client/src/pages/Landing.tsx:509:16" data-component-name="div">> Dedicated Support Channel</div>
+     |                                                                                                            ^
+  510|                </div>
+  511|                
+  
+      at failureErrorWithLog (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:1472:15)
+      at /home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:755:50
+      at responseCallbacks.<computed> (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:622:9)
+      at handleIncomingPacket (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:677:12)
+      at Socket.readFromStdout (/home/runner/workspace/node_modules/vite/node_modules/esbuild/lib/main.js:600:7)
+      at Socket.emit (node:events:524:28)
+      at addChunk (node:internal/streams/readable:561:12)
+      at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+      at Readable.push (node:internal/streams/readable:392:5)
+      at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
