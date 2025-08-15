@@ -1,0 +1,300 @@
+Prompt for Replit (paste everything below)
+
+Create a production-grade web app called “C/No Voidline” — an AI‑assisted audio mastering console with a cinematic, GNSS/mission‑control aesthetic. Build it so I can run it immediately on Replit (no manual fixes). Follow every instruction precisely.
+
+Tech Stack (non‑negotiable)
+
+Next.js 14 (App Router) + React 18 + TypeScript
+
+Tailwind CSS for styling; shadcn/ui for base components; lucide-react for icons
+
+Framer Motion for motion/animations (GPU‑friendly, prefers transform/opacity)
+
+Zustand for client state; Zod for schema validation
+
+Web Audio API + lightweight WASM-safe DSP layer (no external cloud calls)
+
+ESLint (next, typescript, react, security) + Prettier (consistent formatting)
+
+Vitest for unit tests; Playwright for critical UI e2e
+
+pnpm as the package manager
+
+Product Identity (fixed)
+
+App/brand: C/No Voidline
+
+Final tagline (must appear in meta + footer): “Frequencies aligned. Silence remains.”
+
+Logo rule: do not alter the logo shape or typography. Expose a <Logo /> component that renders the exact inline SVG; it must accept className and inherit currentColor.
+
+Palette & surface:
+
+Surface: #0B0C0E to #07090B vertical gradient
+
+Text: #C9D1D9
+
+Accent: #3FB950 (with glow rgba variants)
+
+Sub‑accent: #2EA043
+
+Neutrals: slate/stone shades only
+
+Typography: Inter for UI, Fira Code for monospace details
+
+App Architecture
+
+/app
+
+/(public) Landing & marketing route
+
+/console Auth‑free demo of mastering console (local only)
+
+/api/dsp Route handlers for offline DSP (analyzers & export)
+
+/components Reusable UI (cards, meters, radar, faders, knobs, tiles)
+
+/modules/audio WebAudio graph + DSP nodes (TypeScript)
+
+/modules/analysis FFT, loudness (ITU‑R BS.1770‑like estimation), phase correlation, stereo field
+
+/modules/presets “Blackroom Profiles”
+
+/lib utils (zod schemas, formatting, fps‑throttle), theming
+
+/styles global.css + tailwind config layers
+
+/tests vitest + playwright
+
+/public static assets (impulses, tiny noise textures)
+
+Core UX/UI (build these screens exactly)
+1) Entry Screen — “Signal Acquisition”
+
+Visual: dark satellite‑ops grid with scanning sweep (Framer Motion + CSS grid)
+
+CTA: drag‑and‑drop “signal uplink” zone (drop WAV/AIFF/MP3)
+
+Fun: the dropped audio’s waveform “orbits” a subtle globe (Canvas/WebGL optional; otherwise SVG path + polar transform)
+
+Purpose: load the track into the console and navigate to /console
+
+2) Core Mastering — “Frequency Command Deck” (/console)
+
+Panel layout (responsive, stable at 1080×1920 and common laptop widths):
+
+WaveDNA Visualizer (center): animated spectrum/particle bands; lows as “tectonic plates,” highs as “auroras” (Canvas or WebGL; fallback SVG)
+
+Dynamic Faders (right rail): LUFS, dBTP, dBFS, LRA — show current readings and allow target adjustments
+
+Stereo Field Radar (top-left card): rotating sweep plotting mid/side energy over time
+
+Phase Lock Grid (mid-left card): network lines tighten as phase correlation improves
+
+Noise Floor Tracker (bottom full‑width, thin): glowing “Voidline” with real‑time headroom indicator
+
+Mission Status Bar (top): “Signal Strength XX%” that updates with improvements
+
+3) AI Presets — “Blackroom Profiles”
+
+Tile buttons with code names: BERLIN_CONCRETE, SUB_ABYSS, DOME_SHIFT
+
+Hover micro‑animations (environment hint)
+
+Each preset maps to deterministic DSP chains (EQ shelves/peaks, soft saturation curve, stereo spread kernels)
+
+4) Mastering Controls — “Signal Modulation Zone”
+
+Knobs/sliders (vector‑neon) for:
+
+Harmonic Boost
+
+Subweight (low‑end shaping)
+
+Transient Punch
+
+Airlift (HF sparkle)
+
+Spatial Flux (stereo depth)
+
+Every control updates the status bar and corresponding meters in real time
+
+5) Output — “Transmission Window”
+
+Targets: CLUB, STREAMING, VINYL, RADIO
+
+Auto‑adjust export params (sample rate, dither choice, ceiling, integrated LUFS target)
+
+Animation: pulsed light sweeping across a spectrum bar during render
+
+Export: client‑side render to WAV (44.1/48 kHz), download link
+
+Unique Interactions (ship now, no placeholders)
+
+Orbit Mode: toggle that wraps the waveform around a sphere you can rotate to inspect frequency regions (use a polar mapping shader or canvas transform; provide a software fallback)
+
+Voidline Challenge: real‑time computed score that rewards improved SNR without wrecking dynamics (combine LUFS/LRA/crest factor and a noise floor model to compute a 0–100 score)
+
+Signal Path Story: small console feed narrating what the engine is doing in playful mission‑log style with exact parameter deltas
+
+Audio/DSP Requirements (deterministic, offline)
+
+Implement a local-only mastering chain using Web Audio API nodes plus custom processors:
+
+AnalyserNode (FFT), DynamicsCompressorNode, BiquadFilterNode banks
+
+Optional ConvolverNode with short IRs for subtle color (load tiny IR files in /public/ir)
+
+A custom WorkletProcessor for:
+
+softclip/tanh waveshaping,
+
+stereo mid/side matrix and spread
+
+true‑peak estimation (4× oversampling)
+
+Export: render the graph offline via OfflineAudioContext and stream to a Blob for WAV download
+
+Loudness estimation: implement a simplified BS.1770 filter gate and integrated LUFS (document limitations)
+
+Phase correlation: compute R/L correlation coefficient over a sliding window
+
+No external ML dependency; keep CPU budgets tight. All effects must be audible and stable.
+
+Component Inventory (build these, no stubs)
+
+<Logo /> — exact SVG, currentColor‑driven
+
+<NeonCard /> — glass + glow card wrapper (tailwind + data-[variant])
+
+<WaveDNA /> — canvas/WebGL spectrum visual
+
+<StereoRadar /> — rotating polar plot
+
+<PhaseGrid /> — animated network lines with correlation tightness
+
+<VoidlineMeter /> — horizontal glow headroom line
+
+<Fader />, <Knob /> — keyboard and pointer accessible
+
+<MissionBar /> — signal strength + notifications
+
+<PresetTile /> — Blackroom tiles with hover previews
+
+<TransmissionPanel /> — export target + progress animation
+
+<GlitchWord /> — wraps specific headline words with behind‑text glitch bursts (used on “MASTERING”, “TRANSMITTING…”, “SIGNAL STRENGTH”)
+
+Accessibility & UX Quality
+
+All interactive elements keyboard operable (roving tabindex where needed)
+
+ARIA labels for meters, faders, knobs (announce values & units)
+
+Motion‑reduced mode (respect prefers-reduced-motion)
+
+60fps target; avoid expensive reflows. Animation via transforms/opacity only.
+
+State & Data Contracts
+
+Zustand store slices: transport, analysis, chain, export, ui
+
+Zod schemas for:
+
+PresetConfig
+
+ExportTarget (CLUB|STREAMING|VINYL|RADIO) → maps to {sampleRate, ceilingDb, targetLUFS, dither}
+
+ChainParams with strict ranges; rejection reverts to last valid value
+
+Routing & Pages
+
+/ Landing: hero with inline SVG logo, animated radar sweep, WaveDNA teaser, CTA “Load Your Signal”
+
+/console Mastering deck (loads once a track is dropped)
+
+/api/dsp/* Route handlers:
+
+/api/dsp/analyze accept ArrayBuffer, return JSON: { lufs, dbtp, dbfs, lra, correlation, spectrum[] }
+
+/api/dsp/render accept params + audio data, return WAV stream
+
+Visual Polish (ship the vibe)
+
+Subtle grid background with parallax
+
+Glow utilities in Tailwind layer (e.g., .glow-sm, .glow-md)
+
+Framer entrance transitions: cards fade+lift, radar sweeps on mount, glitch bursts behind select words
+
+Performance budget: Lighthouse Perf ≥ 90 on landing
+
+Testing (must run green on Replit)
+
+Vitest: units for:
+
+loudness calc, correlation, crest factor, true‑peak oversampling
+
+parameter mapping for presets and controls
+
+Playwright: e2e smoke
+
+upload audio → meters update → toggle Orbit Mode → set preset → export WAV
+
+a11y checks: tab through controls, role/name assertions
+
+Tooling & Quality Gates
+
+ESLint strict (no any, no unused, no floating promises), Prettier
+
+Husky pre‑commit: lint, type-check, vitest --run
+
+GitHub Actions (optional) but keep scripts local for Replit
+
+No TODO/FIXME left in code
+
+Project Scripts
+
+pnpm dev — Next dev
+
+pnpm build — Next build
+
+pnpm start — Next start
+
+pnpm test — Vitest
+
+pnpm test:e2e — Playwright
+
+pnpm lint — ESLint
+
+pnpm type-check — tsc
+
+Deliverables (exact)
+
+Fully running app in Replit preview (landing → console → export)
+
+A README.md with:
+
+one‑command run instructions
+
+architecture map & data flow diagram
+
+DSP notes (what’s implemented; limitations)
+
+a11y checklist coverage
+
+Example tiny IRs and a 3–5s sample audio in /public/samples for quick demo
+
+All assets optimized; no broken imports; no placeholders
+
+Seed Implementation Details (write actual code)
+
+Provide at least one WorkletProcessor for softclip + true‑peak estimation
+
+Implement OfflineAudioContext export pipeline (44.1 and 48 kHz)
+
+Implement computeVoidlineScore() combining LUFS target proximity, crest factor, correlation, and noise model → 0–100
+
+Implement Orbit Mode sphere visualization with a CPU‑light fallback
+
+Implement GlitchWord effect (behind text bursts) used on required headlines
