@@ -252,8 +252,10 @@ export default function Landing() {
           <TerminalWindow 
             command="$ ./ai-mastering-core --init"
             variant="init"
-            className="mb-8 animated-item" 
-            style={{ animationDelay: '0.3s' }}
+            className="animated-item"
+            style={{ animationDelay: '0.4s' }}
+            onFileSelect={handleFileSelect}
+            isProcessing={isProcessing}
           >
             <div className="text-left font-mono">
               <div className="text-sm space-y-2 text-gray-400 mb-8">
@@ -265,11 +267,16 @@ export default function Landing() {
                   Upload Audio File ...
                 </button>
               </div>
+
+              {/* Supported Formats */}
+              <div className="text-xs font-mono text-gray-400/70 text-center mt-4">
+                Supported: WAV, MP3, AAC, FLAC, OGG • Max size: 100MB
+              </div>
             </div>
           </TerminalWindow>
 
           {/* System Status */}
-          
+
         </motion.div>
 
         {/* Three Column Layout */}
