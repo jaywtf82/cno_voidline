@@ -3,6 +3,7 @@
   /* Base palette from reference */
   --bg: #0B1014;            /* page background */
   --bg-elev: #0E141A;       /* cards/surfaces */
+  --surface: #0E141A;       /* alias for cards/surfaces */
   --grid: #0E171C;          /* grid lines (dim) */
   --border: #1B2733;        /* card/header borders */
   --text: #C8D2DF;          /* primary text */

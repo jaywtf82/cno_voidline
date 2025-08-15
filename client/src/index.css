@@ -2,10 +2,9 @@
 
 /* Import theme system for visual parity */
 @import './styles/theme.css';
+@import './styles/voidline-skin.css';
 @import './styles/overlays.css';
-
-@import "./styles/voidline-skin.css";
-@import "./styles/overlays.css";
+@import './styles/layout.css';
 
 @tailwind base;
 @tailwind components;

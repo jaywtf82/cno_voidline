@@ -31,3 +31,23 @@ export function AppShell({ children, className = '' }: AppShellProps) {
     </div>
   );
 }
+import type { ReactNode } from 'react';
+import { AppHeader } from './AppHeader';
+
+interface AppShellProps {
+  children: ReactNode;
+}
+
+export function AppShell({ children }: AppShellProps) {
+  return (
+    <div className="app-shell h-[100dvh] overflow-hidden bg-[var(--bg)] text-[var(--text)] antialiased">
+      {/* Fixed/Sticky Header */}
+      <AppHeader />
+
+      {/* Scroll area: body content scrolls under header */}
+      <main id="app-main" className="app-main">
+        {children}
+      </main>
+    </div>
+  );
+}

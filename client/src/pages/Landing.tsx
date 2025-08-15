@@ -284,60 +284,10 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ 
-      backgroundColor: 'var(--color-primary)', 
-      color: 'var(--color-secondary)',
+    <div className="min-h-screen relative z-10 max-w-7xl mx-auto px-6 py-8" style={{ 
       fontFamily: "'Fira Code', monospace"
     }}>
-      {/* Background Grid */}
-      <div className="background-grid"></div>
-      <div className="background-vignette"></div>
-
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-        {/* Header - Match Reference Image */}
-        <header className="border-b border-gray-800 bg-black/95 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-6 py-3">
-            <motion.div 
-              className="flex items-center justify-between"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              {/* Left Side - Terminal Branding */}
-              <div className="flex items-center space-x-2">
-                <span className="font-mono text-sm text-gray-400">[-]</span>
-                <span className="font-mono text-sm text-green-400">./C/No_Voidline</span>
-                <span className="font-mono text-xs text-gray-500 ml-4">Frequencies attained. Stillness remains.</span>
-              </div>
-
-              {/* Right Side - Navigation and Controls */}
-              <div className="flex items-center space-x-6">
-                <nav className="flex items-center space-x-8">
-                  <a href="#" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/home</a>
-                  <a href="#features" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/features</a>
-                  <a href="#pricing" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/pricing</a>
-                  <a href="#docs" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/docs</a>
-                  <a href="#logs" className="font-mono text-sm text-gray-400 hover:text-green-400 transition-colors">/logs</a>
-                </nav>
-                
-                {!isAuthenticated && (
-                  <button
-                    onClick={handleLogin}
-                    className="font-mono text-sm px-4 py-1.5 border border-green-400 text-green-400 hover:bg-green-400 hover:text-black transition-all duration-200 rounded"
-                  >
-                    Login
-                  </button>
-                )}
-                
-                <div className="flex items-center space-x-1.5">
-                  <div className="w-2.5 h-2.5 bg-red-400 rounded-full"></div>
-                  <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full"></div>
-                  <div className="w-2.5 h-2.5 bg-green-400 rounded-full"></div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </header>
+        {/* Header is now handled by AppShell */}
 
         {/* Hero Section - AI Mastering Upload */}
         <motion.div 
