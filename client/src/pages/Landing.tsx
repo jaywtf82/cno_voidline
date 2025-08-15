@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { NeonCard, NeonCardHeader, NeonCardTitle, NeonCardContent } from "@/components/ui/neon-card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Logo } from "@/components/Logo";
 import { GlitchWord } from "@/components/effects/GlitchWord";
 import { WaveDNA } from "@/components/visualizers/WaveDNA";
@@ -146,6 +147,7 @@ export default function Landing() {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [audioAnalysis, setAudioAnalysis] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const mockPresets = [
     { name: "CLUB_MASTER", category: "Club", description: "High energy club master", isActive: false },
@@ -350,43 +352,19 @@ export default function Landing() {
                 </div>
               </div>
               
-              <div className="text-center space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button 
-                    className="font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
-                    onClick={() => {
-                      if (isAuthenticated) {
-                        window.location.href = `/console?session=${audioAnalysis.sessionId}`;
-                      } else {
-                        localStorage.setItem('pendingSession', audioAnalysis.sessionId);
-                        handleLogin();
-                      }
-                    }}
-                  >
-                    {isAuthenticated ? 'Start Mastering Session' : 'Login to Start Mastering'}
-                  </Button>
-                  
-                  {!isAuthenticated && (
-                    <Button 
-                      variant="outline"
-                      className="font-mono border-accent-primary/50 hover:border-accent-primary text-accent-primary"
-                      onClick={() => {
-                        // Continue with demo mode - show mastering interface without saving
-                        window.location.href = `/console?session=${audioAnalysis.sessionId}&demo=true`;
-                      }}
-                    >
-                      Continue as Demo
-                    </Button>
-                  )}
-                </div>
-                
-                {!isAuthenticated && (
-                  <p className="text-xs text-text-muted font-mono">
-                    Demo mode allows you to try the mastering interface without saving projects.
-                    <br />
-                    Login to save your work and access all features.
-                  </p>
-                )}
+              <div className="text-center">
+                <Button 
+                  className="font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
+                  onClick={() => {
+                    if (isAuthenticated) {
+                      window.location.href = `/console?session=${audioAnalysis.sessionId}`;
+                    } else {
+                      setShowAuthModal(true);
+                    }
+                  }}
+                >
+                  Start Mastering Session
+                </Button>
               </div>
             </NeonCardContent>
           </NeonCard>
@@ -890,6 +868,63 @@ export default function Landing() {
         </div>
       </motion.div>
       </div>
+
+      {/* Authentication Modal */}
+      <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
+        <DialogContent className="bg-surface-dark border border-primary/30 text-text-primary">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-accent-primary text-center">
+              Start Mastering Session
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 p-4">
+            <div className="text-center space-y-4">
+              <p className="text-text-secondary text-sm">
+                Choose how you'd like to proceed with your mastering session
+              </p>
+              
+              <div className="space-y-3">
+                <Button 
+                  className="w-full font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
+                  onClick={() => {
+                    localStorage.setItem('pendingSession', audioAnalysis?.sessionId || '');
+                    setShowAuthModal(false);
+                    handleLogin();
+                  }}
+                >
+                  Login / Register
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  className="w-full font-mono border-accent-primary/50 hover:border-accent-primary text-accent-primary"
+                  onClick={() => {
+                    setShowAuthModal(false);
+                    window.location.href = `/console?session=${audioAnalysis?.sessionId}&demo=true`;
+                  }}
+                >
+                  Continue as Demo
+                </Button>
+              </div>
+              
+              <div className="text-xs text-text-muted space-y-2">
+                <div className="border-t border-primary/20 pt-3">
+                  <p><strong className="text-accent-primary">Login Benefits:</strong></p>
+                  <p>• Save your mastered tracks</p>
+                  <p>• Create custom presets</p>
+                  <p>• Access project history</p>
+                </div>
+                <div className="pt-2">
+                  <p><strong className="text-yellow-400">Demo Mode:</strong></p>
+                  <p>• Try all features without saving</p>
+                  <p>• Perfect for testing the interface</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
