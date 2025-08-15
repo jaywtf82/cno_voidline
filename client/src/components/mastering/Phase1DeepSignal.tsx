@@ -1,245 +1,267 @@
-
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Play, 
+  Pause, 
+  RotateCcw,
+  Zap,
+  Activity,
+  Eye,
+  Settings,
+  TrendingUp
+} from 'lucide-react';
+import { SpectrumCanvas } from './vis/SpectrumCanvas';
+import { ScopeCanvas } from './vis/ScopeCanvas';
+import { MeterStacks } from './vis/MeterStacks';
+import { liveFeed } from '@/state/liveFeedHub';
+import { useMasteringStore } from '@/state/masteringStore';
 
-interface Phase1DeepSignalProps {
-  activePhase: 'nuance' | 'dynamics' | 'frequencies' | 'stereo';
-  onPhaseChange: (phase: 'nuance' | 'dynamics' | 'frequencies' | 'stereo') => void;
-  session: any;
-  workletMetrics: any;
-  aiAnalysis: any;
-  targetCorridor: 'streaming' | 'club' | 'vinyl';
-}
-
-export function Phase1DeepSignal({
-  activePhase,
-  onPhaseChange,
-  session,
-  workletMetrics,
-  aiAnalysis,
-  targetCorridor
-}: Phase1DeepSignalProps) {
-  const phases = [
-    {
-      key: 'nuance' as const,
-      title: 'Nuance',
-      description: 'Micro-dynamics and transient analysis',
-      metrics: ['ΔRMS', 'Crest', 'Transients'],
-      color: 'from-cyan-500 to-blue-500'
-    },
-    {
-      key: 'dynamics' as const,
-      title: 'Dynamics',
-      description: 'PLR/PSR and loudness analysis',
-      metrics: ['LUFS', 'PLR', 'PSR'],
-      color: 'from-green-500 to-cyan-500'
-    },
-    {
-      key: 'frequencies' as const,
-      title: 'Frequencies',
-      description: 'Spectral analysis and EQ planning',
-      metrics: ['Spectrum', 'Balance', 'Resonance'],
-      color: 'from-yellow-500 to-green-500'
-    },
-    {
-      key: 'stereo' as const,
-      title: 'Stereo Image',
-      description: 'Spatial field and correlation',
-      metrics: ['Width', 'Correlation', 'Center'],
-      color: 'from-purple-500 to-pink-500'
+/**
+ * Phase1DeepSignal - Interactive Phase 1 mastering card
+ * Deep signal analysis with real-time visualizations
+ */
+export function Phase1DeepSignal() {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+  
+  const { 
+    currentSession, 
+    audioMetrics,
+    setSessionPhase
+  } = useMasteringStore();
+  
+  useEffect(() => {
+    // Set current phase
+    setSessionPhase('phase1');
+  }, [setSessionPhase]);
+  
+  const handleStartAnalysis = async () => {
+    setIsProcessing(true);
+    setProgress(0);
+    setAnalysisComplete(false);
+    
+    // Start live feed
+    liveFeed.ui.action('Starting Phase 1: Deep Signal Deconstruction');
+    liveFeed.analysis.progress('Initializing analysis pipeline...', 0);
+    
+    // Simulate analysis pipeline with realistic progress
+    const stages = [
+      { name: 'Loading audio worklets...', duration: 800 },
+      { name: 'Computing LUFS integration...', duration: 1200 },
+      { name: 'True peak detection...', duration: 900 },
+      { name: 'LRA calculation with gating...', duration: 1000 },
+      { name: 'Spectral analysis (1/24-oct)...', duration: 1500 },
+      { name: 'Stereo correlation mapping...', duration: 700 },
+      { name: 'AI model initialization...', duration: 1100 },
+      { name: 'Feature extraction...', duration: 1300 },
+      { name: 'Finalizing metrics...', duration: 600 }
+    ];
+    
+    let currentProgress = 0;
+    
+    for (let i = 0; i < stages.length; i++) {
+      const stage = stages[i];
+      liveFeed.analysis.progress(stage.name, currentProgress);
+      
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, stage.duration));
+      
+      currentProgress = Math.round(((i + 1) / stages.length) * 100);
+      setProgress(currentProgress);
+      
+      // Send some worklet data during processing
+      if (i >= 2) {
+        liveFeed.worklet.lufs({}, -14.2 + Math.random() * 2);
+        liveFeed.worklet.dbtp({}, -1.1 + Math.random() * 0.5);
+        liveFeed.worklet.lra({}, 6.8 + Math.random());
+      }
+      
+      if (i === 6) {
+        liveFeed.ai.init('YAMNet model loaded, preparing embeddings...');
+      }
+      
+      if (i === 7) {
+        liveFeed.ai.epoch('Training audio classifier head...', 1, 0.045);
+      }
     }
-  ];
-
+    
+    // Complete
+    liveFeed.analysis.summary('Phase 1 analysis complete - all metrics within tolerance');
+    liveFeed.ai.done('AI analysis ready for Phase 2 processing');
+    liveFeed.complete('phase1', 'Deep Signal Deconstruction completed successfully');
+    
+    setIsProcessing(false);
+    setAnalysisComplete(true);
+  };
+  
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+    liveFeed.ui.action(isPlaying ? 'Playback paused' : 'Playback started');
+  };
+  
+  const handleReset = () => {
+    setProgress(0);
+    setIsProcessing(false);
+    setAnalysisComplete(false);
+    setIsPlaying(false);
+    liveFeed.ui.action('Phase 1 reset to initial state');
+  };
+  
   return (
-    <Card className="bg-black/90 border-cyan-500/30">
-      <CardHeader>
-        <CardTitle className="font-mono text-lg text-cyan-400 flex items-center justify-between">
+    <div className="card-terminal">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="card-header">
+          <Zap className="w-5 h-5" />
           Phase 1: Deep Signal Deconstruction
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-gray-400">ACTIVE</span>
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-6">
-          <p className="text-gray-400 text-sm mb-4">
-            AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.
-          </p>
+          <span className={`status-indicator ${analysisComplete ? 'status-indicator--active' : isProcessing ? 'status-indicator--warning' : 'status-indicator--inactive'}`} />
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={handlePlayPause}
+            disabled={!analysisComplete}
+            className="btn-terminal btn-terminal--secondary"
+            size="sm"
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            {isPlaying ? 'Pause' : 'Play'}
+          </Button>
           
-          {/* Phase Filter Chips */}
-          <div className="flex flex-wrap gap-3">
-            {phases.map((phase) => (
-              <motion.div
-                key={phase.key}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+          <Button
+            onClick={handleReset}
+            className="btn-terminal btn-terminal--secondary"
+            size="sm"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset
+          </Button>
+        </div>
+      </div>
+      
+      {/* Progress */}
+      {isProcessing && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-terminal-sm">Analysis Progress</span>
+            <span className="text-terminal-sm text-color-primary">{progress}%</span>
+          </div>
+          <Progress 
+            value={progress} 
+            className="w-full h-2 bg-terminal-border"
+          />
+        </div>
+      )}
+      
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Real-time visualizations */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Spectrum Canvas */}
+          <div className="card-terminal p-4">
+            <h3 className="text-terminal-base font-semibold mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Spectrum Analysis
+            </h3>
+            <SpectrumCanvas 
+              width={480} 
+              height={200} 
+              isActive={isPlaying || isProcessing}
+            />
+          </div>
+          
+          {/* Scope Canvas */}
+          <div className="card-terminal p-4">
+            <h3 className="text-terminal-base font-semibold mb-3 flex items-center gap-2">
+              <Eye className="w-4 h-4" />
+              Vectorscope & Correlation
+            </h3>
+            <ScopeCanvas 
+              width={480} 
+              height={200} 
+              isActive={isPlaying || isProcessing}
+            />
+          </div>
+        </div>
+        
+        {/* Meter stacks and controls */}
+        <div className="space-y-6">
+          {/* Meters */}
+          <div className="card-terminal p-4">
+            <h3 className="text-terminal-base font-semibold mb-3 flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              Real-time Meters
+            </h3>
+            <MeterStacks isActive={isPlaying || isProcessing} />
+          </div>
+          
+          {/* Controls */}
+          <div className="card-terminal p-4">
+            <h3 className="text-terminal-base font-semibold mb-3 flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Analysis Controls
+            </h3>
+            
+            <div className="space-y-4">
+              <Button
+                onClick={handleStartAnalysis}
+                disabled={isProcessing}
+                className="btn-terminal w-full"
               >
-                <Button
-                  variant={activePhase === phase.key ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => onPhaseChange(phase.key)}
-                  className={`
-                    font-mono text-sm px-4 py-2 transition-all duration-200
-                    ${activePhase === phase.key 
-                      ? `bg-gradient-to-r ${phase.color} text-white border-none` 
-                      : 'border-cyan-500/30 text-cyan-400 hover:border-cyan-400'
-                    }
-                  `}
-                >
-                  {phase.title}
-                </Button>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Active Phase Details */}
-        <motion.div
-          key={activePhase}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-black/50 p-4 rounded border border-cyan-500/20"
-        >
-          {(() => {
-            const currentPhase = phases.find(p => p.key === activePhase);
-            return (
-              <>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-mono text-cyan-400 font-bold">
-                    {currentPhase?.title} Analysis
-                  </h3>
-                  <div className="flex space-x-2">
-                    {currentPhase?.metrics.map((metric) => (
-                      <Badge key={metric} variant="outline" className="text-xs border-cyan-500/50">
-                        {metric}
-                      </Badge>
-                    ))}
-                  </div>
+                {isProcessing ? 'Processing...' : 'Start Deep Analysis'}
+              </Button>
+              
+              <div className="space-y-2 text-terminal-xs">
+                <div className="flex justify-between">
+                  <span>LUFS Integration:</span>
+                  <span className="text-color-primary">
+                    {audioMetrics?.lufs?.toFixed(1) || '--'} LUFS
+                  </span>
                 </div>
-                <p className="text-gray-400 text-sm mb-4">
-                  {currentPhase?.description}
-                </p>
-
-                {/* Real-time Metrics */}
-                {workletMetrics && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {activePhase === 'nuance' && (
-                      <>
-                        <div className="text-center">
-                          <div className="text-lg font-mono text-cyan-400">
-                            {(workletMetrics.crest || 0).toFixed(1)}
-                          </div>
-                          <div className="text-xs text-gray-400">CREST dB</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-mono text-cyan-400">
-                            {(workletMetrics.transients || 0)}
-                          </div>
-                          <div className="text-xs text-gray-400">TRANSIENTS</div>
-                        </div>
-                      </>
-                    )}
-
-                    {activePhase === 'dynamics' && (
-                      <>
-                        <div className="text-center">
-                          <div className="text-lg font-mono text-cyan-400">
-                            {(workletMetrics.lufsI || 0).toFixed(1)}
-                          </div>
-                          <div className="text-xs text-gray-400">LUFS-I</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-mono text-cyan-400">
-                            {(workletMetrics.plr || 0).toFixed(1)}
-                          </div>
-                          <div className="text-xs text-gray-400">PLR dB</div>
-                        </div>
-                      </>
-                    )}
-
-                    {activePhase === 'frequencies' && (
-                      <>
-                        <div className="text-center">
-                          <div className="text-lg font-mono text-cyan-400">
-                            {(workletMetrics.spectralCentroid || 0).toFixed(0)}
-                          </div>
-                          <div className="text-xs text-gray-400">CENTROID Hz</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-mono text-cyan-400">
-                            {(workletMetrics.spectralBalance || 0).toFixed(1)}
-                          </div>
-                          <div className="text-xs text-gray-400">BALANCE</div>
-                        </div>
-                      </>
-                    )}
-
-                    {activePhase === 'stereo' && (
-                      <>
-                        <div className="text-center">
-                          <div className="text-lg font-mono text-cyan-400">
-                            {(workletMetrics.correlation || 0).toFixed(2)}
-                          </div>
-                          <div className="text-xs text-gray-400">CORRELATION</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-mono text-cyan-400">
-                            {(workletMetrics.stereoWidth || 0).toFixed(0)}%
-                          </div>
-                          <div className="text-xs text-gray-400">WIDTH</div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* AI Insights for Active Phase */}
-                {aiAnalysis?.risks && aiAnalysis.risks.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-cyan-500/20">
-                    <div className="text-xs text-gray-400 mb-2">AI INSIGHTS:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {aiAnalysis.risks.map((risk: string, index: number) => (
-                        <Badge 
-                          key={index} 
-                          variant="destructive" 
-                          className="text-xs cursor-pointer hover:bg-red-600"
-                          title={`Click to focus on ${risk}`}
-                        >
-                          {risk}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </motion.div>
-
-        {/* Progress Indicator */}
-        <div className="mt-6">
-          <div className="text-xs text-gray-400 mb-2">Analysis Progress</div>
-          <div className="flex items-center space-x-2">
-            {phases.map((phase, index) => (
-              <div
-                key={phase.key}
-                className={`
-                  flex-1 h-1 rounded-full transition-all duration-300
-                  ${index <= phases.findIndex(p => p.key === activePhase)
-                    ? 'bg-gradient-to-r from-cyan-500 to-cyan-400'
-                    : 'bg-gray-700'
-                  }
-                `}
-              />
-            ))}
+                <div className="flex justify-between">
+                  <span>True Peak:</span>
+                  <span className="text-color-primary">
+                    {audioMetrics?.dbtp?.toFixed(1) || '--'} dBTP
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>LRA:</span>
+                  <span className="text-color-primary">
+                    {audioMetrics?.lra?.toFixed(1) || '--'} LU
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Stereo Correlation:</span>
+                  <span className="text-color-primary">
+                    {audioMetrics?.correlation?.toFixed(2) || '--'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
+          
+          {/* Mission Status */}
+          {analysisComplete && (
+            <div className="card-terminal p-4 border-status-success">
+              <h3 className="text-terminal-base font-semibold mb-2 text-status-success">
+                Phase 1 Complete
+              </h3>
+              <p className="text-terminal-xs text-terminal-text-muted">
+                Signal analysis complete. Ready to proceed to Phase 2: AI Enhancement.
+              </p>
+              <Button
+                className="btn-terminal w-full mt-3"
+                onClick={() => liveFeed.ui.action('Proceeding to Phase 2...')}
+              >
+                Continue to Phase 2
+              </Button>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

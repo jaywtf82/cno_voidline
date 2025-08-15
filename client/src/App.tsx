@@ -9,6 +9,7 @@ import Landing from "@/pages/Landing";
 import Console from "@/pages/Console";
 import MockingPage from "@/pages/MockingPage";
 import Mastering from "@/pages/Mastering";
+import MasteringProcess from "@/pages/MasteringProcess";
 import NotFound from "@/pages/not-found";
 import { initializeAnalysisData } from '@/lib/stores/audioStore';
 
@@ -44,6 +45,7 @@ function Router() {
       {/* Demo/Testing routes */}
       <Route path="/mocking" component={MockingPage} />
       <Route path="/mastering" component={Mastering} />
+      <Route path="/mastering/process" component={MasteringProcess} />
 
       <Route component={NotFound} />
     </Switch>

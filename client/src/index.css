@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500;600;700&display=swap');
 
+/* Import theme system for visual parity */
+@import './styles/theme.css';
+@import './styles/overlays.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

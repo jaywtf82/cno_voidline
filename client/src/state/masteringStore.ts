@@ -2,6 +2,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface AudioMetrics {
+  lufs: number;
+  dbtp: number;
+  lra: number;
+  rms: number;
+  correlation: number;
+  dynamicRange: number;
+  spectralCentroid: number;
+}
+
 export interface MasteringSession {
   id: string;
   fileMeta: {
@@ -12,6 +22,8 @@ export interface MasteringSession {
   };
   buffer: AudioBuffer | null;
   analysis: any;
+  audioMetrics: AudioMetrics | null;
+  currentPhase: 'upload' | 'analysis' | 'phase1' | 'phase2' | 'phase3' | 'complete';
   settings: {
     fftSize: number;
     smoothing: number;
@@ -27,8 +39,9 @@ export interface MasteringSession {
 }
 
 interface MasteringStore {
-  session: MasteringSession | null;
+  currentSession: MasteringSession | null;
   sessions: Map<string, MasteringSession>;
+  audioMetrics: AudioMetrics | null;
   
   // Actions
   createSession: (fileMeta: any, buffer: AudioBuffer) => string;
@@ -36,6 +49,8 @@ interface MasteringStore {
   updateSession: (id: string, updates: Partial<MasteringSession>) => void;
   updateSettings: (settings: Partial<MasteringSession['settings']>) => void;
   setAnalysis: (analysis: any) => void;
+  setAudioMetrics: (metrics: AudioMetrics) => void;
+  setSessionPhase: (phase: MasteringSession['currentPhase']) => void;
   setAiInsights: (ai: MasteringSession['ai']) => void;
   clearSession: () => void;
 }
@@ -43,8 +58,9 @@ interface MasteringStore {
 export const useMasteringStore = create<MasteringStore>()(
   persist(
     (set, get) => ({
-      session: null,
+      currentSession: null,
       sessions: new Map(),
+      audioMetrics: null,
 
       createSession: (fileMeta, buffer) => {
         const id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -59,6 +75,8 @@ export const useMasteringStore = create<MasteringStore>()(
           },
           buffer,
           analysis: null,
+          audioMetrics: null,
+          currentPhase: 'upload',
           settings: {
             fftSize: 2048,
             smoothing: 0.8,
@@ -71,8 +89,9 @@ export const useMasteringStore = create<MasteringStore>()(
           const newSessions = new Map(state.sessions);
           newSessions.set(id, newSession);
           return {
-            session: newSession,
+            currentSession: newSession,
             sessions: newSessions,
+            audioMetrics: null,
           };
         });
 
@@ -116,7 +135,10 @@ export const useMasteringStore = create<MasteringStore>()(
         const session = state.sessions.get(id);
         
         if (session) {
-          set({ session });
+          set({ 
+            currentSession: session, 
+            audioMetrics: session.audioMetrics 
+          });
           
           // Load audio buffer from IndexedDB if not present
           if (!session.buffer) {
@@ -144,7 +166,7 @@ export const useMasteringStore = create<MasteringStore>()(
                     }
                     
                     set((state) => ({
-                      session: state.session ? { ...state.session, buffer } : null
+                      currentSession: state.currentSession ? { ...state.currentSession, buffer } : null
                     }));
                   }
                 };
@@ -167,7 +189,8 @@ export const useMasteringStore = create<MasteringStore>()(
             
             return {
               sessions: newSessions,
-              session: state.session?.id === id ? updatedSession : state.session,
+              currentSession: state.currentSession?.id === id ? updatedSession : state.currentSession,
+              audioMetrics: state.currentSession?.id === id ? updatedSession.audioMetrics || state.audioMetrics : state.audioMetrics,
             };
           }
           
@@ -177,11 +200,11 @@ export const useMasteringStore = create<MasteringStore>()(
 
       updateSettings: (settings) => {
         set((state) => {
-          if (!state.session) return state;
+          if (!state.currentSession) return state;
           
           const updatedSession = {
-            ...state.session,
-            settings: { ...state.session.settings, ...settings },
+            ...state.currentSession,
+            settings: { ...state.currentSession.settings, ...settings },
           };
           
           const newSessions = new Map(state.sessions);
@@ -196,36 +219,67 @@ export const useMasteringStore = create<MasteringStore>()(
 
       setAnalysis: (analysis) => {
         set((state) => {
-          if (!state.session) return state;
+          if (!state.currentSession) return state;
           
-          const updatedSession = { ...state.session, analysis };
+          const updatedSession = { ...state.currentSession, analysis };
           const newSessions = new Map(state.sessions);
-          newSessions.set(state.session.id, updatedSession);
+          newSessions.set(state.currentSession.id, updatedSession);
           
           return {
-            session: updatedSession,
+            currentSession: updatedSession,
             sessions: newSessions,
           };
         });
       },
 
+      setAudioMetrics: (metrics) => {
+        set((state) => {
+          if (state.currentSession) {
+            const updatedSession = { ...state.currentSession, audioMetrics: metrics };
+            const sessions = new Map(state.sessions);
+            sessions.set(state.currentSession.id, updatedSession);
+            return {
+              currentSession: updatedSession,
+              sessions,
+              audioMetrics: metrics,
+            };
+          }
+          return { ...state, audioMetrics: metrics };
+        });
+      },
+
+      setSessionPhase: (phase) => {
+        set((state) => {
+          if (state.currentSession) {
+            const updatedSession = { ...state.currentSession, currentPhase: phase };
+            const sessions = new Map(state.sessions);
+            sessions.set(state.currentSession.id, updatedSession);
+            return {
+              currentSession: updatedSession,
+              sessions,
+            };
+          }
+          return state;
+        });
+      },
+
       setAiInsights: (ai) => {
         set((state) => {
-          if (!state.session) return state;
+          if (!state.currentSession) return state;
           
-          const updatedSession = { ...state.session, ai };
+          const updatedSession = { ...state.currentSession, ai };
           const newSessions = new Map(state.sessions);
-          newSessions.set(state.session.id, updatedSession);
+          newSessions.set(state.currentSession.id, updatedSession);
           
           return {
-            session: updatedSession,
+            currentSession: updatedSession,
             sessions: newSessions,
           };
         });
       },
 
       clearSession: () => {
-        set({ session: null });
+        set({ currentSession: null, audioMetrics: null });
       },
     }),
     {

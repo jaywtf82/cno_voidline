@@ -1,61 +1,73 @@
 # C/No Voidline - Production Docker Image
-FROM node:20-alpine AS base
+# Multi-stage build for optimized deployment
 
-# Install dependencies only when needed
-FROM base AS deps
+# Build stage
+FROM node:18-alpine AS builder
+
+# Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY vite.config.ts ./
+COPY tailwind.config.ts ./
+COPY postcss.config.js ./
+COPY components.json ./
+COPY drizzle.config.ts ./
 
 # Install dependencies
 RUN npm ci --only=production && npm cache clean --force
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Set environment variables for build
-ENV NODE_ENV=production
-ENV VITE_REQUIRE_AUTH=false
-ENV VITE_DEPLOYMENT_TARGET=docker
+# Copy source code
+COPY client/ ./client/
+COPY server/ ./server/
+COPY shared/ ./shared/
 
 # Build application
 RUN npm run build
 
-# Production image, copy all the files and run the app
-FROM base AS runner
+# Runtime stage
+FROM node:18-alpine AS runtime
+
+# Install system dependencies
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    postgresql-client
+
+# Create app user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S voidline -u 1001
+
+# Set working directory
 WORKDIR /app
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 cno-voidline
-
 # Copy built application
-COPY --from=builder --chown=cno-voidline:nodejs /app/dist ./dist
-COPY --from=builder --chown=cno-voidline:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=cno-voidline:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=voidline:nodejs /app/dist ./dist/
+COPY --from=builder --chown=voidline:nodejs /app/node_modules ./node_modules/
+COPY --from=builder --chown=voidline:nodejs /app/package*.json ./
 
-# Copy additional files
-COPY --from=builder --chown=cno-voidline:nodejs /app/attached_assets ./attached_assets
-COPY --from=builder --chown=cno-voidline:nodejs /app/config.html ./config.html
+# Copy production files
+COPY --chown=voidline:nodejs public/ ./public/
+COPY --chown=voidline:nodejs scripts/quick-start.sh ./scripts/
+RUN chmod +x ./scripts/quick-start.sh
+
+# Create data directory
+RUN mkdir -p /app/data && chown voidline:nodejs /app/data
 
 # Switch to non-root user
-USER cno-voidline
+USER voidline
 
 # Expose port
 EXPOSE 5000
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=5000
-ENV HOST=0.0.0.0
-
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
 
-# Start the application
-CMD ["npm", "run", "start"]
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start application
+CMD ["node", "dist/server/index.js"]
