@@ -51,6 +51,8 @@ export default function MasteringProcess() {
   const [workletMetrics, setWorkletMetrics] = useState<any>(null);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [showExportToast, setShowExportToast] = useState(false);
+  // Placeholder for analysis progress, actual calculation would depend on worklet metrics or pipeline state
+  const [analysisProgress, setAnalysisProgress] = useState(0); 
 
 
   // Refs
@@ -82,7 +84,14 @@ export default function MasteringProcess() {
         await analysisPipelineRef.current.startRealTimeAnalysis(session.buffer);
 
         // Subscribe to worklet updates
-        visualBusRef.current.subscribe('metrics', setWorkletMetrics);
+        visualBusRef.current.subscribe('metrics', (metrics) => {
+            setWorkletMetrics(metrics);
+            // Simple progress calculation: based on time elapsed in buffer
+            if (metrics && metrics.currentTime) {
+                const progress = (metrics.currentTime / session.buffer.duration) * 100;
+                setAnalysisProgress(Math.min(progress, 100)); // Ensure progress doesn't exceed 100%
+            }
+        });
 
         setIsProcessing(true);
 
@@ -180,9 +189,16 @@ export default function MasteringProcess() {
         <div className="container mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <span className="font-mono text-sm text-cyan-400">MASTERING PROCESS</span>
-              <span className="font-mono text-sm text-white">•</span>
-              <span className="font-mono text-sm text-gray-400">{session.fileMeta.name}</span>
+              <span className="font-mono text-sm text-cyan-400">MISSION PROGRESS</span>
+              <div className="flex-1 bg-gray-800 rounded-full h-2 overflow-hidden min-w-[200px]">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-cyan-500 to-cyan-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${analysisProgress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+              <span className="font-mono text-sm text-white">{Math.round(analysisProgress)}%</span>
             </div>
             <div className="flex items-center space-x-4">
               <span className="font-mono text-xs text-gray-400">

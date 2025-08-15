@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Terminal } from 'lucide-react';
@@ -79,7 +78,7 @@ export function FloatingSystemToast({
         setProgress(newMessage.progress || 0);
 
         phaseIndex++;
-        
+
         // Variable timing for realism
         const delay = phase.includes('Analysis') ? 800 : 1200;
         setTimeout(processPhase, delay + Math.random() * 500);
@@ -101,7 +100,7 @@ export function FloatingSystemToast({
               progress: 100
             };
             setMessages(prev => [completeMessage, ...prev.slice(0, 2)]);
-            
+
             // Auto-hide after completion
             setTimeout(() => {
               setIsVisible(false);
@@ -139,98 +138,102 @@ export function FloatingSystemToast({
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, y: 100, scale: 0.8 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 100, scale: 0.8 }}
-        className={`fixed bottom-4 right-4 z-50 w-80 ${className}`}
-      >
-        <div className="bg-black/90 backdrop-blur-sm border border-emerald-500/30 rounded-lg shadow-2xl font-mono text-xs">
-          {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b border-emerald-500/20">
-            <div className="flex items-center space-x-2">
-              <Terminal className="w-3 h-3 text-emerald-400" />
-              <span className="text-emerald-400 font-semibold text-xs">SYSTEM FEED</span>
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
-            </div>
-            <button
-              onClick={() => setIsVisible(false)}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-
-          {/* Progress bar */}
-          <div className="px-3 py-2 border-b border-emerald-500/20">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-emerald-400 text-xs">PROGRESS</span>
-              <span className="text-emerald-400 text-xs">{progress}%</span>
-            </div>
-            <div className="bg-black/50 h-1.5 rounded overflow-hidden">
-              <motion.div
-                className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-              />
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="p-3 max-h-32 overflow-hidden">
-            <div className="space-y-1">
-              <AnimatePresence mode="popLayout">
-                {messages.slice(0, 4).map((message, index) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, x: 20, height: 0 }}
-                    animate={{ 
-                      opacity: 1 - (index * 0.2), 
-                      x: 0, 
-                      height: 'auto',
-                      transition: { duration: 0.3 }
-                    }}
-                    exit={{ 
-                      opacity: 0, 
-                      x: -20, 
-                      height: 0,
-                      transition: { duration: 0.2 }
-                    }}
-                    className="flex items-start space-x-2"
-                  >
-                    <span className={`text-xs font-semibold min-w-fit ${getPhaseColor(message.phase)}`}>
-                      [{message.phase}]
-                    </span>
-                    <span className={`text-xs leading-relaxed ${getMessageColor(message.type)}`}>
-                      {message.message}
-                    </span>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Status footer */}
-          <div className="px-3 py-2 border-t border-emerald-500/20">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1">
-                  <div className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse"></div>
-                  <span className="text-emerald-400">ACTIVE</span>
+      {isActive && (
+        <div className="fixed bottom-4 right-4 z-50 pointer-events-none">
+          <motion.div
+            initial={{ opacity: 0, y: 100, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 100, scale: 0.8 }}
+            className={`w-80 ${className}`}
+          >
+            <div className="bg-black/70 backdrop-blur-md border border-cyan-500/30 rounded-lg shadow-2xl font-mono text-xs">
+              {/* Header */}
+              <div className="flex items-center justify-between p-3 border-b border-cyan-500/20">
+                <div className="flex items-center space-x-2">
+                  <Terminal className="w-3 h-3 text-cyan-400" />
+                  <span className="text-cyan-400 font-semibold text-xs">SYSTEM FEED</span>
+                  <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-1 h-1 bg-cyan-400 rounded-full"></div>
-                  <span className="text-cyan-400">AI</span>
+                <button
+                  onClick={() => setIsVisible(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Progress bar */}
+              <div className="px-3 py-2 border-b border-cyan-500/20">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-cyan-400 text-xs">PROGRESS</span>
+                  <span className="text-cyan-400 text-xs">{progress}%</span>
+                </div>
+                <div className="bg-black/50 h-1.5 rounded overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                  />
                 </div>
               </div>
-              <span className="text-gray-400 text-xs">
-                {new Date().toLocaleTimeString().slice(0, 5)}
-              </span>
+
+              {/* Messages */}
+              <div className="p-3 max-h-32 overflow-hidden">
+                <div className="space-y-1">
+                  <AnimatePresence mode="popLayout">
+                    {messages.slice(0, 4).map((message, index) => (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, x: 20, height: 0 }}
+                        animate={{ 
+                          opacity: 1 - (index * 0.2), 
+                          x: 0, 
+                          height: 'auto',
+                          transition: { duration: 0.3 }
+                        }}
+                        exit={{ 
+                          opacity: 0, 
+                          x: -20, 
+                          height: 0,
+                          transition: { duration: 0.2 }
+                        }}
+                        className="flex items-start space-x-2"
+                      >
+                        <span className={`text-xs font-semibold min-w-fit ${getPhaseColor(message.phase)}`}>
+                          [{message.phase}]
+                        </span>
+                        <span className={`text-xs leading-relaxed ${getMessageColor(message.type)}`}>
+                          {message.message}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Status footer */}
+              <div className="px-3 py-2 border-t border-cyan-500/20">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-1 h-1 bg-cyan-400 rounded-full animate-pulse"></div>
+                      <span className="text-cyan-400">ACTIVE</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <div className="w-1 h-1 bg-emerald-400 rounded-full"></div>
+                      <span className="text-emerald-400">AI</span>
+                    </div>
+                  </div>
+                  <span className="text-gray-400 text-xs">
+                    {new Date().toLocaleTimeString().slice(0, 5)}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 }
