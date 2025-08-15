@@ -302,8 +302,8 @@ export default function Landing() {
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 </div>
               </div>
-              <div className="p-6 pt-0"></div>
-              <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
+              <div className="p-6 pt-0">
+                <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
                 <p className="text-gray-400 mb-6 text-sm">
                   AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.
                 </p>
@@ -346,7 +346,7 @@ export default function Landing() {
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 </div>
               </div>
-              <div className="p-6 pt-0"></div>
+              <div className="p-6 pt-0">
                 <h3 className="text-lg font-bold mb-3">Intelligent Reconstruction</h3>
                 <p className="text-gray-400 mb-6 text-sm">
                   The AI rebuilds the audio, applying precise, calculated enhancements.
@@ -419,7 +419,7 @@ export default function Landing() {
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 </div>
               </div>
-              <div className="p-6 pt-0"></div>
+              <div className="p-6 pt-0">
                 <h3 className="text-lg font-bold mb-3">Interstellar Transmission</h3>
                 <p className="text-gray-400 mb-6 text-sm">
                   The final master signal is crafted for a powerful and clear transmission.
