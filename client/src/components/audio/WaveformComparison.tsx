@@ -30,6 +30,7 @@ export function WaveformComparison({
   const [originalWaveform, setOriginalWaveform] = useState<WaveformData | null>(null);
   const [processedWaveform, setProcessedWaveform] = useState<WaveformData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [currentShowSpectrogramMode, setCurrentShowSpectrogramMode] = useState(showSpectrogramMode);
 
   useEffect(() => {
     if (originalFile) {
@@ -135,7 +136,7 @@ export function WaveformComparison({
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
     
-    if (showSpectrogramMode) {
+    if (currentShowSpectrogramMode) {
       drawSpectrogramView(ctx, width, height);
     } else {
       drawProfessionalWaveforms(ctx, width, height);
@@ -419,7 +420,7 @@ export function WaveformComparison({
   // Update canvas when data changes
   useEffect(() => {
     drawWaveforms();
-  }, [originalWaveform, processedWaveform, isProcessing, showChannels, showSpectrogramMode]);
+  }, [originalWaveform, processedWaveform, isProcessing, showChannels, currentShowSpectrogramMode]);
 
   return (
     <div className={`relative ${className}`}>
@@ -429,18 +430,18 @@ export function WaveformComparison({
             <h4 className="font-mono text-sm text-cyan-400 font-bold tracking-wider">WAVEFORM ANALYSIS</h4>
             <div className="flex items-center space-x-2 text-xs font-mono">
               <button 
-                className={`px-2 py-1 rounded text-xs ${
-                  !showSpectrogramMode ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  !currentShowSpectrogramMode ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
                 }`}
-                onClick={() => {}}
+                onClick={() => setCurrentShowSpectrogramMode(false)}
               >
                 Waveform
               </button>
               <button 
-                className={`px-2 py-1 rounded text-xs ${
-                  showSpectrogramMode ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  currentShowSpectrogramMode ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
                 }`}
-                onClick={() => {}}
+                onClick={() => setCurrentShowSpectrogramMode(true)}
               >
                 Spectrogram
               </button>

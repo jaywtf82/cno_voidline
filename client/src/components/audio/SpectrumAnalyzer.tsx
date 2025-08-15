@@ -9,6 +9,8 @@ interface SpectrumAnalyzerProps {
   mode?: 'instant' | 'peak' | 'average';
 }
 
+type ChannelDisplayMode = 'left' | 'right' | 'max' | 'average';
+
 export function SpectrumAnalyzer({ 
   audioFile, 
   isActive = false, 
@@ -27,6 +29,9 @@ export function SpectrumAnalyzer({
   const [leftChannelData, setLeftChannelData] = useState<Uint8Array>(new Uint8Array(512));
   const [rightChannelData, setRightChannelData] = useState<Uint8Array>(new Uint8Array(512));
   const [peakData, setPeakData] = useState<Float32Array>(new Float32Array(512));
+  const [currentMode, setCurrentMode] = useState<'instant' | 'peak' | 'average'>(mode);
+  const [channelDisplayMode, setChannelDisplayMode] = useState<ChannelDisplayMode>('max');
+  const [showChannelControls, setShowChannelControls] = useState(showChannels);
 
   useEffect(() => {
     if (audioFile && isActive) {
@@ -126,17 +131,39 @@ export function SpectrumAnalyzer({
     // Draw professional grid
     drawProfessionalGrid(ctx, width, height);
     
-    // Draw frequency response curves
-    if (showChannels) {
-      drawFrequencyResponse(ctx, leftData, width, height, '#00ffff', 'Left'); // Cyan for left
-      drawFrequencyResponse(ctx, rightData, width, height, '#ff8c00', 'Right'); // Orange for right
-    } else {
-      // Combine channels for mono display
-      const combinedData = new Uint8Array(leftData.length);
-      for (let i = 0; i < leftData.length; i++) {
-        combinedData[i] = Math.max(leftData[i], rightData[i]);
-      }
-      drawFrequencyResponse(ctx, combinedData, width, height, '#00ff7f', 'Average');
+    // Draw frequency response curves based on channel display mode
+    switch (channelDisplayMode) {
+      case 'left':
+        drawFrequencyResponse(ctx, leftData, width, height, '#00ffff', 'Left');
+        break;
+      case 'right':
+        drawFrequencyResponse(ctx, rightData, width, height, '#ff8c00', 'Right');
+        break;
+      case 'max':
+        const maxData = new Uint8Array(leftData.length);
+        for (let i = 0; i < leftData.length; i++) {
+          maxData[i] = Math.max(leftData[i], rightData[i]);
+        }
+        drawFrequencyResponse(ctx, maxData, width, height, '#00ff7f', 'Max');
+        break;
+      case 'average':
+        const avgData = new Uint8Array(leftData.length);
+        for (let i = 0; i < leftData.length; i++) {
+          avgData[i] = Math.round((leftData[i] + rightData[i]) / 2);
+        }
+        drawFrequencyResponse(ctx, avgData, width, height, '#ffff00', 'Average');
+        break;
+      default:
+        if (showChannelControls) {
+          drawFrequencyResponse(ctx, leftData, width, height, '#00ffff', 'Left');
+          drawFrequencyResponse(ctx, rightData, width, height, '#ff8c00', 'Right');
+        } else {
+          const combinedData = new Uint8Array(leftData.length);
+          for (let i = 0; i < leftData.length; i++) {
+            combinedData[i] = Math.max(leftData[i], rightData[i]);
+          }
+          drawFrequencyResponse(ctx, combinedData, width, height, '#00ff7f', 'Combined');
+        }
     }
     
     // Draw frequency and dB labels
@@ -316,39 +343,52 @@ export function SpectrumAnalyzer({
             <h4 className="font-mono text-sm text-cyan-400 font-bold tracking-wider">SPECTRUM ANALYZER</h4>
             <div className="flex items-center space-x-2 text-xs font-mono">
               <button 
-                className={`px-2 py-1 rounded text-xs ${
-                  mode === 'instant' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  currentMode === 'instant' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
                 }`}
+                onClick={() => setCurrentMode('instant')}
               >
                 Instant
               </button>
               <button 
-                className={`px-2 py-1 rounded text-xs ${
-                  mode === 'peak' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  currentMode === 'peak' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
                 }`}
+                onClick={() => setCurrentMode('peak')}
               >
                 Peak
               </button>
               <button 
-                className={`px-2 py-1 rounded text-xs ${
-                  mode === 'average' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'
+                className={`px-2 py-1 rounded text-xs transition-colors ${
+                  currentMode === 'average' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
                 }`}
+                onClick={() => setCurrentMode('average')}
               >
                 Average
               </button>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            {showChannels && (
+            {showChannelControls && (
               <div className="flex items-center space-x-3 text-xs font-mono">
-                <div className="flex items-center space-x-1">
+                <button 
+                  className={`flex items-center space-x-1 transition-colors ${
+                    channelDisplayMode === 'left' ? 'text-cyan-400' : 'text-cyan-400/60 hover:text-cyan-400'
+                  }`}
+                  onClick={() => setChannelDisplayMode('left')}
+                >
                   <div className="w-2 h-2 bg-cyan-400 rounded-full"></div>
-                  <span className="text-cyan-400">Left</span>
-                </div>
-                <div className="flex items-center space-x-1">
+                  <span>Left</span>
+                </button>
+                <button 
+                  className={`flex items-center space-x-1 transition-colors ${
+                    channelDisplayMode === 'right' ? 'text-orange-400' : 'text-orange-400/60 hover:text-orange-400'
+                  }`}
+                  onClick={() => setChannelDisplayMode('right')}
+                >
                   <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
-                  <span className="text-orange-400">Right</span>
-                </div>
+                  <span>Right</span>
+                </button>
               </div>
             )}
             <div className="text-xs font-mono text-cyan-400/60">
@@ -373,26 +413,34 @@ export function SpectrumAnalyzer({
           {/* Channel display controls */}
           <div className="absolute top-2 right-2 flex items-center space-x-2">
             <button 
-              className="text-xs font-mono text-cyan-400/60 hover:text-cyan-400"
-              onClick={() => {}}
+              className={`text-xs font-mono transition-colors ${
+                channelDisplayMode === 'left' ? 'text-cyan-400' : 'text-cyan-400/60 hover:text-cyan-400'
+              }`}
+              onClick={() => setChannelDisplayMode('left')}
             >
               ⊡ Left
             </button>
             <button 
-              className="text-xs font-mono text-orange-400/60 hover:text-orange-400"
-              onClick={() => {}}
+              className={`text-xs font-mono transition-colors ${
+                channelDisplayMode === 'right' ? 'text-orange-400' : 'text-orange-400/60 hover:text-orange-400'
+              }`}
+              onClick={() => setChannelDisplayMode('right')}
             >
               ⊡ Right
             </button>
             <button 
-              className="text-xs font-mono text-emerald-400/60 hover:text-emerald-400"
-              onClick={() => {}}
+              className={`text-xs font-mono transition-colors ${
+                channelDisplayMode === 'max' ? 'text-emerald-400' : 'text-emerald-400/60 hover:text-emerald-400'
+              }`}
+              onClick={() => setChannelDisplayMode('max')}
             >
               ⊡ Max
             </button>
             <button 
-              className="text-xs font-mono text-yellow-400/60 hover:text-yellow-400"
-              onClick={() => {}}
+              className={`text-xs font-mono transition-colors ${
+                channelDisplayMode === 'average' ? 'text-yellow-400' : 'text-yellow-400/60 hover:text-yellow-400'
+              }`}
+              onClick={() => setChannelDisplayMode('average')}
             >
               ⊡ Average
             </button>
