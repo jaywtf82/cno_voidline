@@ -313,17 +313,16 @@ export default function Landing() {
                 <span className="font-mono text-sm" style={{ color: 'var(--color-accent)' }}>./C/No_Voidline</span>
               </div>
 
-              {/* Center - Navigation */}
-              <nav className="hidden md:flex items-center space-x-8">
-                <a href="#" className="nav-link">/home</a>
-                <a href="#features" className="nav-link">/features</a>
-                <a href="#pricing" className="nav-link">/pricing</a>
-                <a href="#docs" className="nav-link">/docs</a>
-                <a href="#logs" className="nav-link">/logs</a>
-              </nav>
-
-              {/* Right Side - Login Button */}
+              {/* Right Side - Navigation and Controls */}
               <div className="flex items-center space-x-4">
+                <nav className="hidden md:flex items-center space-x-8">
+                  <a href="#" className="nav-link">/home</a>
+                  <a href="#features" className="nav-link">/features</a>
+                  <a href="#pricing" className="nav-link">/pricing</a>
+                  <a href="#docs" className="nav-link">/docs</a>
+                  <a href="#logs" className="nav-link">/logs</a>
+                </nav>
+                
                 {!isAuthenticated && (
                   <button
                     onClick={handleLogin}
@@ -332,6 +331,7 @@ export default function Landing() {
                     Login
                   </button>
                 )}
+                
                 <div className="flex items-center justify-end space-x-1">
                   <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
                   <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
