@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { NeonCard, NeonCardHeader, NeonCardTitle, NeonCardContent } from "@/components/ui/neon-card";
@@ -21,13 +20,15 @@ import { aiMasteringCore } from "@/lib/audio/aiMasteringCore";
 import { SpectrumAnalyzer } from "@/components/audio/SpectrumAnalyzer";
 import { WaveformComparison } from "@/components/audio/WaveformComparison";
 import { OptimizedAudioProcessor } from "@/lib/audio/optimizedAudioProcessor";
+import { useLocation } from "react-router-dom"; // Import useLocation
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [glitchTrigger, setGlitchTrigger] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth(); // Destructure login from useAuth
+  const [, navigate] = useLocation(); // Use useLocation to get navigate function
 
   // Mock audio parameters with animated values
   const [mockData, setMockData] = useState({
@@ -46,7 +47,7 @@ export default function Landing() {
   // Animate values periodically
   useEffect(() => {
     if (!isPlaying) return;
-    
+
     const interval = setInterval(() => {
       setMockData(prev => ({
         ...prev,
@@ -77,13 +78,18 @@ export default function Landing() {
     setGlitchTrigger(true);
   };
 
-  const handleLogin = () => {
-    window.location.href = "/api/login";
+  const handleLogin = async () => {
+    try {
+      await login(); // Use the login function from useAuth
+      navigate('/console');
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
   };
 
   const handleStartMastering = () => {
     if (isAuthenticated) {
-      window.location.href = "/console";
+      navigate('/console'); // Use navigate
     } else {
       handleLogin();
     }
@@ -95,20 +101,20 @@ export default function Landing() {
     setIsProcessing(true);
     setAnalysisProgress(0);
     setAnalysisComplete(false);
-    
+
     try {
       // Initialize AI mastering core
       await aiMasteringCore.initialize();
-      
+
       // Convert file to AudioBuffer
       const arrayBuffer = await file.arrayBuffer();
       const audioContext = new AudioContext();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
+
       // Create mastering session
       const sessionId = await aiMasteringCore.createSession(audioBuffer);
       console.log('Mastering session created:', sessionId);
-      
+
       // Simulate realistic analysis progress
       for (let progress = 0; progress <= 100; progress += 5) {
         setAnalysisProgress(progress);
@@ -135,7 +141,7 @@ export default function Landing() {
 
       setIsProcessing(false);
       setAnalysisComplete(true);
-      
+
     } catch (error) {
       console.error('Failed to process audio file:', error);
       setIsProcessing(false);
@@ -146,12 +152,12 @@ export default function Landing() {
 
   // File analysis state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const isProcessing = false; // Add missing variable
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [audioAnalysis, setAudioAnalysis] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  
+
   // Mastering session state
   const [masteringActive, setMasteringActive] = useState(false);
   const [masteringProgress, setMasteringProgress] = useState(0);
@@ -200,7 +206,7 @@ export default function Landing() {
         transition={{ duration: 0.6 }}
       >
         <Logo />
-        
+
         <div className="flex items-center space-x-8">
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-6">
@@ -211,6 +217,7 @@ export default function Landing() {
             >
               /home
             </a>
+            {/* Moved /docs link to be right next to the home link */}
             <a 
               href="#docs" 
               className="text-text-secondary hover:text-accent-primary font-mono text-sm transition-colors"
@@ -219,7 +226,7 @@ export default function Landing() {
               /docs
             </a>
           </nav>
-          
+
           <div className="flex items-center space-x-4">
             {/* Login Button */}
             {!isAuthenticated && (
@@ -232,8 +239,8 @@ export default function Landing() {
                 Login
               </Button>
             )}
-            
-            
+
+
           </div>
         </div>
       </motion.div>
@@ -252,7 +259,7 @@ export default function Landing() {
           className="mb-8" 
           isProcessing={isProcessing}
         />
-        
+
         {/* Analysis Progress - shown when processing */}
         {isProcessing && (
           <motion.div
@@ -270,7 +277,7 @@ export default function Landing() {
                     <span className="font-mono text-sm text-accent-primary">PROCESSING</span>
                   </div>
                 </div>
-                
+
                 {/* Progress Bar */}
                 <div className="w-full bg-black/50 rounded-lg h-3 overflow-hidden border border-accent-primary/30">
                   <motion.div
@@ -280,7 +287,7 @@ export default function Landing() {
                     transition={{ duration: 0.5 }}
                   />
                 </div>
-                
+
                 {/* Live System Feed */}
                 <div className="font-mono text-sm space-y-2 text-left">
                   <div className="text-accent-primary">$ Live System Feed:</div>
@@ -294,7 +301,7 @@ export default function Landing() {
             </NeonCard>
           </motion.div>
         )}
-        
+
         {/* Default System Status - shown when not processing */}
         {!isProcessing && (
           <motion.div 
@@ -343,7 +350,7 @@ export default function Landing() {
                     <div>Channels: {audioAnalysis.channels}</div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-mono text-sm text-accent-primary">Audio Levels</h4>
                   <div className="font-mono text-xs space-y-1">
@@ -353,7 +360,7 @@ export default function Landing() {
                     <div>Dynamic Range: {audioAnalysis.dynamicRange.toFixed(1)} LU</div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <h4 className="font-mono text-sm text-accent-primary">Stereo Analysis</h4>
                   <div className="font-mono text-xs space-y-1">
@@ -366,14 +373,14 @@ export default function Landing() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="text-center">
                 <Button 
                   className="font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
                   onClick={() => {
                     // Check if authentication is required (configurable)
                     const requireAuth = import.meta.env.VITE_REQUIRE_AUTH === 'true';
-                    
+
                     if (requireAuth && !isAuthenticated) {
                       setShowAuthModal(true);
                     } else {
@@ -428,7 +435,7 @@ export default function Landing() {
             </NeonCardHeader>
             <NeonCardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                
+
                 {/* Left Panel - Controls */}
                 <div className="space-y-6">
                   {/* Mode Selection */}
@@ -490,7 +497,7 @@ export default function Landing() {
                       ))}
                     </div>
                   </div>
-                  
+
                   {/* AI Presets (only shown in AI mode) */}
                   {masteringMode === 'ai' && (
                     <div>
@@ -521,7 +528,7 @@ export default function Landing() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Processing Controls */}
                   <div className="flex gap-3">
                     <Button 
@@ -529,26 +536,26 @@ export default function Landing() {
                       onClick={async () => {
                         setMasteringProgress(0);
                         setProcessedAudioFile(null);
-                        
+
                         // Optimized processing simulation
                         const processingSteps = [
                           { name: 'Analyzing...', duration: 500 },
                           { name: 'Processing...', duration: 2000 },
                           { name: 'Finalizing...', duration: 300 }
                         ];
-                        
+
                         let currentProgress = 0;
                         for (const step of processingSteps) {
                           const stepIncrement = step.duration / 50; // 50ms intervals
                           const targetProgress = currentProgress + (step.duration / 3000) * 100;
-                          
+
                           while (currentProgress < targetProgress) {
                             await new Promise(resolve => setTimeout(resolve, 50));
                             currentProgress = Math.min(targetProgress, currentProgress + 2);
                             setMasteringProgress(currentProgress);
                           }
                         }
-                        
+
                         // Simulate creating processed file
                         if (selectedFile) {
                           setProcessedAudioFile(selectedFile); // In real implementation, this would be the processed audio
@@ -560,7 +567,7 @@ export default function Landing() {
                        masteringProgress < 100 ? `Processing ${masteringProgress.toFixed(0)}%` : 
                        'Complete'}
                     </Button>
-                    
+
                     {masteringProgress === 100 && (
                       <Button 
                         variant="outline"
@@ -582,7 +589,7 @@ export default function Landing() {
                       </Button>
                     )}
                   </div>
-                  
+
                   {masteringProgress > 0 && (
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs font-mono">
@@ -598,7 +605,7 @@ export default function Landing() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Right Panel - Visualizers */}
                 <div className="space-y-6">
                   {/* Spectrum Analyzer */}
@@ -607,7 +614,7 @@ export default function Landing() {
                     isActive={masteringProgress > 0}
                     className="h-48"
                   />
-                  
+
                   {/* Waveform Comparison */}
                   <WaveformComparison
                     originalFile={selectedFile || undefined}
@@ -615,7 +622,7 @@ export default function Landing() {
                     isProcessing={masteringProgress > 0 && masteringProgress < 100}
                     className="h-40"
                   />
-                  
+
                   {/* Levels Display */}
                   <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                     <div className="space-y-1">
@@ -631,7 +638,7 @@ export default function Landing() {
                       <div>RMS: {masteringProgress === 100 ? '-12.0 dB' : '---'}</div>
                     </div>
                   </div>
-                  
+
                   {/* Quality Metrics */}
                   {masteringProgress === 100 && (
                     <div className="bg-black/30 border border-accent-primary/30 rounded p-3">
@@ -657,7 +664,7 @@ export default function Landing() {
           masteringActive ? 'opacity-30 pointer-events-none' : 'opacity-100'
         }`}
       >
-        
+
         {/* Left Panel - Transport & Controls */}
         <motion.div 
           className="space-y-6"
@@ -675,7 +682,7 @@ export default function Landing() {
               <p className="text-text-secondary mb-6 text-sm">
                 AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.
               </p>
-              
+
               {/* Spectrum Analyzer Preview */}
               <div className="bg-black/50 p-4 rounded">
                 <div className="flex items-end space-x-1 h-24">
@@ -753,7 +760,7 @@ export default function Landing() {
           <div className="space-y-6">
             {/* WaveDNA Visualizer */}
             <WaveDNA isPlaying={isPlaying} className="h-64" />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Phase 2: Enhancement */}
               <NeonCard variant="terminal" className="p-6">
@@ -762,7 +769,7 @@ export default function Landing() {
                   <div className="text-text-primary font-bold">Enhancement</div>
                   <div className="text-text-muted font-mono text-sm">CORE: REBUILD</div>
                 </div>
-                
+
                 <h3 className="text-lg font-bold mb-3">Intelligent Reconstruction</h3>
                 <p className="text-text-secondary mb-4 text-sm">
                   The AI rebuilds the audio, applying precise, calculated enhancements.
@@ -770,7 +777,7 @@ export default function Landing() {
                 <p className="text-xs font-mono text-text-muted/70 mb-4">
                   designed and developed by <span className="text-accent-primary">[@dotslashrecords]</span>
                 </p>
-                
+
                 {/* Neural Module Display */}
                 <div className="bg-black/50 p-4 rounded border border-accent-primary/20">
                   <div className="font-mono text-sm mb-3 text-accent-primary">neural module v9.4.1</div>
@@ -801,7 +808,7 @@ export default function Landing() {
                   </div>
                 </div>
               </NeonCard>
-              
+
               {/* Phase 3: Transmission */}
               <NeonCard variant="terminal" className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
@@ -813,12 +820,12 @@ export default function Landing() {
                   </div>
                   <div className="text-text-muted font-mono text-sm">CORE: TRANSPORT</div>
                 </div>
-                
+
                 <h3 className="text-lg font-bold mb-3">Interstellar Transmission</h3>
                 <p className="text-text-secondary mb-6 text-sm">
                   The final master signal is crafted for a powerful and clear transmission.
                 </p>
-                
+
                 {/* Signal Bars */}
                 <div className="bg-black/50 p-4 rounded border border-accent-primary/20">
                   <div className="flex items-end justify-center space-x-3 h-16">
@@ -833,7 +840,7 @@ export default function Landing() {
                 </div>
               </NeonCard>
             </div>
-            
+
             {/* Level Meters */}
             <VoidlineMeter 
               level={mockData.levels.peak}
@@ -930,7 +937,7 @@ export default function Landing() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <span className="text-text-muted">LUFS:</span>
@@ -999,7 +1006,7 @@ export default function Landing() {
         </motion.div>
       </div>
 
-      
+
 
       {/* Footer Status Bar */}
       <motion.div 
@@ -1014,7 +1021,7 @@ export default function Landing() {
               designed and developed by <span className="text-accent-primary">[@dotslashrecords]</span>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <div className="text-text-muted">
               <a href="#" className="hover:text-accent-primary">Privacy Policy</a>
@@ -1043,13 +1050,13 @@ export default function Landing() {
                 Start Mastering Session
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-6 p-4">
               <div className="text-center space-y-4">
                 <p className="text-text-secondary text-sm">
                   Choose how you'd like to proceed with your mastering session
                 </p>
-                
+
                 <div className="space-y-3">
                   <Button 
                     className="w-full font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
@@ -1061,7 +1068,7 @@ export default function Landing() {
                   >
                     Login / Register
                   </Button>
-                  
+
                   <Button 
                     variant="outline"
                     className="w-full font-mono border-accent-primary/50 hover:border-accent-primary text-accent-primary"
@@ -1076,7 +1083,7 @@ export default function Landing() {
                     Continue as Demo
                   </Button>
                 </div>
-                
+
                 <div className="text-xs text-text-muted space-y-2">
                   <div className="border-t border-primary/20 pt-3">
                     <p><strong className="text-accent-primary">Login Benefits:</strong></p>
