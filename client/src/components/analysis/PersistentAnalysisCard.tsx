@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useLocation } from 'wouter';
@@ -40,7 +39,7 @@ interface PersistentAnalysisCardProps {
 export function PersistentAnalysisCard({ analysisId, analysisData, className = '' }: PersistentAnalysisCardProps) {
   const [, navigate] = useLocation();
   const getAnalysis = useAudioStore((state) => state.getAnalysis);
-  
+
   const analysis = analysisData || (analysisId ? getAnalysis(analysisId) : null);
 
   if (!analysis || typeof analysis !== 'object') {
@@ -52,7 +51,7 @@ export function PersistentAnalysisCard({ analysisId, analysisData, className = '
     id: analysis.id || 'Unknown',
     sr: analysis.sr || analysis.sampleRate || 44100,
     ch: analysis.ch || analysis.channels || 2,
-    dur_s: analysis.dur_s || analysis.duration || 0,
+    dur_s: typeof analysis?.dur_s === 'number' ? analysis.dur_s : parseFloat(analysis?.dur_s || '0'),
     peak_dbfs: analysis.peak_dbfs || analysis.peak || 0,
     rms_mono_dbfs: analysis.rms_mono_dbfs || analysis.rms || 0,
     crest_db: analysis.crest_db || analysis.crest || 0,

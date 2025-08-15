@@ -21,8 +21,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
-import { useAudioStore } from '@/lib/stores/audioStore';
+import { Button } from "@/components/ui/button";
 import { PhaseOneCard } from '@/components/analysis/PhaseOneCard';
+import { useAudioStore } from '@/lib/stores/audioStore';
 import { useAuth } from '@/hooks/useAuth';
 
 interface LogEntry {
