@@ -189,6 +189,9 @@ export class OptimizedAudioProcessor {
 
       // Cleanup
       await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to update
+      
+      // Complete the progress
+      onProgress?.({ progress: 100, stage: 'Analysis complete.' });
 
       return {
         audioBuffer,
