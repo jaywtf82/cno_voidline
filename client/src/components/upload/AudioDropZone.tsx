@@ -171,17 +171,6 @@ export function AudioDropZone({ onFileSelect, className }: AudioDropZoneProps) {
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
-              variant="default"
-              size="lg"
-              disabled={isProcessing}
-              className="font-mono px-6 py-3"
-              data-testid="button-start-mastering"
-            >
-              <Play className="w-4 h-4 mr-2" />
-              {isProcessing ? "Processing..." : "Start Mastering"}
-            </Button>
-
-            <Button
               variant="outline"
               size="lg"
               disabled={isProcessing}
