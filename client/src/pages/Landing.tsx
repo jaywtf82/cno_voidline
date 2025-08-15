@@ -87,6 +87,9 @@ export default function Landing() {
 
   const handleFileSelect = async (file: File) => {
     console.log('File selected:', file.name);
+    setIsProcessing(true);
+    setAnalysisProgress(0);
+    
     try {
       // Initialize AI mastering core
       await aiMasteringCore.initialize();
@@ -100,20 +103,43 @@ export default function Landing() {
       const sessionId = await aiMasteringCore.createSession(audioBuffer);
       console.log('Mastering session created:', sessionId);
       
-      // Redirect to console for authenticated users, or show login
-      if (isAuthenticated) {
-        window.location.href = `/console?session=${sessionId}`;
-      } else {
-        // Store session in localStorage for after login
-        localStorage.setItem('pendingSession', sessionId);
-        handleLogin();
-      }
+      // Progress will complete via useEffect, then redirect
+      setTimeout(() => {
+        if (isAuthenticated) {
+          window.location.href = `/console?session=${sessionId}`;
+        } else {
+          localStorage.setItem('pendingSession', sessionId);
+          handleLogin();
+        }
+      }, 5000); // Give time for progress to complete
+      
     } catch (error) {
       console.error('Failed to process audio file:', error);
+      setIsProcessing(false);
     }
   };
 
 
+
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  
+  // Simulate analysis progress
+  useEffect(() => {
+    if (isProcessing) {
+      const interval = setInterval(() => {
+        setAnalysisProgress(prev => {
+          if (prev >= 100) {
+            setIsProcessing(false);
+            return 0;
+          }
+          return prev + Math.random() * 5;
+        });
+      }, 200);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isProcessing]);
 
   const mockPresets = [
     { name: "CLUB_MASTER", category: "Club", description: "High energy club master", isActive: false },
@@ -191,30 +217,83 @@ export default function Landing() {
 
       {/* Hero Section - AI Mastering Upload */}
       <motion.div 
-        className="mb-12"
+        className="mb-12 text-center"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
       >
+        <div className="mb-8">
+          <h1 className="text-3xl lg:text-4xl font-mono font-bold text-primary mb-4">
+            FREQUENCY COMMAND DECK
+          </h1>
+          <p className="text-lg text-text-secondary mb-8 max-w-3xl mx-auto">
+            Professional mastering interface with real-time analysis
+          </p>
+        </div>
+
         <AudioDropZone onFileSelect={handleFileSelect} className="mb-8" />
         
-        {/* System Status */}
-        <motion.div 
-          className="mt-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-        >
-          <NeonCard variant="terminal" className="p-4 max-w-2xl mx-auto text-left">
-            <div className="font-mono text-sm space-y-2">
-              <div className="text-accent-primary">$ Live System Feed:</div>
-              <div className="text-text-muted">[STATUS] AI core initialized and stable.</div>
-              <div className="text-text-muted">[STATUS] Neural network connection is nominal.</div>
-              <div className="text-yellow-400">[ALERT] Solar flare activity detected. Uplink integrity at 96%.</div>
-              <div className="text-accent-primary">System is ready for your command</div>
-            </div>
-          </NeonCard>
-        </motion.div>
+        {/* Analysis Progress - shown when processing */}
+        {isProcessing && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <NeonCard variant="terminal" className="p-6 max-w-3xl mx-auto">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-mono text-lg text-accent-primary">Deep Signal Analysis</h3>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-accent-primary rounded-full animate-pulse"></div>
+                    <span className="font-mono text-sm text-accent-primary">PROCESSING</span>
+                  </div>
+                </div>
+                
+                {/* Progress Bar */}
+                <div className="w-full bg-black/50 rounded-lg h-3 overflow-hidden border border-accent-primary/30">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-accent-primary to-yellow-400 shadow-glow-sm"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(analysisProgress, 100)}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </div>
+                
+                {/* Live System Feed */}
+                <div className="font-mono text-sm space-y-2 text-left">
+                  <div className="text-accent-primary">$ Live System Feed:</div>
+                  <div className="text-text-muted">[STATUS] AI core initialized and stable.</div>
+                  <div className="text-text-muted">[STATUS] Neural network connection is nominal.</div>
+                  <div className="text-text-muted">[INFO] FFT analysis: {Math.min(analysisProgress, 100).toFixed(1)}% complete</div>
+                  <div className="text-yellow-400">[ALERT] Solar flare activity detected. Uplink integrity at 96%.</div>
+                  <div className="text-accent-primary">Status: Deep signal analysis in progress</div>
+                </div>
+              </div>
+            </NeonCard>
+          </motion.div>
+        )}
+        
+        {/* Default System Status - shown when not processing */}
+        {!isProcessing && (
+          <motion.div 
+            className="mt-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
+            <NeonCard variant="terminal" className="p-4 max-w-2xl mx-auto text-left">
+              <div className="font-mono text-sm space-y-2">
+                <div className="text-accent-primary">$ Live System Feed:</div>
+                <div className="text-text-muted">[STATUS] AI core initialized and stable.</div>
+                <div className="text-text-muted">[STATUS] Neural network connection is nominal.</div>
+                <div className="text-yellow-400">[ALERT] Solar flare activity detected. Uplink integrity at 96%.</div>
+                <div className="text-accent-primary">System is ready for your command</div>
+              </div>
+            </NeonCard>
+          </motion.div>
+        )}
       </motion.div>
 
       {/* Main Grid */}
