@@ -127,7 +127,8 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
           {/* Left side - Command */}
           <div className="flex items-center space-x-2">
             <span 
-              className="font-mono text-sm text-primary"
+              className="font-mono text-sm"
+              style={{ color: '#3FB950' }}
               aria-label={`Terminal command: ${command}`}
             >
               {command}
@@ -137,21 +138,24 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
           {/* Right side - Traffic Lights */}
           <div className="flex items-center space-x-2" aria-hidden="true">
             <div 
-              className="w-3 h-3 rounded-full bg-[#27C93F] shadow-sm"
+              className="w-3 h-3 rounded-full shadow-sm"
               style={{ 
-                boxShadow: '0 0 6px rgba(39, 201, 63, 0.4)' 
+                backgroundColor: '#3FB950',
+                boxShadow: '0 0 6px rgba(63, 185, 80, 0.4)' 
               }}
             />
             <div 
-              className="w-3 h-3 rounded-full bg-[#FFBD2E] shadow-sm"
+              className="w-3 h-3 rounded-full shadow-sm"
               style={{ 
-                boxShadow: '0 0 6px rgba(255, 189, 46, 0.4)' 
+                backgroundColor: '#2EA043',
+                boxShadow: '0 0 6px rgba(46, 160, 67, 0.4)' 
               }}
             />
             <div 
-              className="w-3 h-3 rounded-full bg-[#FF5F56] shadow-sm"
+              className="w-3 h-3 rounded-full shadow-sm"
               style={{ 
-                boxShadow: '0 0 6px rgba(255, 95, 86, 0.4)' 
+                backgroundColor: '#22c55e',
+                boxShadow: '0 0 6px rgba(34, 197, 94, 0.4)' 
               }}
             />
           </div>
