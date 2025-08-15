@@ -46,7 +46,7 @@ import { PremasterAnalysis } from '@/components/analysis/PremasterAnalysis';
 import { FloatingSystemToast } from '@/components/system/FloatingSystemToast';
 
 // Enhanced analyzeAudioFile function with proper error handling
-async function analyzeAudioFile(file: File) {
+async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: number; stage: string }) => void) {
   console.log(`Analyzing ${file.name}...`);
   
   try {
@@ -55,8 +55,7 @@ async function analyzeAudioFile(file: File) {
       throw new Error('Invalid audio file');
     }
 
-    // Simulate analysis time with progress
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    onProgress?.({ progress: 10, stage: 'Loading file...' });
 
     // Try to use actual audio analysis if available
     const processor = new (await import('@/lib/audio/optimizedAudioProcessor')).OptimizedAudioProcessor();
@@ -67,8 +66,10 @@ async function analyzeAudioFile(file: File) {
       const arrayBuffer = await file.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
+      onProgress?.({ progress: 30, stage: 'Initializing...' });
       await processor.initialize();
-      const results = await processor.processAudio(audioBuffer);
+      
+      const results = await processor.processAudio(audioBuffer, onProgress);
       
       return {
         fileName: file.name,
@@ -211,16 +212,11 @@ export default function Landing() {
     setAudioAnalysis(null);
 
     try {
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setAnalysisProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
+      const analysis = await analyzeAudioFile(file, (progress) => {
+        setAnalysisProgress(progress.progress);
+      });
 
-      const analysis = await analyzeAudioFile(file);
-
-      clearInterval(progressInterval);
       setAnalysisProgress(100);
-
       setAudioAnalysis(analysis);
       setAnalysisComplete(true);
     } catch (error) {
@@ -242,9 +238,9 @@ export default function Landing() {
         correlation: 0.85
       };
 
+      setAnalysisProgress(100);
       setAudioAnalysis(fallbackAnalysis);
       setAnalysisComplete(true);
-      setAnalysisProgress(100);
     } finally {
       setIsProcessing(false);
     }
