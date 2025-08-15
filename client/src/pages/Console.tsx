@@ -1,3 +1,21 @@
+/**
+ * Console.tsx - Main Console Interface for Audio Processing
+ * 
+ * CONTROLS:
+ * - Upload area: Drag & drop or click to select audio files
+ * - Playback controls: Play/Pause, Volume, Transport
+ * - AI Mode toggle: Switch between manual and AI mastering
+ * - Export controls: Format selection and download
+ * 
+ * QA STEPS:
+ * 1. Test file upload and audio playback functionality
+ * 2. Verify real-time analysis updates during playback
+ * 3. Check AI mastering toggles work correctly
+ * 4. Test export functionality for different formats
+ * 5. Verify session state persistence
+ * 6. Test responsive layout across devices
+ */
+
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -574,19 +592,23 @@ export default function Console() {
 
                 {!presetsLoading && presetsData && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {(presetsData as any)?.builtIn && Array.isArray((presetsData as any).builtIn) ? 
-                      (presetsData as any).builtIn.slice(0, 3).map((preset: Preset) => (
-                        <PresetTile
-                          key={preset.id}
-                          preset={preset}
-                          onApply={handleApplyPreset}
-                        />
-                      )) : (
+                    {(() => {
+                      const presets = (presetsData as any)?.builtIn;
+                      if (presets && Array.isArray(presets)) {
+                        return presets.slice(0, 3).map((preset: Preset) => (
+                          <PresetTile
+                            key={preset.id}
+                            preset={preset}
+                            onApply={handleApplyPreset}
+                          />
+                        ));
+                      }
+                      return (
                         <div className="col-span-3 text-center text-gray-400 font-mono text-sm">
                           No presets available
                         </div>
-                      )
-                    }
+                      );
+                    })()}
                   </div>
                 )}
               </div>

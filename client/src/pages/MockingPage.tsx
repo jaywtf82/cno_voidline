@@ -1,3 +1,16 @@
+/**
+ * MockingPage.tsx - Development Testing Interface
+ * 
+ * CONTROLS:
+ * - Various UI component tests and mockups
+ * - Interactive demos for development purposes
+ * 
+ * QA STEPS:
+ * 1. Test all UI components render correctly
+ * 2. Verify styling consistency
+ * 3. Check responsive behavior
+ */
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { NeonCard, NeonCardHeader, NeonCardTitle, NeonCardContent } from "@/components/ui/neon-card";

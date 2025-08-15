@@ -1,3 +1,20 @@
+/**
+ * Mastering.tsx - Professional Mastering Session Interface
+ * 
+ * CONTROLS:
+ * - PhaseOneCard: Click to expand detailed signal analysis modal
+ * - Escape key: Close modal
+ * - Enter/Space: Open modal when focused
+ * - Real-time visualizers with animated analysis thumbnails
+ * 
+ * QA STEPS:
+ * 1. Verify PhaseOneCard renders with proper terminal styling
+ * 2. Test modal opening/closing with keyboard and mouse
+ * 3. Check visualizations are smooth and responsive
+ * 4. Confirm green color scheme consistency
+ * 5. Test accessibility features and keyboard navigation
+ * 6. Verify session data persistence and restoration
+ */
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';

@@ -1,3 +1,21 @@
+/**
+ * Landing.tsx - AI Audio Mastering Console Landing Page
+ * 
+ * CONTROLS:
+ * - Drag & drop or click to upload audio files (WAV, MP3, AAC, FLAC, OGG, max 100MB)
+ * - Upload triggers automatic analysis pipeline (INIT → DECODING → ANALYZING → READY)
+ * - Analysis complete shows PremasterAnalysis card with technical metrics
+ * - "Start Mastering Session" button navigates to /mastering?id={trackId}
+ * 
+ * QA STEPS:
+ * 1. Upload various audio formats - should process without errors
+ * 2. Verify real-time progress indicator during analysis
+ * 3. Check PremasterAnalysis displays actual file data (not seed data)
+ * 4. Confirm "Start Mastering Session" button navigates correctly
+ * 5. Test responsive layout on different screen sizes
+ * 6. Verify terminal aesthetic and green color scheme
+ */
+
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";

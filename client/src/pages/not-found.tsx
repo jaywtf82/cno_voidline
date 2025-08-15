@@ -1,3 +1,14 @@
+/**
+ * not-found.tsx - 404 Error Page
+ * 
+ * CONTROLS:
+ * - Terminal-styled 404 error display
+ * 
+ * QA STEPS:
+ * 1. Verify proper error page styling
+ * 2. Test navigation back to main app
+ */
+
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
 
