@@ -1,0 +1,201 @@
+Repo: https://github.com/jaywtf82/cno_voidline
+Context: Repo includes client/, server/, shared/, .replit, package.json, vite.config.ts, etc. Use existing terminal aesthetic and theme tokens. 
+GitHub
+
+Objectives (authoritative)
+After upload + analysis on the landing page, render a dynamic premaster_analysis card with standards metrics and a primary CTA Start Mastering Session.
+
+Clicking CTA navigates to Mastering Process page hosting Phase 1 · Deep Signal Deconstruction (interactive, 60 fps, WebAudio+Worklets).
+
+Compute all must-have, standards/compliance metrics per ITU-R BS.1770 / EBU R128 (I/S/M LUFS with K-weighting+gating, dBTP via oversampled TP, LRA, sample checks, correlation/mono-compatibility).
+
+Compute strongly-recommended and nice-to-have metrics.
+
+AI analyzer runs fully offline with AI_MODE='scratch'|'transfer'. In transfer mode, load a local small embedding model (e.g., YAMNet/VGGish) and train light heads on-device. No external calls.
+
+Create/Update these paths (repo-relative)
+bash
+Copy
+Edit
+client/app/(landing)/page.tsx                         # Update: upload → analysis → premaster card → CTA
+client/app/mastering/process/page.tsx                 # NEW: Mastering Process page host
+client/components/premaster/PremasterAnalysisCard.tsx # NEW: displays standards metrics + AI notes
+client/components/mastering/Phase1DeepSignal.tsx      # NEW: Phase 1 card (interactive)
+client/components/mastering/vis/SpectrumCanvas.tsx    # NEW: 1/24-oct + log line + HOLD
+client/components/mastering/vis/ScopeCanvas.tsx       # NEW: vectorscope polar/Lissajous + correlation bar
+client/components/mastering/vis/MeterStacks.tsx       # NEW: PLR/PSR/crest tri-meter; micro-dynamics meter
+client/worklets/lufs-processor.js                     # NEW: K-weighting, gate, LUFS M/S/I, dBTP (≥4×)
+client/worklets/peaks-rms-processor.js                # NEW: per-block peak/RMS, fast/slow RMS deltas
+client/worklets/correlation-processor.js              # NEW: stereo correlation + XY buffers for scope
+client/lib/audio/analysisPipeline.ts                  # NEW: offline standards analysis (for card)
+client/lib/audio/visualBus.ts                         # NEW: postMessage bridge Worklet→UI (typed frames)
+client/state/masteringStore.ts                        # NEW: session state (Zustand or Context)
+client/styles/mastering.css                           # NEW: tiny CSS for grid + accent glows
+
+# AI (fully offline; switchable)
+client/state/aiConfig.ts                              # NEW: { AI_MODE: 'transfer'|'scratch', epochs, batch }
+client/lib/audio/ai/modelSpec.ts                      # NEW: tiny Temporal CNN→GRU model (scratch)
+client/lib/audio/ai/heads.ts                          # NEW: lightweight GRU/CNN heads (transfer)
+client/lib/audio/ai/embedding.ts                      # NEW: local YAMNet/VGGish wrapper (no network)
+client/lib/audio/ai/runtime.ts                        # NEW: TF.js or ONNX Runtime Web bootstrap (WASM)
+client/lib/audio/ai/dataset.ts                        # NEW: feature windows, labels, augmentations
+client/lib/audio/ai/trainer.ts                        # NEW: pure TS trainer (SGD+momentum, cosine LR)
+
+public/models/yamnet/model.json                       # NEW: packaged locally (if transfer mode)
+public/models/yamnet/*.bin                            # NEW: weights blobs (no CDN)
+Landing → Analysis → Card → CTA (exact flow)
+On file drop/pick in client/app/(landing)/page.tsx:
+
+Persist session shell (id, file meta) → masteringStore.
+
+Kick offline analysis (analysisPipeline.ts) with progress events: INIT → DECODING → ANALYZING n% → SUMMARIZING → READY.
+
+On READY, mount <PremasterAnalysisCard/> with metrics + AI notes (if available) and enable Start Mastering Session.
+
+CTA routes to /mastering/process.
+
+Mastering Process + Phase 1 (Deep Signal Deconstruction)
+Component: Phase1DeepSignal.tsx with four filter chips (toggle + focus): Nuance · Dynamics · Frequencies · Stereo Image.
+
+Visuals & Interactions
+
+Nuance: micro-dynamics meter = ΔRMS(fast vs slow), crest sparkline, transient density ticks.
+
+Dynamics: PLR/PSR/crest tri-meter with corridor bands; side histogram of short-term values.
+
+Frequencies: hybrid analyzer = 1/24-octave bars + log-frequency line, HOLD overlay; note gridlines (55/110/220 Hz…).
+
+Stereo Image: vectorscope polar/Lissajous; correlation bar; mid/side minis; center-of-mass trail.
+
+Controls: hover readouts; Cmd/Ctrl-drag=freq zoom; Shift-drag=level zoom; double-click reset; Space freeze; PNG export via toDataURL().
+
+Rendering
+
+Independent canvases per tile on their own requestAnimationFrame loops; reuse typed arrays; prefer OffscreenCanvas; no blocking on audio thread.
+
+Standards/Compliance — Must-haves (implement precisely)
+Compute in both offline pipeline (for the card) and real-time worklets (for Phase 1), matching within tolerances (±0.5 LU, ±0.3 dBTP):
+
+LUFS: Integrated (I), Short-term (S, 3 s), Momentary (M, 400 ms) using K-weighting + gating.
+
+True Peak (dBTP): oversampled estimator (≥4×) with peak-hold.
+
+LRA (Loudness Range): relative gating per EBU/BS.1770 methodology.
+
+Sample Peak, RMS, Crest (sanity checks).
+
+Inter-sample clipping count, DC offset per channel, sample rate/bit-depth integrity.
+
+Stereo correlation / mono-compatibility: include collapse-to-mono check for sub-bass.
+
+Worklet split
+
+lufs-processor.js: K-weight IIR → gated LUFS M/S/I; 4× TP estimate.
+
+peaks-rms-processor.js: per-block Peak/RMS L/R + fast/slow RMS for ΔRMS.
+
+correlation-processor.js: correlation coefficient (−1..+1) + XY buffers for scope.
+
+Strongly recommended (translation/quality gates)
+PLR / PSR (Peak − LUFS I / Short-term).
+
+Mid/Side energy & channel balance; enforce low-end mono <80–120 Hz (configurable by genre).
+
+Hybrid spectrum (1/24-oct + log line) with HOLD overlay.
+
+Vectorscope (polar/Lissajous) for phase stability.
+
+Nice-to-haves
+Spectral centroid/bandwidth, ZCR, spectrogram (toggle).
+
+Transient density, micro-dynamics visualizers.
+
+Targets (defaults surfaced in UI chips)
+Streaming: LUFS-I −14…−9, dBTP ≤ −1.0, LRA 4–8 LU, PLR ~8–10 dB, PSR ≥7 dB.
+
+Club/DJ: LUFS-I −7…−6, dBTP −0.8…−1.0, LRA 3–6 LU, bass mono <100 Hz, correlation ≥0 in lows.
+
+Vinyl pre-master (optional profile): LUFS-I −12…−16, strict mono sub, tamed <40 Hz and 2–6 kHz.
+
+Expose a Target Corridor selector (Streaming | Club | Vinyl) to annotate meters with corridor bands.
+
+AI Analyzer (fully offline; deterministic)
+Flag: AI_MODE = 'transfer' | 'scratch' (persist in aiConfig.ts; default to 'transfer' if local model assets found).
+
+Mode ‘transfer’
+
+Load local YAMNet or VGGish embeddings from public/models/... via runtime.ts (TF.js or ONNX Web, WASM backend).
+
+Train lightweight heads (heads.ts) for 3–10 epochs on device:
+
+Balance score (0–100), Dynamics score (0–100), Risk flags: clipping, DC drift, harsh 2–6 kHz, mud 150–300 Hz, phase instability.
+
+Dataset windows (dataset.ts): 1/24-oct energies (log), LUFS M/S, PLR/PSR, crest, dBTP, correlation, DC; small augmentations (±1.5 dB/oct tilt, gentle sat, widen/narrow).
+
+Checkpoints in IndexedDB: voidline:v1:ai:ckpt.
+
+Mode ‘scratch’
+
+modelSpec.ts: tiny Temporal CNN → GRU(64) → embedding(32); heads as above.
+
+trainer.ts: SGD+momentum, cosine LR; Huber (reg) + BCE (cls).
+
+Surface AI outputs
+
+PremasterAnalysisCard: show AI Notes (scores + risk chips).
+
+Phase 1: subtle badges (e.g., “Harsh @ 3.2 kHz”) that blink on hover and link to that band.
+
+State, Persistence, Resilience
+ts
+Copy
+Edit
+type AnalysisSummary = {
+  lufsI:number; lufsS:number; lufsM:number; lra:number; dbtp:number;
+  samplePeak:number; rms:number; crest:number;
+  plr:number; psr:number; corr:number;
+  dcL:number; dcR:number; sr:number; bitDepth:number; clipCount:number;
+};
+
+type MasteringSession = {
+  id:string;
+  fileMeta:{name:string; duration:number; sr:number; channels:number};
+  buffer: AudioBuffer; // chunked backup in IndexedDB
+  analysis: AnalysisSummary;
+  settings:{ fftSize:number; smoothing:number; corridor:'stream'|'club'|'vinyl'; scopeMode:'polar'|'lissa' };
+  ai?: { balance?:number; dynamics?:number; risks?:string[] };
+};
+Persist: audio chunks in IndexedDB, summary/settings in localStorage.
+
+Progress is sticky across soft reloads.
+
+If a Worklet fails, auto-fallback to offline CPU math; annotate UI quietly.
+
+Performance SLAs
+Worklet compute <1.3 ms/block @ 512 frames; no audio dropouts when switching views.
+
+Visuals 60 fps on mid-range laptop; no GC churn (reuse typed arrays).
+
+/mastering/process mounts <300 ms with session restored.
+
+Testing & Acceptance
+Unit tests: LUFS parity (offline vs worklet), dBTP error <0.3 dB, correlation sign on known fixtures, trainer overfits tiny synthetic set.
+
+Manual fixtures: mono sine, pink noise, clipped loop, phase-inverted L/R, DC-biased file.
+
+Pass when:
+
+premaster_analysis always renders full standards metrics.
+
+CTA reliably navigates to Mastering Process with live Phase 1.
+
+Worklet vs offline metrics within stated tolerances.
+
+AI outputs deterministic given same checkpoint.
+
+Styling & UX consistency
+Honor the terminal window look; right-aligned “traffic-light” controls on card headers; accent glow for active filters.
+
+No heavy external libs or fonts; keep paint paths lean.
+
+Deliver everything above. Inline a brief README block at the top of each new page.tsx describing user controls + QA steps.
