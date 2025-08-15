@@ -454,9 +454,9 @@ export default function Landing() {
               <div className="text-4xl font-mono font-bold mb-6">Free</div>
               
               <div className="space-y-3 mb-8 font-mono text-sm">
-                <div>> 3 AI Masters</div>
-                <div>> WAV & MP3 Exports</div>
-                <div>> Standard Delivery</div>
+                <div>&gt; 3 AI Masters</div>
+                <div>&gt; WAV & MP3 Exports</div>
+                <div>&gt; Standard Delivery</div>
               </div>
               
               <button className="btn btn-secondary w-full">
@@ -481,10 +481,10 @@ export default function Landing() {
               <div className="text-sm text-gray-400 mb-6">/ month</div>
               
               <div className="space-y-3 mb-8 font-mono text-sm">
-                <div>> 15 AI Masters / month</div>
-                <div>> All Formats (WAV, MP3, FLAC)</div>
-                <div>> Priority Queue</div>
-                <div>> Reference Tracks</div>
+                <div>&gt; 15 AI Masters / month</div>
+                <div>&gt; All Formats (WAV, MP3, FLAC)</div>
+                <div>&gt; Priority Queue</div>
+                <div>&gt; Reference Tracks</div>
               </div>
               
               <button className="btn btn-primary w-full">
@@ -503,10 +503,10 @@ export default function Landing() {
               <div className="text-sm text-gray-400 mb-6">/ year</div>
               
               <div className="space-y-3 mb-8 font-mono text-sm">
-                <div>> Unlimited AI Masters</div>
-                <div>> All Formats & Features</div>
-                <div>> Highest Priority Access</div>
-                <div>> Dedicated Support Channel</div>
+                <div>&gt; Unlimited AI Masters</div>
+                <div>&gt; All Formats &amp; Features</div>
+                <div>&gt; Highest Priority Access</div>
+                <div>&gt; Dedicated Support Channel</div>
               </div>
               
               <button className="btn btn-secondary w-full">
