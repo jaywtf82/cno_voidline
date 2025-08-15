@@ -1,84 +1,90 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type ThemeType = "classic" | "matrix" | "cyberpunk" | "retro";
 
-interface ThemeState {
-  theme: ThemeType;
-  isTransitioning: boolean;
-  customThemes: Record<string, any>;
-  
-  // Actions
-  setTheme: (theme: ThemeType) => void;
-  toggleTheme: () => void;
-  addCustomTheme: (name: string, config: any) => void;
-  removeCustomTheme: (name: string) => void;
-  getThemeColors: () => ThemeColors;
-}
-
-interface ThemeColors {
+interface ThemeConfig {
   primary: string;
   secondary: string;
+  accent: string;
+  background: string;
+  foreground: string;
   glow: string;
   glowStrong: string;
 }
 
-const themeConfigs: Record<ThemeType, ThemeColors> = {
+const themeConfigs: Record<ThemeType, ThemeConfig> = {
   classic: {
     primary: "#3FB950",
-    secondary: "#2EA043", 
-    glow: "rgba(63, 185, 80, 0.6)",
-    glowStrong: "rgba(63, 185, 80, 0.8)",
+    secondary: "#2EA043",
+    accent: "#00D4FF",
+    background: "#0B0C0E",
+    foreground: "#C9D1D9",
+    glow: "#3FB950",
+    glowStrong: "#3FB950aa",
   },
   matrix: {
     primary: "#00FF41",
-    secondary: "#00CC33",
-    glow: "rgba(0, 255, 65, 0.6)",
-    glowStrong: "rgba(0, 255, 65, 0.8)",
+    secondary: "#00D435",
+    accent: "#39FF14",
+    background: "#0A0A0A",
+    foreground: "#00FF41",
+    glow: "#00FF41",
+    glowStrong: "#00FF41aa",
   },
   cyberpunk: {
     primary: "#00D4FF",
-    secondary: "#B794F6",
-    glow: "rgba(0, 212, 255, 0.6)",
-    glowStrong: "rgba(0, 212, 255, 0.8)",
+    secondary: "#0099CC",
+    accent: "#FF0080",
+    background: "#0D1117",
+    foreground: "#E6F7FF",
+    glow: "#00D4FF",
+    glowStrong: "#00D4FFaa",
   },
   retro: {
     primary: "#FF8C42",
-    secondary: "#17A2B8",
-    glow: "rgba(255, 140, 66, 0.6)",
-    glowStrong: "rgba(255, 140, 66, 0.8)",
+    secondary: "#FF6B1A",
+    accent: "#FFD700",
+    background: "#1A1A1A",
+    foreground: "#FFF8DC",
+    glow: "#FF8C42",
+    glowStrong: "#FF8C42aa",
   },
 };
+
+interface ThemeState {
+  theme: ThemeType;
+  customThemes: Record<string, ThemeConfig>;
+  setTheme: (theme: ThemeType) => void;
+  toggleTheme: () => void;
+  addCustomTheme: (name: string, config: ThemeConfig) => void;
+  removeCustomTheme: (name: string) => void;
+  getThemeColors: () => ThemeConfig;
+}
 
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set, get) => ({
       theme: "classic",
-      isTransitioning: false,
       customThemes: {},
-
+      
       setTheme: (theme: ThemeType) => {
-        set({ isTransitioning: true });
-        
-        // Apply theme to document
-        const root = document.documentElement;
-        
-        // Remove all theme classes
-        Object.keys(themeConfigs).forEach(themeName => {
-          root.classList.remove(`theme-${themeName}`);
-        });
-        
-        // Add new theme class (except classic which is default)
-        if (theme !== "classic") {
-          root.classList.add(`theme-${theme}`);
-        }
-        
         set({ theme });
         
-        // Reset transition state
-        setTimeout(() => {
-          set({ isTransitioning: false });
-        }, 300);
+        // Apply theme to CSS variables
+        if (typeof window !== "undefined") {
+          const root = document.documentElement;
+          const config = themeConfigs[theme];
+          
+          root.style.setProperty("--theme-primary", config.primary);
+          root.style.setProperty("--theme-secondary", config.secondary);
+          root.style.setProperty("--theme-accent", config.accent);
+          root.style.setProperty("--theme-background", config.background);
+          root.style.setProperty("--theme-foreground", config.foreground);
+          root.style.setProperty("--theme-glow", config.glow);
+          root.style.setProperty("--theme-glow-strong", config.glowStrong);
+        }
       },
 
       toggleTheme: () => {
@@ -88,7 +94,7 @@ export const useThemeStore = create<ThemeState>()(
         get().setTheme(themes[nextIndex]);
       },
 
-      addCustomTheme: (name: string, config: any) => {
+      addCustomTheme: (name: string, config: ThemeConfig) => {
         set(state => ({
           customThemes: {
             ...state.customThemes,
