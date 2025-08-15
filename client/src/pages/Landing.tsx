@@ -233,7 +233,7 @@ export default function Landing() {
                 Login
               </button>
             )}
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-end space-x-1">
               <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
               <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
