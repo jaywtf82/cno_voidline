@@ -325,7 +325,7 @@ export default function Landing() {
 
           {/* Analysis Progress and Live System Feed */}
           {isProcessing && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="auto-grid grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <AnalysisProgress 
                 isAnalyzing={isProcessing}
                 progress={analysisProgress}
@@ -350,7 +350,7 @@ export default function Landing() {
         </motion.div>
 
         {/* Three Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+        <div className="auto-grid dense grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
           {/* Phase 1: Analysis */}
           {/* Removed Phase 1 section as requested */}
 
@@ -360,14 +360,14 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <div className="terminal-window animated-item" style={{ animationDelay: '1.2s' }}>
-              <div className="terminal-header px-4 py-2 mb-4 flex items-center justify-between">
+            <div className="terminal-window animated-item card" style={{ animationDelay: '1.2s' }}>
+              <div className="terminal-header card__hd px-4 py-2 mb-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 2: Enhancement</div>
                   <div className="text-white font-bold text-sm">CORE: REBUILD</div>
                 </div>
               </div>
-              <div className="p-6 pt-0">
+              <div className="p-6 pt-0 card__bd">
                 <h3 className="text-lg font-bold mb-3">Intelligent Reconstruction</h3>
                 <p className="text-gray-400 mb-6 text-sm">
                   The AI rebuilds the audio, applying precise, calculated enhancements.
@@ -428,8 +428,8 @@ export default function Landing() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            <div className="terminal-window animated-item" style={{ animationDelay: '1.5s' }}>
-              <div className="terminal-header px-4 py-2 mb-4 flex items-center justify-between">
+            <div className="terminal-window animated-item card" style={{ animationDelay: '1.5s' }}>
+              <div className="terminal-header card__hd px-4 py-2 mb-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>
                     Phase 3: Transmission
@@ -437,7 +437,7 @@ export default function Landing() {
                   <div className="text-white font-bold text-sm">CORE: TRANSPORT</div>
                 </div>
               </div>
-              <div className="p-6 pt-0">
+              <div className="p-6 pt-0 card__bd">
                 <h3 className="text-lg font-bold mb-3">Interstellar Transmission</h3>
                 <p className="text-gray-400 mb-6 text-sm">
                   The final master signal is crafted for a powerful and clear transmission.

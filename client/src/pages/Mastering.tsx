@@ -268,7 +268,7 @@ export default function Mastering() {
         </motion.div>
 
         {/* Phase 1 Analysis Progress Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="auto-grid grid grid-cols-1 lg:grid-cols-2 gap-6">
           {cards.map((card, index) => (
             <motion.div
               key={card.key}
@@ -276,9 +276,9 @@ export default function Mastering() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
             >
-              <Card className="bg-black/90 border-cyan-500/30 h-96 flex flex-col">
+              <Card className="card bg-black/90 border-cyan-500/30 h-96 flex flex-col">
                 {/* Card Header */}
-                <div className="p-4 border-b border-cyan-500/20">
+                <div className="card__hd p-4 border-b border-cyan-500/20">
                   <div className="flex items-center justify-between">
                     <h3 className="font-mono text-sm text-cyan-400 font-bold">
                       {card.title}
@@ -303,7 +303,7 @@ export default function Mastering() {
                 </div>
 
                 {/* Card Content - Mission Log */}
-                <div className="flex-1 p-4 overflow-hidden">
+                <div className="card__bd flex-1 p-4 overflow-hidden">
                   <h4 className="font-mono text-xs text-gray-400 mb-3">MISSION LOG</h4>
                   <div className="bg-black/50 border border-gray-700 rounded p-3 h-full overflow-y-auto">
                     <ul className="space-y-1 font-mono text-xs" aria-live="polite">
@@ -330,7 +330,7 @@ export default function Mastering() {
                 </div>
 
                 {/* Footer Strip - Fixed height, no overlap */}
-                <div className="border-t border-cyan-500/20 bg-black/70 p-3 h-16 flex items-center">
+                <div className="card__ft border-t border-cyan-500/20 bg-black/70 p-3 h-16 flex items-center">
                   <div className="w-full overflow-hidden">
                     <p className="font-mono text-xs text-cyan-300 whitespace-nowrap text-ellipsis overflow-hidden">
                       {card.footerText}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { attachHiDPICanvas } from "@/lib/ui/resizeCanvas";
 import { motion } from 'framer-motion';
 
 interface SpectrumAnalyzerProps {
@@ -19,6 +20,11 @@ export function SpectrumAnalyzer({
   mode = 'instant'
 }: SpectrumAnalyzerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const detach = attachHiDPICanvas(canvasRef.current);
+    return detach;
+  }, []);
   const animationRef = useRef<number>();
   const audioContextRef = useRef<AudioContext>();
   const analyserLeftRef = useRef<AnalyserNode>();
@@ -121,8 +127,9 @@ export function SpectrumAnalyzer({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
 
     // Clear canvas with professional dark background
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
@@ -565,14 +572,12 @@ export function SpectrumAnalyzer({
         </div>
 
         {/* Professional spectrum canvas */}
-        <div className="bg-black border border-cyan-500/20 rounded relative">
+        <div className="bg-black border border-cyan-500/20 rounded relative visual" style={{ ['--visual-h' as any]:'300px' }}>
           <canvas
             ref={canvasRef}
-            width={800}
-            height={300}
             className="w-full"
             style={{ 
-              height: '300px',
+              height: '100%',
               imageRendering: 'crisp-edges'
             }}
           />
