@@ -20,7 +20,7 @@ import { aiMasteringCore } from "@/lib/audio/aiMasteringCore";
 import { SpectrumAnalyzer } from "@/components/audio/SpectrumAnalyzer";
 import { WaveformComparison } from "@/components/audio/WaveformComparison";
 import { OptimizedAudioProcessor } from "@/lib/audio/optimizedAudioProcessor";
-import { useLocation } from "react-router-dom"; // Import useLocation
+import { useLocation } from "wouter"; // Import useLocation
 
 export default function Landing() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -152,7 +152,7 @@ export default function Landing() {
 
   // File analysis state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const isProcessing = false; // Add missing variable
+  const [isProcessing, setIsProcessing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [audioAnalysis, setAudioAnalysis] = useState<any>(null);
