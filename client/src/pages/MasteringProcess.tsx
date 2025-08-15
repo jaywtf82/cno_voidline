@@ -21,8 +21,8 @@ export default function MasteringProcess() {
   // Initialize session if needed
   React.useEffect(() => {
     if (urlSessionId && !currentSession) {
-      // Create session from URL parameter
-      createSession(urlSessionId);
+      // Create a minimal session from URL parameter
+      createSession({ name: `Session ${urlSessionId}` }, null);
     }
   }, [urlSessionId, currentSession, createSession]);
 

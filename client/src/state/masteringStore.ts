@@ -67,12 +67,12 @@ export const useMasteringStore = create<MasteringStore>()(
         const newSession: MasteringSession = {
           id,
           fileMeta: {
-            name: fileMeta.name || 'Unknown',
-            duration: buffer.duration,
-            sr: buffer.sampleRate,
-            channels: buffer.numberOfChannels,
+            name: fileMeta?.name || 'Unknown',
+            duration: buffer?.duration || 0,
+            sr: buffer?.sampleRate || 44100,
+            channels: buffer?.numberOfChannels || 2,
           },
-          buffer,
+          buffer: buffer || null,
           analysis: null,
           audioMetrics: null,
           currentPhase: 'upload',

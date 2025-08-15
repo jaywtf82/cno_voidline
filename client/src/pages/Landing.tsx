@@ -448,9 +448,6 @@ export default function Landing() {
               <PremasterAnalysis 
                 analysisData={audioAnalysis}
               />
-              <script>
-                {`window.handleStartMasteringSession = ${handleStartMasteringSession.toString()}`}
-              </script>
             </div>
           )}
 
