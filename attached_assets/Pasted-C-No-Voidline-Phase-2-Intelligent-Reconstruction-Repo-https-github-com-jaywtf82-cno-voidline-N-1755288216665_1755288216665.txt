@@ -1,0 +1,123 @@
+C/No Voidline · Phase 2: Intelligent Reconstruction
+Repo: https://github.com/jaywtf82/cno_voidline
+Non-negotiables:
+
+Do not break existing routes, upload/analysis, or Phase 1.
+
+Keep the sticky, centered glassy header and global colors exactly as main page.
+
+Body scrolls under header; no layout drift; responsive at 320–1920px.
+
+Offline by default. If an ML head is used, prefer TensorFlow.js (tiny, local).
+
+No external network calls.
+
+Deliverables (create/update)
+bash
+Copy
+Edit
+# Phase 2 surface
+client/app/mastering/process/page.tsx                     # add Phase 2 card under Phase 1 (no header changes)
+client/components/mastering/Phase2Reconstruction.tsx     # NEW: Phase 2 host
+
+# Playback & comparison
+client/components/mastering/playback/ABTransport.tsx      # NEW: one transport for A/B, loop, seek, match-gain, bypass, delta, null
+client/components/mastering/playback/DualWaveCompare.tsx  # NEW: stacked waveforms + hardness/peaks/ISP overlays
+
+# Realtime visuals (FabFilter/Ozone style)
+client/components/mastering/vis/MeterBridge.tsx           # NEW: LUFS M/S/I, RMS, Peak, histogram
+client/components/mastering/vis/RealtimeSpectrum.tsx      # NEW: 1/24-oct bands + log line + HOLD
+client/components/mastering/vis/CorrelationPanel.tsx      # NEW: correlation-vs-frequency + vectorscope toggle
+
+# DSP graph (AudioWorklets)
+client/worklets/xover-processor.js                        # NEW: linear-phase FIR split (64–2048 taps) / min-phase fallback
+client/worklets/mbcomp-processor.js                       # NEW: 3–5 band comp, soft-knee, lookahead, M/S option
+client/worklets/limiter-processor.js                      # NEW: true-peak limiter, 4–8× oversample, peak-hold, ISP detect
+client/worklets/transient-processor.js                    # NEW: attack/sustain shaper (pre/post)
+client/worklets/ms-processor.js                           # NEW: M/S encode/decode + low-end mono fold (<freq)
+client/worklets/dither-processor.js                       # NEW: TPDF + optional noise-shape
+
+# AI presets (C/No hybrid rules + tiny head)
+client/lib/audio/ai/presetProfiles.ts                     # NEW: Streaming/Club/Vinyl corridors
+client/lib/audio/ai/presetEngine.ts                       # NEW: rules + tiny tfjs head → ChainParams
+client/lib/audio/presetStore.ts                           # NEW: save/load/export user presets (IndexedDB + JSON)
+
+# Analysis & glue
+client/lib/audio/engineGraph.ts                           # NEW: builds WebAudio graph; auto latency compensation
+client/lib/audio/compareMetrics.ts                        # NEW: hardness (PSR/crest), peaks, ISP markers for overlays
+client/state/masteringStore.ts                            # UPDATE: add Phase 2 params, buffers, latency, preset state
+
+# UI skin & resilience (use existing tokens; no palette drift)
+client/styles/layout.css                                  # ensure sticky centered header retained
+client/styles/voidline-skin.css                           # global tokens (bg/surface/accent), glass
+client/styles/responsive-grid.css                         # auto-grid + visual height reserves (no jank)
+UX scope
+Phase 2 card under Phase 1 in /mastering/process. Header/nav/colors identical to main.
+
+Dual playback: Original (A) vs Processed (B), locked sync; Match Gain, Bypass, Delta, Null Test.
+
+Manual rack (left):
+
+Transient (attack/sustain) → MS Encode → Xover → Multi-band comp → EQ (pre/post) → Stereo width/low-end mono → Limiter (ceiling/lookahead/release/style) → Dither.
+
+AI Presets (right): target Streaming / Club / Vinyl → “Generate from Analysis” (uses Phase-1 features: LUFS I/S/M, LRA, PLR/PSR, band energy, correlation, DC, harshness/mud flags).
+
+Actions: Apply, A/B vs Manual, Save Preset, Export JSON.
+
+Visuals row (bottom): MeterBridge, Spectrum, Correlation/Scope.
+
+Unified Live Feed (floating, compact, fades after success) logs: preset gen, limiter ISP catches, oversampling mode, latency comp.
+
+Standards compliance baked-in
+Metering uses ITU-R BS.1770/EBU R128 for LUFS I/S/M + gating; LRA; True Peak (dBTP) via 4–8× OS; sample peak/RMS/crest; correlation/mono-compat; DC offset.
+
+Targets: Streaming corridor (-14→-9 LUFS-I, ceiling ≤ −1.0 dBTP), Club/DJ (-7→-6 LUFS-I, ceiling −0.9…−1.0 dBTP). Presets align accordingly.
+
+Key engineering notes
+Latency compensation: measure FIR + lookahead; delay A by the same amount so A/B is sample-honest.
+
+Limiter: brickwall at ceiling; emit ISP events for overlay ticks.
+
+Spectrum: OffscreenCanvas + requestAnimationFrame; 60 fps target; HOLD overlay toggle.
+
+Correlation panel: banded correlation (−1…+1) across frequency + optional polar vectorscope.
+
+Resilience: .visual{--visual-h:…} reserves height; ResizeObserver sets HiDPI canvas sizes; auto-grid prevents overlaps.
+
+Minimal APIs
+ts
+Copy
+Edit
+// Host
+export default function Phase2Reconstruction({ sessionId }: { sessionId:string }): JSX.Element;
+
+// Presets
+export type ChainParams = {/* bands, comp, eq, ms, limiter, dither */};
+export function generatePreset(target:'stream'|'club'|'vinyl', features:any): ChainParams;
+export function applyPreset(params: ChainParams): void;
+Definition of Done
+Visual parity with app: glassy header centered; mint accent; grey nav pill; no press colors.
+
+A/B transport keeps sync on seek/loop; Match Gain normalizes LUFS-S window.
+
+Limiter never exceeds ceiling (±0.1 dB tolerance); ISP events surfaced.
+
+Preset generation produces valid chain with no audio dropout; user presets persist.
+
+Meters (LUFS I/S/M, LRA, Peak/RMS, correlation) agree with reference within expected tolerance.
+
+60 fps visuals on mid-tier laptop; no layout jank; mobile works down to 360px.
+
+Performance SLAs
+Worklet budget ≤ 1.5 ms/block @ 512f; default 4× OS (8× optional).
+
+GC-safe: reuse typed arrays; no per-frame allocations in renderers.
+
+QA checklist
+Toggle linear ↔ min-phase crossover during playback (no clicks).
+
+Null test shows near-silence when all modules bypassed and gains matched.
+
+Low-end mono fold keeps correlation ≥ 0 below cutoff.
+
+Exported preset JSON round-trips correctly.

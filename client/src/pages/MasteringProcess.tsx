@@ -1,12 +1,21 @@
 import React from 'react';
+import { useLocation } from 'wouter';
 import { AppShell } from '@/components/layout/AppShell';
 import { Phase1DeepSignal } from '@/components/mastering/Phase1DeepSignal';
+import Phase2Reconstruction from '@/components/mastering/Phase2Reconstruction';
+import { useMasteringStore } from '@/state/masteringStore';
 
 /**
  * MasteringProcess - Main mastering workflow page
  * Uses AppShell for exact header parity with main page
  */
 export default function MasteringProcess() {
+  const { currentSession } = useMasteringStore();
+  const [location] = useLocation();
+  
+  // Extract session ID from URL or use current session
+  const sessionId = currentSession?.id || 'default';
+
   return (
     <AppShell className="p-6">
       <div className="max-w-7xl mx-auto">
@@ -23,6 +32,11 @@ export default function MasteringProcess() {
         
         {/* Phase 1: Deep Signal Deconstruction */}
         <Phase1DeepSignal />
+        
+        {/* Phase 2: Intelligent Reconstruction */}
+        <div className="mt-8">
+          <Phase2Reconstruction sessionId={sessionId} />
+        </div>
       </div>
     </AppShell>
   );
