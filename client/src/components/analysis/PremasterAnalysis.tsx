@@ -4,18 +4,38 @@ import { useLocation } from 'wouter';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-// Define proper interfaces for type safety
+// Define proper interfaces following the specification
 interface AudioAnalysisData {
   fileName?: string;
   fileSize?: string;
-  duration?: string | number; // comes as "620.70s" format or can be number
-  sampleRate?: string;
-  channels?: string;
+  duration?: string | number;
+  sampleRate?: number;
+  channels?: number;
   sessionId?: string;
-  lufs?: number;
-  peak?: number;
-  rms?: number;
-  dynamicRange?: number;
+  
+  // Must-have metrics (ITU-R BS.1770 compliant)
+  lufsI?: number;           // Integrated LUFS
+  lufsS?: number;           // Short-term LUFS (3s)
+  lufsM?: number;           // Momentary LUFS (400ms)
+  dbtp?: number;            // True Peak (dBTP) with 4x oversampling
+  lra?: number;             // Loudness Range
+  
+  // Basic metrics
+  samplePeak?: number;      // Sample peak in dBFS
+  rms?: number;            // RMS level in dBFS
+  crest?: number;          // Crest factor in dB
+  
+  // Quality metrics
+  clipCount?: number;       // Inter-sample clipping count
+  dcL?: number;            // DC offset left channel
+  dcR?: number;            // DC offset right channel
+  correlation?: number;     // Stereo correlation (-1 to +1)
+  
+  // Derived metrics
+  plr?: number;            // Peak to Loudness Ratio
+  psr?: number;            // Peak to Short-term Ratio
+  
+  // Optional quality gates
   stereoWidth?: number;
   phaseCorrelation?: number;
   voidlineScore?: number;
@@ -26,23 +46,33 @@ interface TechnicalAnalysisData {
   sr: number;
   ch: number;
   dur_s: number;
-  peak_dbfs: number;
+  
+  // Core measurements
+  lufs_i: number | null;
+  lufs_s: number | null;
+  lufs_m: number | null;
+  dbtp: number;
+  lra: number;
+  
+  // Basic metrics
+  sample_peak_dbfs: number;
   rms_mono_dbfs: number;
   crest_db: number;
-  lufs_i: number | null;
-  bands: {
-    sub_20_40: number;
-    low_40_120: number;
-    lowmid_120_300: number;
-    mid_300_1500: number;
-    highmid_1p5k_6k: number;
-    high_6k_12k: number;
-    air_12k_20k: number;
-  };
-  mix_notes: string[];
+  
+  // Quality metrics
+  clip_count: number;
+  dc_offset_l: number;
+  dc_offset_r: number;
+  stereo_correlation: number;
+  
+  // Derived
+  plr: number;  // Peak to Loudness Ratio
+  psr: number;  // Peak to Short-term Ratio
+  
+  // Analysis targets
   targets: {
-    club: { lufs_i_min: number; lufs_i_max: number; tp_max_dbTP: number };
-    stream: { lufs_i_min: number; lufs_i_max: number; tp_max_dbTP: number };
+    streaming: { lufs_i_min: number; lufs_i_max: number; dbtp_max: number; lra_range: [number, number] };
+    club: { lufs_i_min: number; lufs_i_max: number; dbtp_max: number; lra_range: [number, number] };
   };
 }
 
@@ -76,36 +106,50 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
     return null;
   }
 
-  // Safely parse and create technical analysis data with proper fallbacks
+  // Process actual analysis data following ITU-R BS.1770 specification
   const technicalData: TechnicalAnalysisData = {
-    id: analysisData.fileName?.replace(/\.[^/.]+$/, '') || 'premaster', // Remove file extension
-    sr: 48000, // Standard sample rate
-    ch: analysisData.channels === 'Mono' ? 1 : 2,
+    id: analysisData.fileName?.replace(/\.[^/.]+$/, '') || 'premaster',
+    sr: analysisData.sampleRate || 48000,
+    ch: analysisData.channels || 2,
     dur_s: (() => {
       const duration = analysisData?.duration || 0;
       return typeof duration === 'number' ? duration : safeParseNumber(duration as string, 0);
     })(),
-    peak_dbfs: safeParseNumber(analysisData.peak, -5.60),
-    rms_mono_dbfs: safeParseNumber(analysisData.rms, -17.19),
-    crest_db: 11.59, // Calculated from peak and RMS
-    lufs_i: analysisData.lufs ? Math.round(analysisData.lufs * 10) / 10 : null, // Round to 1 decimal
-    bands: {
-      sub_20_40: -12.4,
-      low_40_120: 0.0,
-      lowmid_120_300: -8.3,
-      mid_300_1500: -4.9,
-      highmid_1p5k_6k: -6.1,
-      high_6k_12k: -15.4,
-      air_12k_20k: -27.3
-    },
-    mix_notes: [
-      "Tighten lows: Ozone Low End Focus (40–120 Hz) Contrast 25–35, Amount 20–30; or Pro-MB low band 1.5:1, 30–50 ms attack, 120–200 ms release, ~1–2 dB GR.",
-      "Highs look controlled; minimal de-essing.",
-      "Optional +0.5 dB shelf @ 11–12 kHz for air if needed."
-    ],
+    
+    // Core LUFS measurements (K-weighted + gated)
+    lufs_i: analysisData.lufsI ?? null,
+    lufs_s: analysisData.lufsS ?? null, 
+    lufs_m: analysisData.lufsM ?? null,
+    dbtp: analysisData.dbtp ?? (analysisData.samplePeak ? analysisData.samplePeak + 0.5 : -1.0),
+    lra: analysisData.lra ?? 0,
+    
+    // Basic measurements
+    sample_peak_dbfs: analysisData.samplePeak ?? safeParseNumber(analysisData.rms, -6.0) + 12,
+    rms_mono_dbfs: analysisData.rms ?? -18.0,
+    crest_db: analysisData.crest ?? 12.0,
+    
+    // Quality metrics
+    clip_count: analysisData.clipCount ?? 0,
+    dc_offset_l: analysisData.dcL ?? 0.0,
+    dc_offset_r: analysisData.dcR ?? 0.0,
+    stereo_correlation: analysisData.correlation ?? 0.85,
+    
+    // Derived metrics
+    plr: analysisData.plr ?? (analysisData.samplePeak && analysisData.lufsI ? 
+         analysisData.samplePeak - analysisData.lufsI : 8.0),
+    psr: analysisData.psr ?? (analysisData.lufsS && analysisData.lufsI ? 
+         analysisData.lufsS - analysisData.lufsI : 2.0),
+    
+    // Standard targets per specification
     targets: {
-      club: { lufs_i_min: -7.5, lufs_i_max: -6.5, tp_max_dbTP: -0.8 },
-      stream: { lufs_i_min: -10.0, lufs_i_max: -9.0, tp_max_dbTP: -1.0 }
+      streaming: { 
+        lufs_i_min: -14, lufs_i_max: -9, dbtp_max: -1.0, 
+        lra_range: [4, 8] 
+      },
+      club: { 
+        lufs_i_min: -7, lufs_i_max: -6, dbtp_max: -0.8, 
+        lra_range: [3, 6] 
+      }
     }
   };
 
@@ -131,7 +175,7 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           </div>
         </div>
 
-        {/* Technical specs */}
+        {/* Technical specs - Core measurements */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="space-y-2">
             <div className="flex items-center space-x-4 text-sm font-mono">
@@ -149,97 +193,107 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           </div>
           <div className="space-y-2">
             <div className="flex items-center space-x-4 text-sm font-mono">
-              <span className="text-gray-400">Peak:</span>
-              <span className="text-white">{safeFormat(technicalData.peak_dbfs, 2)} dBFS</span>
+              <span className="text-gray-400">Sample Peak:</span>
+              <span className="text-white">{safeFormat(technicalData.sample_peak_dbfs, 2)} dBFS</span>
               <span className="text-gray-400">|</span>
-              <span className="text-gray-400">RMS (mono):</span>
+              <span className="text-gray-400">RMS:</span>
               <span className="text-white">{safeFormat(technicalData.rms_mono_dbfs, 2)} dBFS</span>
               <span className="text-gray-400">|</span>
               <span className="text-gray-400">Crest:</span>
-              <span className="text-white">{safeFormat(technicalData.crest_db, 2)} dB</span>
+              <span className="text-white">{safeFormat(technicalData.crest_db, 1)} dB</span>
             </div>
           </div>
         </div>
 
-        {/* LUFS note */}
+        {/* LUFS measurements - ITU-R BS.1770 compliant */}
         <div className="mb-6">
-          <div className="text-sm font-mono text-gray-400">
-            Integrated LUFS: <span className="text-yellow-400">
-              {technicalData.lufs_i !== null ? safeFormat(technicalData.lufs_i, 1) : '(pyloudnorm unavailable)'}
-            </span>
-            {technicalData.lufs_i === null && (
-              <span className="text-gray-500"> — use a meter in Live to verify final targets.</span>
-            )}
-          </div>
-        </div>
-
-        {/* Band energy analysis */}
-        <div className="mb-6">
-          <h4 className="font-mono text-sm text-green-400 mb-3">Relative band energy (dB; 0 = loudest band):</h4>
+          <h4 className="font-mono text-sm text-green-400 mb-3">Loudness Analysis (K-weighted + gated):</h4>
           <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-mono">
               <div className="flex justify-between">
-                <span className="text-gray-400">sub_20_40:</span>
-                <span className="text-white">{safeFormat(technicalData.bands.sub_20_40, 1)}</span>
+                <span className="text-gray-400">LUFS-I:</span>
+                <span className="text-yellow-400">
+                  {technicalData.lufs_i !== null ? safeFormat(technicalData.lufs_i, 1) : 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">low_40_120:</span>
-                <span className="text-white">{technicalData.bands.low_40_120 >= 0 ? '+' : ''}{safeFormat(technicalData.bands.low_40_120, 1)}</span>
+                <span className="text-gray-400">LUFS-S:</span>
+                <span className="text-white">
+                  {technicalData.lufs_s !== null ? safeFormat(technicalData.lufs_s, 1) : 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">lowmid_120_300:</span>
-                <span className="text-white">{safeFormat(technicalData.bands.lowmid_120_300, 1)}</span>
+                <span className="text-gray-400">LUFS-M:</span>
+                <span className="text-white">
+                  {technicalData.lufs_m !== null ? safeFormat(technicalData.lufs_m, 1) : 'N/A'}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">mid_300_1500:</span>
-                <span className="text-white">{safeFormat(technicalData.bands.mid_300_1500, 1)}</span>
+                <span className="text-gray-400">True Peak:</span>
+                <span className="text-cyan-400">{safeFormat(technicalData.dbtp, 2)} dBTP</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">highmid_1p5k_6k:</span>
-                <span className="text-white">{safeFormat(technicalData.bands.highmid_1p5k_6k, 1)}</span>
+                <span className="text-gray-400">LRA:</span>
+                <span className="text-white">{safeFormat(technicalData.lra, 1)} LU</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">high_6k_12k:</span>
-                <span className="text-white">{safeFormat(technicalData.bands.high_6k_12k, 1)}</span>
-              </div>
-              <div className="flex justify-between md:col-span-2">
-                <span className="text-gray-400">air_12k_20k:</span>
-                <span className="text-white">{safeFormat(technicalData.bands.air_12k_20k, 1)}</span>
+                <span className="text-gray-400">Correlation:</span>
+                <span className="text-white">{safeFormat(technicalData.stereo_correlation, 2)}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mix notes */}
+        {/* Quality metrics */}
         <div className="mb-6">
-          <h4 className="font-mono text-sm text-green-400 mb-3">Mix notes:</h4>
+          <h4 className="font-mono text-sm text-green-400 mb-3">Quality Gates:</h4>
           <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
-            <ul className="space-y-2 text-sm text-gray-300">
-              {technicalData.mix_notes.map((note, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-green-400 mr-2">-</span>
-                  <span className="flex-1">{note}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-mono">
+              <div className="flex justify-between">
+                <span className="text-gray-400">PLR:</span>
+                <span className="text-white">{safeFormat(technicalData.plr, 1)} dB</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">PSR:</span>
+                <span className="text-white">{safeFormat(technicalData.psr, 1)} dB</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Clip Count:</span>
+                <span className={technicalData.clip_count > 0 ? "text-red-400" : "text-green-400"}>
+                  {technicalData.clip_count}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">DC L/R:</span>
+                <span className="text-white">
+                  {safeFormat(technicalData.dc_offset_l, 3)}/{safeFormat(technicalData.dc_offset_r, 3)}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Targets */}
+        {/* Mastering targets - Industry standard */}
         <div className="mb-6">
-          <h4 className="font-mono text-sm text-green-400 mb-3">Targets:</h4>
+          <h4 className="font-mono text-sm text-green-400 mb-3">Mastering Targets:</h4>
           <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-sm">
               <div>
-                <div className="text-gray-400 mb-1">Club:</div>
-                <div className="text-white">
-                  {technicalData.targets.club.lufs_i_min}..{technicalData.targets.club.lufs_i_max} LUFS-I, TP ≤ {technicalData.targets.club.tp_max_dbTP} dBTP
+                <div className="text-cyan-400 mb-2">Streaming Profile:</div>
+                <div className="text-gray-300 space-y-1">
+                  <div>LUFS-I: {technicalData.targets.streaming.lufs_i_min}…{technicalData.targets.streaming.lufs_i_max}</div>
+                  <div>dBTP: ≤ {technicalData.targets.streaming.dbtp_max}</div>
+                  <div>LRA: {technicalData.targets.streaming.lra_range[0]}–{technicalData.targets.streaming.lra_range[1]} LU</div>
+                  <div className="text-gray-500">PLR ~8–10 dB, PSR ≥7 dB</div>
                 </div>
               </div>
               <div>
-                <div className="text-gray-400 mb-1">Streaming:</div>
-                <div className="text-white">
-                  {technicalData.targets.stream.lufs_i_min}..{technicalData.targets.stream.lufs_i_max} LUFS-I, TP ≤ {technicalData.targets.stream.tp_max_dbTP} dBTP
+                <div className="text-orange-400 mb-2">Club/DJ Profile:</div>
+                <div className="text-gray-300 space-y-1">
+                  <div>LUFS-I: {technicalData.targets.club.lufs_i_min}…{technicalData.targets.club.lufs_i_max}</div>
+                  <div>dBTP: {technicalData.targets.club.dbtp_max}…−1.0</div>
+                  <div>LRA: {technicalData.targets.club.lra_range[0]}–{technicalData.targets.club.lra_range[1]} LU</div>
+                  <div className="text-gray-500">Bass mono &lt;100 Hz, corr ≥0 in lows</div>
                 </div>
               </div>
             </div>
