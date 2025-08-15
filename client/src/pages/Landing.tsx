@@ -249,13 +249,6 @@ export default function Landing() {
         >
           {/* Terminal Title */}
           <div className="terminal-window p-8 mb-8 animated-item" style={{ animationDelay: '0.3s' }}>
-            <div className="terminal-header px-4 py-2 mb-6 flex items-center">
-              <div className="flex space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              </div>
-            </div>
 
             <div className="text-left font-mono">
               <div className="text-2xl mb-4" style={{ color: 'var(--color-accent)' }}>
@@ -296,11 +289,6 @@ export default function Landing() {
                   <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 1: Analysis</div>
                   <div className="text-white font-bold text-sm">CORE: DECONSTRUCT</div>
                 </div>
-                <div className="flex space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                </div>
               </div>
               <div className="p-6 pt-0">
                 <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
@@ -339,11 +327,6 @@ export default function Landing() {
                 <div className="flex items-center space-x-3">
                   <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 2: Enhancement</div>
                   <div className="text-white font-bold text-sm">CORE: REBUILD</div>
-                </div>
-                <div className="flex space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 </div>
               </div>
               <div className="p-6 pt-0">
@@ -412,11 +395,6 @@ export default function Landing() {
                 <div className="flex items-center space-x-3">
                   <div className="text-sm font-mono" style={{ color: 'var(--color-accent)' }}>Phase 3: Transmission</div>
                   <div className="text-white font-bold text-sm">CORE: TRANSPORT</div>
-                </div>
-                <div className="flex space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 </div>
               </div>
               <div className="p-6 pt-0">
