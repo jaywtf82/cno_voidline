@@ -1,3 +1,4 @@
+
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -15,6 +16,11 @@ function Router() {
 
   return (
     <Switch>
+      {/* Always show MockingPage as default for demo purposes */}
+      <Route path="/" component={MockingPage} />
+      <Route path="/mocking" component={MockingPage} />
+      
+      {/* Authentication-protected routes */}
       {isLoading ? (
         <Route>
           <div className="min-h-screen flex items-center justify-center">
@@ -22,15 +28,17 @@ function Router() {
           </div>
         </Route>
       ) : !isAuthenticated ? (
-        <Route component={Landing} />
+        <>
+          <Route path="/landing" component={Landing} />
+          <Route path="/login" component={Landing} />
+        </>
       ) : (
         <>
-          <Route path="/" component={Console} />
           <Route path="/console" component={Console} />
-          <Route component={NotFound} />
         </>
       )}
-      <Route path="/mocking" component={MockingPage} />
+      
+      <Route component={NotFound} />
     </Switch>
   );
 }

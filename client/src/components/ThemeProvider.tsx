@@ -59,6 +59,7 @@ interface ThemeContextType {
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
   config: ThemeConfig;
+  isLoading: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -100,6 +101,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
+    },
+    onError: (error) => {
+      // Silently fail for theme updates
+      console.warn("Theme update failed:", error);
     },
   });
 
@@ -165,7 +170,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme, isAuthenticated, preferences]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, isLoading, config: themeConfigs[theme] }}>
+    <ThemeContext.Provider value={{ theme, setTheme, config: themeConfigs[theme], isLoading }}>
       {children}
     </ThemeContext.Provider>
   );
