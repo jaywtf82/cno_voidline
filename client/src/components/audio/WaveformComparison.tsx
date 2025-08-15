@@ -31,6 +31,9 @@ export function WaveformComparison({
   const [processedWaveform, setProcessedWaveform] = useState<WaveformData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentShowSpectrogramMode, setCurrentShowSpectrogramMode] = useState(showSpectrogramMode);
+  const [autoSwitchMode, setAutoSwitchMode] = useState(true);
+  const [spectralComplexity, setSpectralComplexity] = useState(0);
+  const [dynamicRange, setDynamicRange] = useState(0);
 
   useEffect(() => {
     if (originalFile) {
@@ -81,6 +84,9 @@ export function WaveformComparison({
     const hardness: number[] = [];
     const harshness: number[] = [];
     
+    let totalSpectralActivity = 0;
+    let totalDynamicVariation = 0;
+    
     for (let i = 0; i < 800; i++) {
       const start = i * samplesPerPixel;
       const end = Math.min(start + samplesPerPixel, samples.length);
@@ -88,16 +94,18 @@ export function WaveformComparison({
       let max = 0;
       let rms = 0;
       let highFreqEnergy = 0;
+      let spectralActivity = 0;
       
       for (let j = start; j < end; j++) {
         const sample = Math.abs(samples[j]);
         max = Math.max(max, sample);
         rms += sample * sample;
         
-        // Detect high frequency content (simplified)
+        // Enhanced high frequency detection
         if (j > start) {
           const diff = Math.abs(samples[j] - samples[j - 1]);
           highFreqEnergy += diff;
+          spectralActivity += diff * diff; // Spectral flux approximation
         }
       }
       
@@ -111,6 +119,32 @@ export function WaveformComparison({
       // Calculate harshness (high frequency distortion)
       const avgHighFreq = highFreqEnergy / (end - start);
       harshness[i] = Math.min(1, avgHighFreq * 10); // Scaled harshness
+      
+      // Accumulate analysis metrics
+      totalSpectralActivity += spectralActivity;
+      totalDynamicVariation += Math.abs(max - rms);
+    }
+    
+    // Update analysis metrics for intelligent switching
+    const avgSpectralComplexity = totalSpectralActivity / 800;
+    const avgDynamicRange = totalDynamicVariation / 800;
+    
+    setSpectralComplexity(avgSpectralComplexity);
+    setDynamicRange(avgDynamicRange);
+    
+    // Intelligent mode switching based on content analysis
+    if (autoSwitchMode) {
+      const spectralThreshold = 0.15;
+      const dynamicThreshold = 0.3;
+      
+      // Switch to spectrogram for complex spectral content
+      if (avgSpectralComplexity > spectralThreshold && avgDynamicRange < dynamicThreshold) {
+        setTimeout(() => setCurrentShowSpectrogramMode(true), 1000);
+      } 
+      // Switch to waveform for dynamic content
+      else if (avgDynamicRange > dynamicThreshold) {
+        setTimeout(() => setCurrentShowSpectrogramMode(false), 1000);
+      }
     }
     
     return {
@@ -178,38 +212,124 @@ export function WaveformComparison({
   };
   
   const drawSpectrogramView = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
-    // Spectrogram view similar to professional audio software
     const time = Date.now() * 0.001;
-    const spectrogramHeight = height - 60;
+    const spectrogramHeight = height - 40;
     
-    // Draw frequency bands
-    for (let y = 0; y < spectrogramHeight; y += 2) {
-      for (let x = 0; x < width; x += 1) {
-        const freq = (y / spectrogramHeight) * 22050;
-        const timePos = x / width;
+    // Enhanced color palette for professional spectrogram
+    const getSpectrogramColor = (intensity: number, freq: number) => {
+      const normalizedFreq = freq / 22050;
+      
+      if (intensity < 0.1) return `rgba(0, 0, 40, ${intensity * 0.8})`;
+      if (intensity < 0.3) return `rgba(0, ${Math.floor(intensity * 100)}, ${Math.floor(intensity * 200)}, ${intensity})`;
+      if (intensity < 0.6) return `rgba(${Math.floor(intensity * 150)}, ${Math.floor(intensity * 200)}, ${Math.floor(intensity * 100)}, ${intensity})`;
+      if (intensity < 0.8) return `rgba(${Math.floor(intensity * 200)}, ${Math.floor(intensity * 150)}, 0, ${intensity})`;
+      return `rgba(255, ${Math.floor((1-intensity) * 200)}, 0, ${Math.min(1, intensity * 1.2)})`;
+    };
+    
+    // Real-time spectrogram simulation with enhanced realism
+    if (originalWaveform) {
+      const blockSize = 128;
+      const timeBlocks = Math.floor(width / 2);
+      const freqBins = Math.floor(spectrogramHeight / 1);
+      
+      for (let t = 0; t < timeBlocks; t++) {
+        const timeOffset = t / timeBlocks;
         
-        // Simulate spectrogram data
-        let intensity = 0;
-        if (freq < 200) intensity = 0.3 + Math.sin(time + timePos * 10) * 0.2;
-        else if (freq < 2000) intensity = 0.6 + Math.sin(time * 0.8 + timePos * 15) * 0.3;
-        else if (freq < 8000) intensity = 0.4 + Math.sin(time * 1.2 + timePos * 8) * 0.2;
-        else intensity = 0.2 + Math.sin(time * 0.5 + timePos * 5) * 0.1;
-        
-        const alpha = Math.max(0, Math.min(1, intensity + Math.random() * 0.1));
-        const hue = (freq / 22050) * 240; // Blue to red gradient
-        
-        ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${alpha})`;
-        ctx.fillRect(x, spectrogramHeight - y, 1, 2);
+        for (let f = 0; f < freqBins; f++) {
+          const freq = (f / freqBins) * 22050;
+          const logFreq = Math.log10(Math.max(1, freq));
+          
+          // Enhanced intensity calculation based on audio characteristics
+          let baseIntensity = 0;
+          
+          // Low frequencies (sub-bass to bass)
+          if (freq < 250) {
+            baseIntensity = 0.4 + Math.sin(time * 0.5 + timeOffset * 8) * 0.3;
+          }
+          // Mid frequencies (fundamentals and harmonics)
+          else if (freq < 4000) {
+            baseIntensity = 0.7 + Math.sin(time * 1.2 + timeOffset * 12 + logFreq) * 0.25;
+          }
+          // High frequencies (presence and air)
+          else if (freq < 12000) {
+            baseIntensity = 0.5 + Math.sin(time * 2.0 + timeOffset * 6 + logFreq * 0.5) * 0.2;
+          }
+          // Very high frequencies
+          else {
+            baseIntensity = 0.25 + Math.sin(time * 0.8 + timeOffset * 4) * 0.15;
+          }
+          
+          // Add spectral complexity based on analysis
+          baseIntensity *= (1 + spectralComplexity * 0.5);
+          
+          // Add dynamic variation
+          baseIntensity += (Math.sin(time * 3 + timeOffset * 15) * dynamicRange * 0.3);
+          
+          // Noise floor and realistic falloff
+          baseIntensity = Math.max(0.05, Math.min(0.95, baseIntensity + Math.random() * 0.08));
+          
+          const x = t * 2;
+          const y = spectrogramHeight - f;
+          
+          ctx.fillStyle = getSpectrogramColor(baseIntensity, freq);
+          ctx.fillRect(x, y, 2, 1);
+          
+          // Add harmonic overtones for realism
+          if (freq < 8000 && Math.random() < 0.3) {
+            const harmonicY = y - Math.floor((freq * 2) / 22050 * freqBins);
+            if (harmonicY > 0) {
+              ctx.fillStyle = getSpectrogramColor(baseIntensity * 0.6, freq * 2);
+              ctx.fillRect(x, harmonicY, 2, 1);
+            }
+          }
+        }
       }
     }
     
-    // Draw frequency scale
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.font = '10px "Fira Code", monospace';
-    [100, 1000, 5000, 10000, 20000].forEach(freq => {
-      const y = spectrogramHeight - (freq / 22050) * spectrogramHeight;
-      ctx.fillText(`${freq >= 1000 ? freq/1000 + 'k' : freq}Hz`, 5, y);
+    // Enhanced frequency scale with professional styling
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.font = 'bold 10px "Fira Code", monospace';
+    
+    const freqMarkers = [20, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+    freqMarkers.forEach(freq => {
+      const y = spectrogramHeight - (Math.log10(freq) / Math.log10(22050)) * spectrogramHeight;
+      if (y > 20 && y < spectrogramHeight - 20) {
+        // Background for label
+        const label = freq >= 1000 ? `${freq/1000}k` : `${freq}`;
+        const textWidth = ctx.measureText(label).width;
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(8, y - 8, textWidth + 8, 14);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillText(label, 12, y + 2);
+        
+        // Frequency grid line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(width * 0.1, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
     });
+    
+    // Time markers
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.font = '9px "Fira Code", monospace';
+    for (let i = 0; i <= 10; i++) {
+      const x = (i / 10) * width;
+      const timeLabel = `${i}s`;
+      const textWidth = ctx.measureText(timeLabel).width;
+      
+      if (x > textWidth && x < width - textWidth) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(x - textWidth/2 - 2, height - 18, textWidth + 4, 12);
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.fillText(timeLabel, x - textWidth/2, height - 8);
+      }
+    }
   };
   
   const drawWaveformChannel = (
@@ -430,20 +550,42 @@ export function WaveformComparison({
             <h4 className="font-mono text-sm text-cyan-400 font-bold tracking-wider">WAVEFORM ANALYSIS</h4>
             <div className="flex items-center space-x-2 text-xs font-mono">
               <button 
-                className={`px-2 py-1 rounded text-xs transition-colors ${
-                  !currentShowSpectrogramMode ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
+                className={`px-3 py-1.5 rounded transition-all duration-300 ${
+                  !currentShowSpectrogramMode 
+                    ? 'bg-gradient-to-r from-cyan-500/30 to-cyan-400/20 text-cyan-400 shadow-lg shadow-cyan-500/20' 
+                    : 'text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10'
                 }`}
-                onClick={() => setCurrentShowSpectrogramMode(false)}
+                onClick={() => {
+                  setCurrentShowSpectrogramMode(false);
+                  setAutoSwitchMode(false);
+                }}
               >
-                Waveform
+                ⊞ Waveform
               </button>
               <button 
-                className={`px-2 py-1 rounded text-xs transition-colors ${
-                  currentShowSpectrogramMode ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400 hover:text-cyan-400'
+                className={`px-3 py-1.5 rounded transition-all duration-300 ${
+                  currentShowSpectrogramMode 
+                    ? 'bg-gradient-to-r from-purple-500/30 to-pink-400/20 text-purple-400 shadow-lg shadow-purple-500/20' 
+                    : 'text-gray-400 hover:text-purple-400 hover:bg-purple-500/10'
                 }`}
-                onClick={() => setCurrentShowSpectrogramMode(true)}
+                onClick={() => {
+                  setCurrentShowSpectrogramMode(true);
+                  setAutoSwitchMode(false);
+                }}
               >
-                Spectrogram
+                ⊞ Spectrogram
+              </button>
+              <div className="w-px h-4 bg-cyan-500/30"></div>
+              <button 
+                className={`px-2 py-1.5 rounded text-xs transition-all duration-300 ${
+                  autoSwitchMode 
+                    ? 'bg-gradient-to-r from-yellow-500/30 to-orange-400/20 text-yellow-400 shadow-lg shadow-yellow-500/20' 
+                    : 'text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10'
+                }`}
+                onClick={() => setAutoSwitchMode(!autoSwitchMode)}
+                title="Intelligent mode switching based on audio content"
+              >
+                {autoSwitchMode ? '⚡ AUTO' : '⚡ AUTO'}
               </button>
             </div>
           </div>
@@ -511,9 +653,35 @@ export function WaveformComparison({
             <span className="text-cyan-400">Sample Rate: 44.1kHz</span>
             <span className="text-cyan-400">Bit Depth: 24-bit</span>
             <span className="text-cyan-400">Channels: Stereo</span>
+            {originalWaveform && (
+              <>
+                <div className="w-px h-3 bg-cyan-500/30"></div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-yellow-400/80">Spectral:</span>
+                  <div className="w-12 h-1 bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-400 to-purple-400 transition-all duration-1000"
+                      style={{ width: `${Math.min(100, spectralComplexity * 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-emerald-400/80">Dynamic:</span>
+                  <div className="w-12 h-1 bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-1000"
+                      style={{ width: `${Math.min(100, dynamicRange * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-          <div className="text-xs font-mono text-cyan-400/60">
-            {originalWaveform ? 'Multi-channel Analysis' : 'Awaiting Audio'}
+          <div className="text-xs font-mono text-cyan-400/60 flex items-center space-x-2">
+            {autoSwitchMode && originalWaveform && (
+              <span className="text-yellow-400/80 animate-pulse">⚡ INTELLIGENT</span>
+            )}
+            <span>{originalWaveform ? 'Multi-channel Analysis' : 'Awaiting Audio'}</span>
           </div>
         </div>
       </div>

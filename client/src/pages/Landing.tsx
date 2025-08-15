@@ -20,9 +20,8 @@ import { Play, Pause, Square, Volume2, Settings, Zap, Target, Waves, Brain } fro
 import { aiMasteringCore } from "@/lib/audio/aiMasteringCore";
 import { SpectrumAnalyzer } from "@/components/audio/SpectrumAnalyzer";
 import { WaveformComparison } from "@/components/audio/WaveformComparison";
-import { OptimizedAudioProcessor } from "@/lib/audio/optimizedAudioProcessor";
-import { useLocation } from "wouter";
 import { AnalysisProgress } from "@/components/audio/AnalysisProgress";
+import { AnalysisDataCard } from '@/components/audio/AnalysisDataCard';
 import { LiveSystemFeed } from "@/components/system/LiveSystemFeed";
 
 export default function Landing() {
@@ -287,10 +286,15 @@ export default function Landing() {
               <LiveSystemFeed isActive={isProcessing} />
             </div>
           )}
-          
+
           {/* Audio Analysis Results */}
           {analysisComplete && audioAnalysis && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* New AnalysisDataCard component added here */}
+              <AnalysisDataCard 
+                data={audioAnalysis} 
+                onMasteringStart={() => setShowAuthModal(true)} 
+              />
               <div className="space-y-6">
                 <SpectrumAnalyzer 
                   audioFile={selectedFile || undefined}
@@ -298,8 +302,6 @@ export default function Landing() {
                   showChannels={true}
                   mode="instant"
                 />
-              </div>
-              <div className="space-y-6">
                 <WaveformComparison 
                   originalFile={selectedFile || undefined}
                   isProcessing={false}
