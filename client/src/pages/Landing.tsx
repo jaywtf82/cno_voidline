@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { NeonCard, NeonCardHeader, NeonCardTitle, NeonCardContent } from "@/components/ui/neon-card";
@@ -257,13 +256,13 @@ export default function Landing() {
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               </div>
             </div>
-            
+
             <div className="text-left font-mono">
               <div className="text-2xl mb-4" style={{ color: 'var(--color-accent)' }}>
                 <span className="prompt">./ai-mastering-core --init</span>
                 <span className="cursor-blink"></span>
               </div>
-              
+
               <div className="text-sm space-y-2 text-gray-400 mb-8">
                 <p>Welcome, producer. Our advanced AI is ready to analyze and enhance your audio. Upload your track to begin the mastering process and unlock its full sonic potential.</p>
               </div>
@@ -295,138 +294,147 @@ export default function Landing() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
           {/* Phase 1: Analysis */}
           <motion.div 
-            className="terminal-window p-6 animated-item" 
-            style={{ animationDelay: '0.9s' }}
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.1 }}
           >
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 1:</div>
-              <div className="text-white font-bold">Analysis</div>
-              <div className="text-gray-400 font-mono text-sm">CORE: DECONSTRUCT</div>
-            </div>
+            <NeonCard className="animated-item" style={{ animationDelay: '0.9s' }}>
+              <NeonCardHeader>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 1:</div>
+                  <div className="text-white font-bold">Analysis</div>
+                  <div className="text-gray-400 font-mono text-sm">CORE: DECONSTRUCT</div>
+                </div>
+              </NeonCardHeader>
+              <NeonCardContent>
+                <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
+                <p className="text-gray-400 mb-6 text-sm">
+                  AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.
+                </p>
 
-            <h3 className="text-lg font-bold mb-3">Deep Signal Deconstruction</h3>
-            <p className="text-gray-400 mb-6 text-sm">
-              AI meticulously analyzes every nuance, dynamics, frequencies, and stereo image.
-            </p>
-
-            {/* Spectrum Bars */}
-            <div className="bg-black/50 p-4 rounded border" style={{ borderColor: 'var(--color-glass-border)' }}>
-              <div className="flex items-end space-x-1 h-24">
-                {Array.from({ length: 8 }, (_, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 animate-pulse"
-                    style={{
-                      backgroundColor: 'var(--color-accent)',
-                      height: `${Math.random() * 80 + 20}%`,
-                      animationDelay: `${i * 0.1}s`,
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
+                {/* Spectrum Bars */}
+                <div className="bg-black/50 p-4 rounded border" style={{ borderColor: 'var(--color-glass-border)' }}>
+                  <div className="flex items-end space-x-1 h-24">
+                    {Array.from({ length: 8 }, (_, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 animate-pulse"
+                        style={{
+                          backgroundColor: 'var(--color-accent)',
+                          height: `${Math.random() * 80 + 20}%`,
+                          animationDelay: `${i * 0.1}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </NeonCardContent>
+            </NeonCard>
           </motion.div>
 
           {/* Phase 2: Enhancement */}
           <motion.div 
-            className="terminal-window p-6 animated-item" 
-            style={{ animationDelay: '1.2s' }}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 2:</div>
-              <div className="text-white font-bold">Enhancement</div>
-              <div className="text-gray-400 font-mono text-sm">CORE: REBUILD</div>
-            </div>
+            <NeonCard className="animated-item" style={{ animationDelay: '1.2s' }}>
+              <NeonCardHeader>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 2:</div>
+                  <div className="text-white font-bold">Enhancement</div>
+                  <div className="text-gray-400 font-mono text-sm">CORE: REBUILD</div>
+                </div>
+              </NeonCardHeader>
+              <NeonCardContent>
+                <h3 className="text-lg font-bold mb-3">Intelligent Reconstruction</h3>
+                <p className="text-gray-400 mb-6 text-sm">
+                  The AI rebuilds the audio, applying precise, calculated enhancements.
+                </p>
 
-            <h3 className="text-lg font-bold mb-3">Intelligent Reconstruction</h3>
-            <p className="text-gray-400 mb-6 text-sm">
-              The AI rebuilds the audio, applying precise, calculated enhancements.
-            </p>
-
-            {/* Neural Module Display */}
-            <div className="bg-black/50 p-4 rounded border" style={{ borderColor: 'var(--color-glass-border)' }}>
-              <div className="font-mono text-sm mb-3" style={{ color: 'var(--color-accent)' }}>neural module v9.4.1</div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 border rounded-lg mx-auto mb-2 flex items-center justify-center" 
-                       style={{ 
-                         backgroundColor: 'var(--color-glow)', 
-                         borderColor: 'var(--color-accent)' 
-                       }}>
-                    <div className="w-3 h-3 rounded-full animate-pulse" 
-                         style={{ backgroundColor: 'var(--color-accent)' }}></div>
+                {/* Neural Module Display */}
+                <div className="bg-black/50 p-4 rounded border" style={{ borderColor: 'var(--color-glass-border)' }}>
+                  <div className="font-mono text-sm mb-3" style={{ color: 'var(--color-accent)' }}>neural module v9.4.1</div>
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 border rounded-lg mx-auto mb-2 flex items-center justify-center" 
+                           style={{ 
+                             backgroundColor: 'var(--color-glow)', 
+                             borderColor: 'var(--color-accent)' 
+                           }}>
+                        <div className="w-3 h-3 rounded-full animate-pulse" 
+                             style={{ backgroundColor: 'var(--color-accent)' }}></div>
+                      </div>
+                      <div className="text-xs font-mono">Dynamics</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 border rounded-lg mx-auto mb-2 flex items-center justify-center" 
+                           style={{ 
+                             backgroundColor: 'var(--color-glow)', 
+                             borderColor: 'var(--color-accent)' 
+                           }}>
+                        <div className="w-3 h-3 rounded-full animate-pulse" 
+                             style={{ 
+                               backgroundColor: 'var(--color-accent)',
+                               animationDelay: '0.2s'
+                             }}></div>
+                      </div>
+                      <div className="text-xs font-mono">Stereo</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-10 h-10 border rounded-lg mx-auto mb-2 flex items-center justify-center" 
+                           style={{ 
+                             backgroundColor: 'var(--color-glow)', 
+                             borderColor: 'var(--color-accent)' 
+                           }}>
+                        <div className="w-3 h-3 rounded-full animate-pulse" 
+                             style={{ 
+                               backgroundColor: 'var(--color-accent)',
+                               animationDelay: '0.4s'
+                             }}></div>
+                      </div>
+                      <div className="text-xs font-mono">EQ Balance</div>
+                    </div>
                   </div>
-                  <div className="text-xs font-mono">Dynamics</div>
                 </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 border rounded-lg mx-auto mb-2 flex items-center justify-center" 
-                       style={{ 
-                         backgroundColor: 'var(--color-glow)', 
-                         borderColor: 'var(--color-accent)' 
-                       }}>
-                    <div className="w-3 h-3 rounded-full animate-pulse" 
-                         style={{ 
-                           backgroundColor: 'var(--color-accent)',
-                           animationDelay: '0.2s'
-                         }}></div>
-                  </div>
-                  <div className="text-xs font-mono">Stereo</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 border rounded-lg mx-auto mb-2 flex items-center justify-center" 
-                       style={{ 
-                         backgroundColor: 'var(--color-glow)', 
-                         borderColor: 'var(--color-accent)' 
-                       }}>
-                    <div className="w-3 h-3 rounded-full animate-pulse" 
-                         style={{ 
-                           backgroundColor: 'var(--color-accent)',
-                           animationDelay: '0.4s'
-                         }}></div>
-                  </div>
-                  <div className="text-xs font-mono">EQ Balance</div>
-                </div>
-              </div>
-            </div>
+              </NeonCardContent>
+            </NeonCard>
           </motion.div>
 
           {/* Phase 3: Transmission */}
           <motion.div 
-            className="terminal-window p-6 animated-item" 
-            style={{ animationDelay: '1.5s' }}
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 3:</div>
-              <div className="text-white font-bold">Transmission</div>
-              <div className="text-gray-400 font-mono text-sm">CORE: TRANSPORT</div>
-            </div>
+            <NeonCard className="animated-item" style={{ animationDelay: '1.5s' }}>
+              <NeonCardHeader>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="text-lg font-mono" style={{ color: 'var(--color-accent)' }}>Phase 3:</div>
+                  <div className="text-white font-bold">Transmission</div>
+                  <div className="text-gray-400 font-mono text-sm">CORE: TRANSPORT</div>
+                </div>
+              </NeonCardHeader>
+              <NeonCardContent>
+                <h3 className="text-lg font-bold mb-3">Interstellar Transmission</h3>
+                <p className="text-gray-400 mb-6 text-sm">
+                  The final master signal is crafted for a powerful and clear transmission.
+                </p>
 
-            <h3 className="text-lg font-bold mb-3">Interstellar Transmission</h3>
-            <p className="text-gray-400 mb-6 text-sm">
-              The final master signal is crafted for a powerful and clear transmission.
-            </p>
-
-            {/* Signal Bars */}
-            <div className="bg-black/50 p-4 rounded border" style={{ borderColor: 'var(--color-glass-border)' }}>
-              <div className="flex items-end justify-center space-x-3 h-16">
-                <div className="w-4 h-8 rounded-t" style={{ backgroundColor: 'var(--color-accent)' }}></div>
-                <div className="w-4 h-12 rounded-t" style={{ backgroundColor: 'var(--color-accent)' }}></div>
-                <div className="w-4 h-16 bg-yellow-400 rounded-t"></div>
-                <div className="w-4 h-14 rounded-t" style={{ backgroundColor: 'var(--color-accent)' }}></div>
-              </div>
-              <div className="text-xs font-mono text-center mt-2 text-gray-400">
-                Signal Strength: Optimal
-              </div>
-            </div>
+                {/* Signal Bars */}
+                <div className="bg-black/50 p-4 rounded border" style={{ borderColor: 'var(--color-glass-border)' }}>
+                  <div className="flex items-end justify-center space-x-3 h-16">
+                    <div className="w-4 h-8 rounded-t" style={{ backgroundColor: 'var(--color-accent)' }}></div>
+                    <div className="w-4 h-12 rounded-t" style={{ backgroundColor: 'var(--color-accent)' }}></div>
+                    <div className="w-4 h-16 bg-yellow-400 rounded-t"></div>
+                    <div className="w-4 h-14 rounded-t" style={{ backgroundColor: 'var(--color-accent)' }}></div>
+                  </div>
+                  <div className="text-xs font-mono text-center mt-2 text-gray-400">
+                    Signal Strength: Optimal
+                  </div>
+                </div>
+              </NeonCardContent>
+            </NeonCard>
           </motion.div>
         </div>
 
@@ -450,15 +458,15 @@ export default function Landing() {
                 <h3 className="text-lg font-mono font-bold mb-2">Payload</h3>
                 <div className="text-sm text-gray-400">15 Day Free Trial</div>
               </div>
-              
+
               <div className="text-4xl font-mono font-bold mb-6">Free</div>
-              
+
               <div className="space-y-3 mb-8 font-mono text-sm">
                 <div>&gt; 3 AI Masters</div>
                 <div>&gt; WAV & MP3 Exports</div>
                 <div>&gt; Standard Delivery</div>
               </div>
-              
+
               <button className="btn btn-secondary w-full">
                 Start Trial
               </button>
@@ -471,22 +479,22 @@ export default function Landing() {
                   MOST POPULAR
                 </span>
               </div>
-              
+
               <div className="mb-4">
                 <h3 className="text-lg font-mono font-bold mb-2">Orbital Pack</h3>
                 <div className="text-sm text-gray-400">Ideal for EPs and albums, providing better value.</div>
               </div>
-              
+
               <div className="text-4xl font-mono font-bold mb-2">₹ 599</div>
               <div className="text-sm text-gray-400 mb-6">/ month</div>
-              
+
               <div className="space-y-3 mb-8 font-mono text-sm">
                 <div>&gt; 15 AI Masters / month</div>
                 <div>&gt; All Formats (WAV, MP3, FLAC)</div>
                 <div>&gt; Priority Queue</div>
                 <div>&gt; Reference Tracks</div>
               </div>
-              
+
               <button className="btn btn-primary w-full">
                 Select Plan
               </button>
@@ -498,17 +506,17 @@ export default function Landing() {
                 <h3 className="text-lg font-mono font-bold mb-2">Voidline Unlimited</h3>
                 <div className="text-sm text-gray-400">For the prolific producer and professional studios.</div>
               </div>
-              
+
               <div className="text-4xl font-mono font-bold mb-2">₹ 999</div>
               <div className="text-sm text-gray-400 mb-6">/ year</div>
-              
+
               <div className="space-y-3 mb-8 font-mono text-sm">
                 <div>&gt; Unlimited AI Masters</div>
                 <div>&gt; All Formats &amp; Features</div>
                 <div>&gt; Highest Priority Access</div>
                 <div>&gt; Dedicated Support Channel</div>
               </div>
-              
+
               <button className="btn btn-secondary w-full">
                 Select Plan
               </button>
