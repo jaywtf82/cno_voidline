@@ -350,20 +350,43 @@ export default function Landing() {
                 </div>
               </div>
               
-              <div className="text-center">
-                <Button 
-                  className="font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
-                  onClick={() => {
-                    if (isAuthenticated) {
-                      window.location.href = `/console?session=${audioAnalysis.sessionId}`;
-                    } else {
-                      localStorage.setItem('pendingSession', audioAnalysis.sessionId);
-                      handleLogin();
-                    }
-                  }}
-                >
-                  Start Mastering Session
-                </Button>
+              <div className="text-center space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button 
+                    className="font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
+                    onClick={() => {
+                      if (isAuthenticated) {
+                        window.location.href = `/console?session=${audioAnalysis.sessionId}`;
+                      } else {
+                        localStorage.setItem('pendingSession', audioAnalysis.sessionId);
+                        handleLogin();
+                      }
+                    }}
+                  >
+                    {isAuthenticated ? 'Start Mastering Session' : 'Login to Start Mastering'}
+                  </Button>
+                  
+                  {!isAuthenticated && (
+                    <Button 
+                      variant="outline"
+                      className="font-mono border-accent-primary/50 hover:border-accent-primary text-accent-primary"
+                      onClick={() => {
+                        // Continue with demo mode - show mastering interface without saving
+                        window.location.href = `/console?session=${audioAnalysis.sessionId}&demo=true`;
+                      }}
+                    >
+                      Continue as Demo
+                    </Button>
+                  )}
+                </div>
+                
+                {!isAuthenticated && (
+                  <p className="text-xs text-text-muted font-mono">
+                    Demo mode allows you to try the mastering interface without saving projects.
+                    <br />
+                    Login to save your work and access all features.
+                  </p>
+                )}
               </div>
             </NeonCardContent>
           </NeonCard>
