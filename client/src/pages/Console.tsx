@@ -358,42 +358,76 @@ export default function Console() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface-dark to-surface-darker text-text-primary">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-sm border-b border-accent-primary/20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Logo className="h-8" />
+    <div className="min-h-screen" style={{ 
+      backgroundColor: 'var(--color-primary)', 
+      color: 'var(--color-secondary)',
+      fontFamily: "'Fira Code', monospace"
+    }}>
+      {/* Background Grid */}
+      <div className="background-grid"></div>
+      <div className="background-vignette"></div>
 
-            <div className="flex items-center space-x-6">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => window.location.href = "/mocking"}
-                className="font-mono text-sm text-accent-primary hover:text-accent-primary/80"
-                data-testid="button-mocking"
-              >
-                /mocking
-              </Button>
-              <div className="font-mono text-sm text-text-muted">
-                {user?.email}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.location.href = "/api/logout"}
-                className="font-mono text-sm"
-                data-testid="button-logout"
-              >
-                Logout
-              </Button>
-            </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+      {/* Header */}
+      <motion.div 
+        className="flex items-center justify-between mb-12 pb-4"
+        style={{ borderBottom: '1px solid var(--color-glass-border)' }}
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        {/* Left Side - Terminal Window */}
+        <div className="flex items-center space-x-2 terminal-window px-3 py-1.5">
+          <div className="flex space-x-1">
+            <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+            <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+          </div>
+          <span className="font-mono text-sm" style={{ color: 'var(--color-accent)' }}>./C/No_Voidline</span>
+        </div>
+
+        {/* Center - Navigation */}
+        <nav className="hidden md:flex items-center space-x-8">
+          <a href="/" className="nav-link">/home</a>
+          <a href="#features" className="nav-link">/features</a>
+          <a href="#pricing" className="nav-link">/pricing</a>
+          <a href="#docs" className="nav-link">/docs</a>
+          <a href="#logs" className="nav-link">/logs</a>
+        </nav>
+
+        {/* Right Side - User Controls */}
+        <div className="flex items-center space-x-4">
+
+            <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.location.href = "/mocking"}
+            className="font-mono text-sm btn btn-secondary"
+            data-testid="button-mocking"
+          >
+            /mocking
+          </Button>
+          <div className="font-mono text-sm text-gray-400">
+            {user?.email}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.location.href = "/api/logout"}
+            className="font-mono text-sm btn btn-secondary"
+            data-testid="button-logout"
+          >
+            Logout
+          </Button>
+          <div className="flex items-center justify-end space-x-1">
+            <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
+            <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           </div>
         </div>
-      </nav>
+      </motion.div>
 
-      <div className="pt-20 p-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="mb-16">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold mb-4">

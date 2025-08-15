@@ -161,9 +161,18 @@ export default function MockingPage() {
               </Button>
             ))}
           </div>
-          {/* System Status */}
-          <div className="font-mono text-xs text-[#3FB950] border border-[#3FB95044] px-3 py-1 rounded mt-1 bg-[#121616]">
-            SYSTEM: ONLINE
+          <Button 
+            onClick={() => window.location.href = "/"} 
+            variant="ghost" 
+            size="sm"
+            className="font-mono text-xs btn btn-secondary"
+          >
+            ← Back to Console
+          </Button>
+          <div className="flex items-center justify-end space-x-1">
+            <div className="w-2 h-2 bg-red-400 rounded-full opacity-60"></div>
+            <div className="w-2 h-2 bg-yellow-400 rounded-full opacity-60"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
           </div>
         </div>
       </motion.div>

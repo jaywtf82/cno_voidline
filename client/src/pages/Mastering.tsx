@@ -23,6 +23,7 @@ import { Card } from '@/components/ui/card';
 import { Logo } from '@/components/Logo';
 import { useAudioStore } from '@/lib/stores/audioStore';
 import { PhaseOneCard } from '@/components/analysis/PhaseOneCard';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LogEntry {
   stage: 'Standard Analysis' | 'AI Refinement';
@@ -41,13 +42,14 @@ interface CardState {
 export default function Mastering() {
   const [location] = useLocation();
   const getAnalysis = useAudioStore((state) => state.getAnalysis);
-  
+  const { isAuthenticated } = useAuth();
+
   // Extract ID from query params
   const urlParams = new URLSearchParams(location.split('?')[1] || '');
   const analysisId = urlParams.get('id') || '888_premaster';
-  
+
   const analysis = getAnalysis(analysisId);
-  
+
   const [overallProgress, setOverallProgress] = useState(0);
   const [cards, setCards] = useState<CardState[]>([
     {
@@ -117,7 +119,7 @@ export default function Mastering() {
 
           const isStandardStage = stepCountRef.current < 6;
           const stage = isStandardStage ? 'Standard Analysis' : 'AI Refinement';
-          
+
           let message = '';
           if (isStandardStage) {
             message = standardAnalysisMessages[Math.min(stepCountRef.current, standardAnalysisMessages.length - 1)];
@@ -179,6 +181,21 @@ export default function Mastering() {
           <div className="flex items-center justify-between">
             <Logo />
             <div className="flex items-center space-x-6">
+              {/* Navigation buttons */}
+              <nav className="flex items-center space-x-4">
+                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 font-mono text-sm">
+                  Home
+                </Button>
+                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 font-mono text-sm">
+                  Features
+                </Button>
+                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 font-mono text-sm">
+                  Pricing
+                </Button>
+                <Button variant="link" className="text-cyan-400 hover:text-cyan-300 font-mono text-sm">
+                  About
+                </Button>
+              </nav>
               <div className="flex items-center space-x-3">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
@@ -256,7 +273,7 @@ export default function Mastering() {
                       </span>
                     </div>
                   </div>
-                  
+
                   {/* Progress Bar */}
                   <div className="mt-2 bg-gray-800 rounded-full h-1 overflow-hidden">
                     <motion.div
