@@ -122,15 +122,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/projects/:id', authMiddleware, async (req: any, res) => {
     try {
+      if (!requireAuth) {
+        // Return basic project data when auth is disabled
+        return res.json({
+          id: req.params.id,
+          name: 'Demo Project',
+          userId: 'anonymous',
+          isPublic: true
+        });
+      }
+      
       const project = await storage.getProject(req.params.id);
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
       
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       // Check ownership
-      if (project.userId !== req.user.claims.sub && !project.isPublic) {
+      if (project.userId !== userId && !project.isPublic) {
         return res.status(403).json({ message: "Access denied" });
       }
       
@@ -141,9 +156,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/projects', isAuthenticated, async (req: any, res) => {
+  app.post('/api/projects', authMiddleware, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      if (!requireAuth) {
+        // Return success but don't save when auth is disabled
+        return res.json({
+          id: 'demo-' + Date.now(),
+          ...req.body,
+          userId: 'anonymous'
+        });
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const validatedData = insertProjectSchema.parse({
         ...req.body,
         userId,
@@ -157,10 +185,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.patch('/api/projects/:id', authMiddleware, async (req: any, res) => {
     try {
+      if (!requireAuth) {
+        // Return success but don't save when auth is disabled
+        return res.json({ id: req.params.id, ...req.body });
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const project = await storage.getProject(req.params.id);
-      if (!project || project.userId !== req.user.claims.sub) {
+      if (!project || project.userId !== userId) {
         return res.status(404).json({ message: "Project not found" });
       }
       
@@ -173,10 +211,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/projects/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/projects/:id', authMiddleware, async (req: any, res) => {
     try {
+      if (!requireAuth) {
+        // Return success but don't actually delete when auth is disabled
+        return res.json({ message: "Project deleted" });
+      }
+      
+      const userId = req.user?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
       const project = await storage.getProject(req.params.id);
-      if (!project || project.userId !== req.user.claims.sub) {
+      if (!project || project.userId !== userId) {
         return res.status(404).json({ message: "Project not found" });
       }
       

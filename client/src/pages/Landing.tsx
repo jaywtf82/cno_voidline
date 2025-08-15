@@ -148,6 +148,13 @@ export default function Landing() {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [audioAnalysis, setAudioAnalysis] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  
+  // Mastering session state
+  const [masteringActive, setMasteringActive] = useState(false);
+  const [masteringProgress, setMasteringProgress] = useState(0);
+  const [currentPreset, setCurrentPreset] = useState('intelligent');
+  const [masteringTarget, setMasteringTarget] = useState('streaming');
+  const [isExporting, setIsExporting] = useState(false);
 
   const mockPresets = [
     { name: "CLUB_MASTER", category: "Club", description: "High energy club master", isActive: false },
@@ -362,8 +369,12 @@ export default function Landing() {
                     if (requireAuth && !isAuthenticated) {
                       setShowAuthModal(true);
                     } else {
-                      // Start session regardless of auth status
-                      window.location.href = `/console?session=${audioAnalysis.sessionId}`;
+                      // Start mastering session on the same page
+                      setMasteringActive(true);
+                      // Scroll to mastering interface
+                      document.getElementById('mastering-interface')?.scrollIntoView({ 
+                        behavior: 'smooth' 
+                      });
                     }
                   }}
                 >
@@ -375,8 +386,200 @@ export default function Landing() {
         </motion.div>
       )}
 
+      {/* Mastering Interface - Only shown when session is active */}
+      {masteringActive && (
+        <motion.div 
+          id="mastering-interface"
+          className="mb-16"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <NeonCard variant="terminal" className="mb-8">
+            <NeonCardHeader>
+              <NeonCardTitle className="flex items-center justify-between">
+                <span>AI Mastering Console</span>
+                <div className="flex items-center gap-4">
+                  <div className="text-xs text-text-muted font-mono">
+                    SESSION: {audioAnalysis?.sessionId?.slice(-8).toUpperCase()}
+                  </div>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="font-mono text-xs border-accent-primary/50 hover:border-accent-primary"
+                    onClick={() => {
+                      setMasteringActive(false);
+                      setMasteringProgress(0);
+                      setIsExporting(false);
+                    }}
+                  >
+                    Back to Analysis
+                  </Button>
+                </div>
+              </NeonCardTitle>
+            </NeonCardHeader>
+            <NeonCardContent>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Left Panel - Controls */}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-mono text-accent-primary mb-4">Mastering Target</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { id: 'streaming', label: 'Streaming', desc: 'Spotify, Apple Music' },
+                        { id: 'club', label: 'Club', desc: 'High-energy, loud' },
+                        { id: 'vinyl', label: 'Vinyl', desc: 'Analog warmth' },
+                        { id: 'radio', label: 'Radio', desc: 'Broadcast ready' }
+                      ].map((target) => (
+                        <Button
+                          key={target.id}
+                          variant={masteringTarget === target.id ? "default" : "outline"}
+                          className={`font-mono text-xs p-3 h-auto flex flex-col items-start ${
+                            masteringTarget === target.id 
+                              ? 'bg-accent-primary text-black' 
+                              : 'border-accent-primary/50 hover:border-accent-primary'
+                          }`}
+                          onClick={() => setMasteringTarget(target.id)}
+                        >
+                          <div className="font-bold">{target.label}</div>
+                          <div className="text-xs opacity-70">{target.desc}</div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-mono text-accent-primary mb-4">AI Preset</h3>
+                    <div className="space-y-2">
+                      {[
+                        { id: 'intelligent', label: 'Intelligent Auto', desc: 'AI analyzes and optimizes' },
+                        { id: 'transparent', label: 'Transparent', desc: 'Minimal coloration' },
+                        { id: 'warm', label: 'Analog Warm', desc: 'Vintage character' },
+                        { id: 'punchy', label: 'Punchy', desc: 'Enhanced dynamics' }
+                      ].map((preset) => (
+                        <Button
+                          key={preset.id}
+                          variant={currentPreset === preset.id ? "default" : "outline"}
+                          className={`w-full font-mono text-xs justify-start ${
+                            currentPreset === preset.id 
+                              ? 'bg-accent-primary text-black' 
+                              : 'border-accent-primary/50 hover:border-accent-primary'
+                          }`}
+                          onClick={() => setCurrentPreset(preset.id)}
+                        >
+                          <div>
+                            <div className="font-bold">{preset.label}</div>
+                            <div className="text-xs opacity-70">{preset.desc}</div>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <Button 
+                      className="flex-1 font-mono bg-accent-primary hover:bg-accent-primary/80 text-black"
+                      onClick={() => {
+                        setMasteringProgress(0);
+                        // Simulate mastering process
+                        const interval = setInterval(() => {
+                          setMasteringProgress(prev => {
+                            if (prev >= 100) {
+                              clearInterval(interval);
+                              return 100;
+                            }
+                            return prev + 2;
+                          });
+                        }, 100);
+                      }}
+                      disabled={masteringProgress > 0 && masteringProgress < 100}
+                    >
+                      {masteringProgress === 0 ? 'Process Audio' : 
+                       masteringProgress < 100 ? `Processing ${masteringProgress}%` : 
+                       'Complete'}
+                    </Button>
+                    
+                    {masteringProgress === 100 && (
+                      <Button 
+                        variant="outline"
+                        className="font-mono border-accent-primary/50 hover:border-accent-primary"
+                        onClick={() => {
+                          setIsExporting(true);
+                          setTimeout(() => setIsExporting(false), 3000);
+                        }}
+                        disabled={isExporting}
+                      >
+                        {isExporting ? 'Exporting...' : 'Export'}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {masteringProgress > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span>Processing Progress</span>
+                        <span>{masteringProgress}%</span>
+                      </div>
+                      <div className="w-full bg-surface-dark border border-accent-primary/30 rounded">
+                        <div 
+                          className="bg-accent-primary h-2 rounded transition-all duration-300"
+                          style={{ width: `${masteringProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Right Panel - Visualizer */}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-mono text-accent-primary mb-4">Real-time Analysis</h3>
+                    <div className="bg-black/50 border border-accent-primary/30 rounded p-4 h-48 flex items-center justify-center">
+                      <div className="text-center text-text-muted">
+                        <div className="font-mono text-sm mb-2">Spectrum Analyzer</div>
+                        <div className="flex items-end space-x-1 justify-center h-20">
+                          {Array.from({ length: 16 }, (_, i) => (
+                            <div
+                              key={i}
+                              className="bg-accent-primary/50 w-2 animate-pulse"
+                              style={{ 
+                                height: `${20 + Math.sin(i * 0.5 + Date.now() * 0.01) * 20}px`,
+                                animationDelay: `${i * 100}ms`
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+                    <div className="space-y-1">
+                      <div className="text-accent-primary">Input Levels</div>
+                      <div>LUFS: {audioAnalysis?.lufs?.toFixed(1) || '-23.1'}</div>
+                      <div>Peak: {audioAnalysis?.peak?.toFixed(1) || '-3.2'} dB</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-accent-primary">Output Levels</div>
+                      <div>LUFS: {masteringProgress === 100 ? '-14.0' : '---'}</div>
+                      <div>Peak: {masteringProgress === 100 ? '-1.0' : '---'} dB</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </NeonCardContent>
+          </NeonCard>
+        </motion.div>
+      )}
+
       {/* Main Grid - improved responsive layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mb-16" id="features">
+      <div 
+        className={`grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mb-16 transition-opacity duration-500 ${
+          masteringActive ? 'opacity-30 pointer-events-none' : 'opacity-100'
+        }`} 
+        id="features"
+      >
         
         {/* Left Panel - Transport & Controls */}
         <motion.div 
@@ -906,7 +1109,10 @@ export default function Landing() {
                     className="w-full font-mono border-accent-primary/50 hover:border-accent-primary text-accent-primary"
                     onClick={() => {
                       setShowAuthModal(false);
-                      window.location.href = `/console?session=${audioAnalysis?.sessionId}&demo=true`;
+                      setMasteringActive(true);
+                      document.getElementById('mastering-interface')?.scrollIntoView({ 
+                        behavior: 'smooth' 
+                      });
                     }}
                   >
                     Continue as Demo
