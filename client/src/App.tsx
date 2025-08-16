@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AppShell } from "@/components/layout/AppShell";
-import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import Console from "@/pages/Console";
@@ -59,9 +58,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <TooltipProvider>
-          <AppErrorBoundary>
-            <Router />
-          </AppErrorBoundary>
+          <Router />
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
