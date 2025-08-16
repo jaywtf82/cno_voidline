@@ -37,13 +37,13 @@ export class OptimizedAudioProcessor {
     try {
       this.audioContext = new AudioContext();
 
-      // Test worklet support
+      // Test worklet support with proper path
       try {
         await this.audioContext.audioWorklet.addModule('/worklets/mastering-worklet.js');
         this.workletSupported = true;
-        console.log('Audio worklets supported');
+        console.log('Audio worklets supported and loaded');
       } catch (workletError) {
-        console.warn('Audio worklets not supported, using fallback processing');
+        console.warn('Audio worklets not supported, using fallback processing:', (workletError as Error).message);
         this.workletSupported = false;
       }
 

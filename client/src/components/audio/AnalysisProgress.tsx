@@ -55,20 +55,34 @@ export function AnalysisProgress({
     setPersistentProgress(prev => Math.max(prev, safeProgress));
 
     if (isAnalyzing) {
-      // Smooth progress animation with robust NaN protection
+      // Use requestAnimationFrame for smoother, performance-optimized animation
+      let animationId: number;
+      
       const animateProgress = () => {
         setDisplayProgress(prev => {
           const currentProgress = typeof prev === 'number' && !isNaN(prev) ? prev : 0;
           const targetProgress = Math.max(currentProgress, safeProgress);
           const diff = targetProgress - currentProgress;
           
-          if (Math.abs(diff) < 0.5) return targetProgress;
-          return currentProgress + (diff * 0.2); // Smoother interpolation
+          if (Math.abs(diff) < 0.1) return targetProgress;
+          
+          const newProgress = currentProgress + (diff * 0.15); // Smoother interpolation
+          
+          // Continue animation if still progressing
+          if (Math.abs(diff) > 0.1) {
+            animationId = requestAnimationFrame(animateProgress);
+          }
+          
+          return newProgress;
         });
       };
 
-      const interval = setInterval(animateProgress, 32); // 60fps-ish
-      return () => clearInterval(interval);
+      animationId = requestAnimationFrame(animateProgress);
+      return () => {
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+      };
     } else if (progress === 100) {
       // Keep progress at 100% when analysis is complete
       setDisplayProgress(100);
@@ -180,33 +194,33 @@ export function AnalysisProgress({
           <div className="flex justify-between bg-black/40 p-2 rounded border border-emerald-500/30">
             <span className="text-emerald-400">LUFS:</span>
             <span className="text-emerald-300">
-              {(metrics?.lufs !== undefined && typeof metrics.lufs === 'number') 
+              {(metrics?.lufs !== undefined && typeof metrics.lufs === 'number' && !isNaN(metrics.lufs)) 
                 ? metrics.lufs.toFixed(1) 
-                : displayProgress > 60 ? '-14.5' : '--'}
+                : '--'}
             </span>
           </div>
           <div className="flex justify-between bg-black/40 p-2 rounded border border-cyan-500/30">
             <span className="text-cyan-400">PEAK:</span>
             <span className="text-cyan-300">
-              {(metrics?.peak !== undefined && typeof metrics.peak === 'number') 
+              {(metrics?.peak !== undefined && typeof metrics.peak === 'number' && !isNaN(metrics.peak)) 
                 ? metrics.peak.toFixed(1) + 'dB' 
-                : displayProgress > 30 ? '-0.5dB' : '--'}
+                : '--'}
             </span>
           </div>
           <div className="flex justify-between bg-black/40 p-2 rounded border border-yellow-500/30">
             <span className="text-yellow-400">RMS:</span>
             <span className="text-yellow-300">
-              {(metrics?.rms !== undefined && typeof metrics.rms === 'number') 
+              {(metrics?.rms !== undefined && typeof metrics.rms === 'number' && !isNaN(metrics.rms)) 
                 ? metrics.rms.toFixed(1) + 'dB' 
-                : displayProgress > 45 ? '-16.0dB' : '--'}
+                : '--'}
             </span>
           </div>
           <div className="flex justify-between bg-black/40 p-2 rounded border border-orange-500/30">
             <span className="text-orange-400">DR:</span>
             <span className="text-orange-300">
-              {(metrics?.dynamicRange !== undefined && typeof metrics.dynamicRange === 'number') 
+              {(metrics?.dynamicRange !== undefined && typeof metrics.dynamicRange === 'number' && !isNaN(metrics.dynamicRange)) 
                 ? metrics.dynamicRange.toFixed(1) + 'dB' 
-                : displayProgress > 30 ? '10.0dB' : '--'}
+                : '--'}
             </span>
           </div>
         </div>
@@ -219,7 +233,7 @@ export function AnalysisProgress({
           <div className={`text-lg transition-all duration-300 ${
             stageMetrics.freq ? 'text-emerald-400' : 'text-gray-500'
           }`}>
-            {stageMetrics.freq ? '✓' : (displayProgress > 10 ? '◐' : '○')}
+            {stageMetrics.freq ? '✓' : (displayProgress > 15 ? '◐' : '○')}
           </div>
         </div>
         <div className="bg-black/40 p-3 rounded border border-cyan-500/30">
@@ -227,7 +241,7 @@ export function AnalysisProgress({
           <div className={`text-lg transition-all duration-300 ${
             stageMetrics.dynamics ? 'text-cyan-400' : 'text-gray-500'
           }`}>
-            {stageMetrics.dynamics ? '✓' : (displayProgress > 20 ? '◐' : '○')}
+            {stageMetrics.dynamics ? '✓' : (displayProgress > 30 ? '◐' : '○')}
           </div>
         </div>
         <div className="bg-black/40 p-3 rounded border border-yellow-500/30">
@@ -235,7 +249,7 @@ export function AnalysisProgress({
           <div className={`text-lg transition-all duration-300 ${
             stageMetrics.lufs ? 'text-yellow-400' : 'text-gray-500'
           }`}>
-            {stageMetrics.lufs ? '✓' : (displayProgress > 50 ? '◐' : '○')}
+            {stageMetrics.lufs ? '✓' : (displayProgress > 60 ? '◐' : '○')}
           </div>
         </div>
         <div className="bg-black/40 p-3 rounded border border-orange-500/30">
@@ -243,7 +257,7 @@ export function AnalysisProgress({
           <div className={`text-lg transition-all duration-300 ${
             stageMetrics.phase ? 'text-orange-400' : 'text-gray-500'
           }`}>
-            {stageMetrics.phase ? '✓' : (displayProgress > 70 ? '◐' : '○')}
+            {stageMetrics.phase ? '✓' : (displayProgress > 75 ? '◐' : '○')}
           </div>
         </div>
       </div>
