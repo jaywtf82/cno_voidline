@@ -1,5 +1,7 @@
 # C/No Voidline - Complete Setup and Configuration Guide
 
+> **2025-08-16** – Added audit reference and noted Docker requirement for quick-start. See `docs/AUDIT.md`.
+
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
 2. [Local Development Setup](#local-development-setup)

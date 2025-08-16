@@ -1,5 +1,7 @@
 # C/No Voidline - Configuration Guide
 
+> **2025-08-16** – Synced with build audit and quick-start script availability. See `docs/AUDIT.md` for details.
+
 This guide explains all configuration options available in the AI Audio Mastering Console.
 
 ## Environment Variables

@@ -1,6 +1,8 @@
 
 # C/No Voidline - UI/UX Design Documentation
 
+> **2025-08-16** – Audit notes added; quick-start requires Docker. Refer to `docs/AUDIT.md`.
+
 ## Design Philosophy
 
 C/No Voidline embodies a **cinematic terminal aesthetic** that merges professional audio engineering with cyberpunk visual design. The interface draws inspiration from sci-fi command centers, hacker terminals, and professional studio equipment to create an immersive and powerful user experience.

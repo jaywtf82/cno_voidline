@@ -1,5 +1,7 @@
 # C/No Voidline - Deployment Guide
 
+> **2025-08-16** – Updated to reference build audit and clarified quick-start script requirement for Docker. See `docs/AUDIT.md`.
+
 A comprehensive guide for deploying the AI Audio Mastering Console across different platforms, all using free services.
 
 ## Table of Contents

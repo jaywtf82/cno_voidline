@@ -1,5 +1,7 @@
 # GitHub Pages Deployment Guide for C/No Voidline
 
+> **2025-08-16** – Clarified tooling audit and quick-start script availability. See `docs/AUDIT.md`.
+
 ## Overview
 
 This guide provides step-by-step instructions for deploying the C/No Voidline frontend to GitHub Pages, including backend API setup, CI/CD configuration, and custom domain setup.
