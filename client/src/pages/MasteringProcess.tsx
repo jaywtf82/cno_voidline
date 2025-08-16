@@ -290,45 +290,46 @@ export default function MasteringProcess() {
   // Parameter updates - Memoized to prevent re-render loops
   const handleMidGainChange = useCallback((bandIndex: number, gain: number) => {
     setProcessorParams(prev => {
+      if (prev.midGains[bandIndex] === gain) return prev;
       const newMidGains = [...prev.midGains] as [number, number, number];
       newMidGains[bandIndex] = gain;
       return {
         ...prev,
-        midGains: newMidGains
+        midGains: newMidGains,
       };
     });
   }, []);
 
   const handleSideGainChange = useCallback((bandIndex: number, gain: number) => {
     setProcessorParams(prev => {
+      if (prev.sideGains[bandIndex] === gain) return prev;
       const newSideGains = [...prev.sideGains] as [number, number, number];
       newSideGains[bandIndex] = gain;
       return {
         ...prev,
-        sideGains: newSideGains
+        sideGains: newSideGains,
       };
     });
   }, []);
 
   const handleDenoiseAmountChange = useCallback((amount: number) => {
-    setProcessorParams(prev => ({
-      ...prev,
-      denoiseAmount: amount
-    }));
+    setProcessorParams(prev =>
+      prev.denoiseAmount === amount
+        ? prev
+        : { ...prev, denoiseAmount: amount },
+    );
   }, []);
 
   const handleLimiterThresholdChange = useCallback((threshold: number) => {
-    setProcessorParams(prev => ({
-      ...prev,
-      threshold
-    }));
+    setProcessorParams(prev =>
+      prev.threshold === threshold ? prev : { ...prev, threshold },
+    );
   }, []);
 
   const handleLimiterCeilingChange = useCallback((ceiling: number) => {
-    setProcessorParams(prev => ({
-      ...prev,
-      ceiling
-    }));
+    setProcessorParams(prev =>
+      prev.ceiling === ceiling ? prev : { ...prev, ceiling },
+    );
   }, []);
 
   const handleResetParameters = useCallback(() => {
