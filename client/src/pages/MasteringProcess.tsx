@@ -86,7 +86,6 @@ export default function MasteringProcess() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedBand, setSelectedBand] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
-  // const sessionData = useSessionStore.getSnapshot(); // Initialize with current snapshot - REMOVED
 
   // Audio processing parameters
   const [processorParams, setProcessorParams] = useState<ProcessorParams>({
@@ -110,18 +109,18 @@ export default function MasteringProcess() {
     release: 50,
   });
 
-  // EQ band definitions for UI
-  const midBands: EQBand[] = [
+  // EQ band definitions for UI - Memoized to prevent re-creation
+  const midBands: EQBand[] = useMemo(() => [
     { freq: processorParams.midFreqs[0], gain: processorParams.midGains[0], q: processorParams.midQs[0], label: 'LOW' },
     { freq: processorParams.midFreqs[1], gain: processorParams.midGains[1], q: processorParams.midQs[1], label: 'MID' },
     { freq: processorParams.midFreqs[2], gain: processorParams.midGains[2], q: processorParams.midQs[2], label: 'HIGH' },
-  ];
+  ], [processorParams.midFreqs, processorParams.midGains, processorParams.midQs]);
 
-  const sideBands: EQBand[] = [
+  const sideBands: EQBand[] = useMemo(() => [
     { freq: processorParams.sideFreqs[0], gain: processorParams.sideGains[0], q: processorParams.sideQs[0], label: 'LOW' },
     { freq: processorParams.sideFreqs[1], gain: processorParams.sideGains[1], q: processorParams.sideQs[1], label: 'MID' },
     { freq: processorParams.sideFreqs[2], gain: processorParams.sideGains[2], q: processorParams.sideQs[2], label: 'HIGH' },
-  ];
+  ], [processorParams.sideFreqs, processorParams.sideGains, processorParams.sideQs]);
 
   // Initialize audio engine on mount
   useEffect(() => {
@@ -188,20 +187,24 @@ export default function MasteringProcess() {
       switch (event.code) {
         case 'Space':
           event.preventDefault();
-          handlePlayPause();
+          if (playing) {
+            engine.stop();
+          } else {
+            engine.play().catch(console.error);
+          }
           break;
 
         case 'KeyA':
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            handleMonitorChange('A');
+            engine.setMonitor('A');
           }
           break;
 
         case 'KeyB':
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            handleMonitorChange('B');
+            engine.setMonitor('B');
           }
           break;
 
@@ -212,13 +215,31 @@ export default function MasteringProcess() {
 
         case 'Escape':
           event.preventDefault();
-          handleResetParameters();
+          setProcessorParams({
+            midGains: [0, 0, 0],
+            sideGains: [0, 0, 0],
+            midFreqs: [200, 1000, 5000],
+            sideFreqs: [200, 1000, 5000],
+            midQs: [1, 1, 1],
+            sideQs: [1, 1, 1],
+            denoiseAmount: 0,
+            noiseGateThreshold: -60,
+            threshold: -6,
+            ceiling: -1,
+            lookAheadSamples: 240,
+            attack: 5,
+            release: 50,
+          });
           break;
 
         case 'Enter':
           if (event.ctrlKey || event.metaKey) {
             event.preventDefault();
-            handleExport();
+            // Inline export logic to avoid circular dependencies
+            if (file && isInitialized && exportStatus.phase !== 'render' && exportStatus.phase !== 'encode') {
+              resetExportStatus();
+              updateExportStatus({ phase: 'render', progress: 0, message: 'Preparing export...' });
+            }
           }
           break;
       }
@@ -226,7 +247,7 @@ export default function MasteringProcess() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isInitialized, selectedBand]); // Removed circular dependencies
+  }, [isInitialized, playing, file, exportStatus.phase, resetExportStatus, updateExportStatus]); // Fixed dependencies
 
   // Playback controls
   const handlePlayPause = useCallback(async () => {
@@ -258,7 +279,7 @@ export default function MasteringProcess() {
     }
   }, []);
 
-  // Parameter updates
+  // Parameter updates - Memoized to prevent re-render loops
   const handleMidGainChange = useCallback((bandIndex: number, gain: number) => {
     setProcessorParams(prev => ({
       ...prev,
