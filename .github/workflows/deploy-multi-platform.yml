@@ -1,0 +1,211 @@
+
+name: Multi-Platform Deployment
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      deployment_target:
+        description: 'Deployment target'
+        required: true
+        default: 'github-pages'
+        type: choice
+        options:
+        - github-pages
+        - netlify
+        - vercel
+        - all
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "deployment-${{ github.ref }}"
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '20'
+  APP_NAME: 'cno-voidline'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      deployment-target: ${{ steps.config.outputs.target }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Determine deployment target
+        id: config
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target=${{ github.event.inputs.deployment_target }}" >> $GITHUB_OUTPUT
+          else
+            echo "target=github-pages" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install dependencies
+        run: npm ci --no-audit
+
+      - name: Create environment configuration
+        run: |
+          cat > .env.production << EOF
+          NODE_ENV=production
+          VITE_DEPLOYMENT_TARGET=${{ steps.config.outputs.target }}
+          VITE_STORAGE_BACKEND=memory
+          VITE_REQUIRE_AUTH=false
+          VITE_AI_PROVIDER=local
+          VITE_MAX_FILE_SIZE_MB=50
+          VITE_ENABLE_ANALYTICS=false
+          VITE_ENABLE_EXPORT=true
+          VITE_OPTIMIZE_BUNDLE=true
+          VITE_ENABLE_PWA=true
+          EOF
+
+      - name: Build application
+        run: npm run build
+
+      - name: Copy additional files
+        run: |
+          cp config.html dist/config.html
+          cp README.md dist/README.md
+          
+      - name: Create deployment info
+        run: |
+          cat > dist/deployment-info.json << EOF
+          {
+            "buildTime": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "target": "${{ steps.config.outputs.target }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "version": "$(npm pkg get version | tr -d '\"')"
+          }
+          EOF
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+          retention-days: 30
+
+  deploy-github-pages:
+    if: needs.build.outputs.deployment-target == 'github-pages' || needs.build.outputs.deployment-target == 'all'
+    needs: build
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  deploy-netlify:
+    if: needs.build.outputs.deployment-target == 'netlify' || needs.build.outputs.deployment-target == 'all'
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy from GitHub Actions"
+          enable-pull-request-comment: true
+          enable-commit-comment: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  deploy-vercel:
+    if: needs.build.outputs.deployment-target == 'vercel' || needs.build.outputs.deployment-target == 'all'
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist/
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          production: true
+
+  notify-deployment:
+    needs: [build, deploy-github-pages, deploy-netlify, deploy-vercel]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Create deployment summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🚀 Deployment Summary
+          
+          **Target**: ${{ needs.build.outputs.deployment-target }}
+          **Commit**: ${{ github.sha }}
+          **Branch**: ${{ github.ref_name }}
+          **Build Time**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          
+          ### Deployment Status
+          
+          | Platform | Status |
+          |----------|--------|
+          | GitHub Pages | ${{ needs.deploy-github-pages.result == 'success' && '✅ Success' || needs.deploy-github-pages.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |
+          | Netlify | ${{ needs.deploy-netlify.result == 'success' && '✅ Success' || needs.deploy-netlify.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |
+          | Vercel | ${{ needs.deploy-vercel.result == 'success' && '✅ Success' || needs.deploy-vercel.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |
+          
+          ### Quick Links
+          
+          - 🏠 [Repository](https://github.com/${{ github.repository }})
+          - 📖 [Documentation](https://github.com/${{ github.repository }}/blob/main/docs/)
+          - ⚙️ [Configuration Manager](https://github.com/${{ github.repository }}/blob/main/config.html)
+          EOF
