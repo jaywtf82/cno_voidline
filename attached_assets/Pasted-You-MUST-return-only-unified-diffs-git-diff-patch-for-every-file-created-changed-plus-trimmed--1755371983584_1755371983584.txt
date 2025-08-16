@@ -1,0 +1,50 @@
+You MUST return only: unified diffs (git diff --patch) for every file created/changed, plus trimmed dev/test/build logs. No prose, no placeholders. All code must run.
+
+C/No Voidline — Implementation (Part 3/4)
+
+5) Radix Slider loop fix
+Patch client/src/components/ui/slider.tsx:
+- Controlled only; never pass defaultValue when value exists.
+- Memoize array via useMemo(()=>[value],[value]).
+- Guard onValueChange via useRef equality; heavy updates in onValueCommit.
+- Remove internal RAFs.
+- Update all consumers (EQ/Denoise/Limiter/Macros) to use onValueCommit → engine.setParams(...).
+
+6) Audio engine (A/B with post-chain preview + fallback)
+Create/Patch client/src/audio/AudioEngine.ts:
+- Graph:
+  Source
+   ├─► A: Split→Merger→meter(A)→lufs(A)→fft(A)→Delay(A)→Monitor(A)
+   └─► B: M/S Encode→ms-eq→denoise→limiter(look-ahead)
+         → M/S Decode→Merger→meter(B)→lufs(B)→fft(B)→Monitor(B)
+- Delay(A) equals limiter lookahead for A/B alignment.
+- Publish frames @50Hz via worklet postMessage: {src:'pre'|'post',metrics,fft,time}.
+- API:
+  loadFromObjectUrl(url:string):Promise<void>;
+  play():Promise<void>; pause():void;
+  setParams(p:EngineParams):void; // smoothed
+  prepareProcessedPreview(params:EngineParams):Promise<{snapshot:{metrics:Metrics; fft:Float32Array}}>;
+  onFrame(cb:(f:FramePayload)=>void):()=>void;
+  destroy():void;
+- FallbackEngine if AudioWorklet fails (AnalyserNode taps), show “worklet off” badge.
+
+7) Processors (client/src/audio/processors/*)
+Implement, no stubs:
+- meter-processor.ts (peak, true-peak est., RMS, correlation, width, noise floor).
+- lufs-processor.ts (BS.1770-4; K-weight; I/S; LRA).
+- fft-processor.ts (4096 Hann/BH; K-weighted mags; double-buffer transfer).
+- ms-eq-processor.ts (M/S encode; 3 peaking bands for M & S; DF-II; param smoothing).
+- denoise-processor.ts (1024 STFT gate/Wiener; learns noise; emits sweepIndex).
+- limiter-processor.ts (look-ahead circular buffer; soft-knee; attack/release; emits true-peak + GR).
+All with preallocated arrays; zero allocations in process().
+
+8) BLACKROOM AI + Manual (Phase-2 first card)
+Files:
+- client/src/ui/BlackroomPanel.tsx
+- client/src/ai/featureExtract.ts
+- client/src/ai/blackroomModel.ts
+Presets: CLUB_MASTER, VINYL_WARM, STREAMING_LOUD, RADIO_READY, AI_SUGGEST, BERLIN_CONCRETE, SUB_ABYSS, DOME_SHIFT.
+Macros: HarmonicBoost, Subweight, TransientPunch, Airlift, SpatialFlux.
+Behavior:
+- On “Process Mastering”: extract features → ONNX (models/blackroom-v2.onnx via onnxruntime-web) or deterministic JSON fallback → await engine.prepareProcessedPreview(params) → activateProcessedPreview(snapshot) → setPhase2Source('post').
+- Show badge “PREVIEW: PROCESSED” when in 'post'; macro/manual changes call engine.setParams(...) and keep 'post'.

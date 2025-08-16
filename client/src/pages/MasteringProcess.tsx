@@ -58,6 +58,8 @@ import { MasteringSpectrum } from '@/components/audio/MasteringSpectrum';
 import { MasteringMeters } from '@/components/audio/MasteringMeters';
 import { StereoCorrelationMeter } from '@/components/audio/StereoCorrelationMeter';
 import { VoidlineScore } from '@/components/audio/VoidlineScore';
+import { BlackroomPanel } from '@/components/ui/BlackroomPanel';
+import { WaveformGL } from '@/components/visuals/WaveformGL';
 
 interface EQBand {
   freq: number;

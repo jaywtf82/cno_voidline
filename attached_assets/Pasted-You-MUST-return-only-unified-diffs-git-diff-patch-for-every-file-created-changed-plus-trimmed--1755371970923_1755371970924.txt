@@ -1,0 +1,37 @@
+You MUST return only: unified diffs (git diff --patch) for every file created/changed, plus trimmed dev/test/build logs. No prose, no placeholders. All code must run.
+
+C/No Voidline — Implementation (Part 2/4)
+
+3) Store (source switching + router + selectors)
+Patch client/src/state/useSessionStore.ts:
+- Extend state:
+  phase2Source:'pre'|'post' (default 'pre');
+  processedReady:boolean;
+  lastProcessedSnapshot?:{metrics:Metrics; fft:Float32Array};
+  metricsA:Metrics; metricsB:Metrics;
+  fftA:Float32Array|null; fftB:Float32Array|null;
+  timeA?:Float32Array|null; timeB?:Float32Array|null;
+- Actions:
+  setPhase2Source(src:'pre'|'post'):void;
+  activateProcessedPreview(snap:{metrics:Metrics; fft:Float32Array}):void;
+  pushFrameFromEngine(f:FramePayload):void;
+- Router:
+  pushFrameFromEngine(f){
+    if(f.src==='pre') set({metricsA:f.metrics, fftA:f.fft, timeA:f.time??null});
+    else set({metricsB:f.metrics, fftB:f.fft, timeB:f.time??null, processedReady:true});
+  }
+- Selectors:
+  export const usePhase2Source=()=>useSessionStore(s=>s.phase2Source);
+  export const usePhase2Metrics=()=>useSessionStore(s=>s.phase2Source==='post'?s.metricsB:s.metricsA, shallow);
+  export const usePhase2Fft=()=>useSessionStore(s=>s.phase2Source==='post'?s.fftB:s.fftA, shallow);
+  export const usePhase2Time=()=>useSessionStore(s=>s.phase2Source==='post'?s.timeB:s.timeA, shallow);
+  export const useProcessedSnapshot=()=>useSessionStore(s=>s.lastProcessedSnapshot);
+
+4) Mastering header & phase order
+Patch client/src/pages/MasteringProcess.tsx:
+- Header minimal: “C/NO VOIDLINE MASTER” + file badge ({name} • {size}); remove Play/Stop, A/B segmented control, AI Suggest toggle.
+- Enforce phase order:
+  Phase-1: “Technical Analysis” (pre-master snapshot; numbers only).
+  Phase-2: First card = BLACKROOM AI + Manual (Signal Modulation Zone) with “Process Mastering” CTA; then realtime monitors (Waveform/Spectrum tabs, Meters, Stereo, Voidline Score).
+  Phase-3: Export-only card (Actions/Export).
+- Layout must match provided screenshots/metadata traces.

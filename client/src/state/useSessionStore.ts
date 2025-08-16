@@ -158,6 +158,28 @@ export const useSessionStore = create<SessionStore>()(
   }))
 );
 
+// Phase-2 source-aware selectors
+export const usePhase2Source = () => useSessionStore(s => s.phase2Source);
+export const usePhase2Metrics = () => {
+  const phase2Source = useSessionStore(s => s.phase2Source);
+  const metricsA = useSessionStore(s => s.metricsA);
+  const metricsB = useSessionStore(s => s.metricsB);
+  return phase2Source === 'pre' ? metricsA : metricsB;
+};
+export const usePhase2Fft = () => {
+  const phase2Source = useSessionStore(s => s.phase2Source);
+  const fftA = useSessionStore(s => s.fftA);
+  const fftB = useSessionStore(s => s.fftB);
+  return phase2Source === 'pre' ? fftA : fftB;
+};
+export const usePhase2Time = () => {
+  const phase2Source = useSessionStore(s => s.phase2Source);
+  const timeA = useSessionStore(s => s.timeA);
+  const timeB = useSessionStore(s => s.timeB);
+  return phase2Source === 'pre' ? timeA : timeB;
+};
+export const useProcessedSnapshot = () => useSessionStore(s => s.lastProcessedSnapshot);
+
 // Optimized selectors - use direct selectors instead to prevent getSnapshot issues
 export const useSessionMetrics = () => {
   const metricsA = useSessionStore(s => s.metricsA);
@@ -182,26 +204,6 @@ export const useExportStatus = () => useSessionStore(
   (state) => state.exportStatus
 );
 
-// Phase2 selectors for source-aware components
-export const usePhase2Source = () => useSessionStore(s => s.phase2Source);
-export const usePhase2Metrics = () => {
-  const source = useSessionStore(s => s.phase2Source);
-  const metricsA = useSessionStore(s => s.metricsA);
-  const metricsB = useSessionStore(s => s.metricsB);
-  return source === 'post' ? metricsB : metricsA;
-};
-export const usePhase2Fft = () => {
-  const source = useSessionStore(s => s.phase2Source);
-  const fftA = useSessionStore(s => s.fftA);
-  const fftB = useSessionStore(s => s.fftB);
-  return source === 'post' ? fftB : fftA;
-};
-export const usePhase2Time = () => {
-  const source = useSessionStore(s => s.phase2Source);
-  const timeA = useSessionStore(s => s.timeA);
-  const timeB = useSessionStore(s => s.timeB);
-  return source === 'post' ? timeB : timeA;
-};
-export const useProcessedSnapshot = () => useSessionStore(s => s.lastProcessedSnapshot);
+
 
 export { initialMetrics };

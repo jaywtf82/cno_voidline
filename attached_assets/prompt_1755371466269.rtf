@@ -1,0 +1,63 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 C/No Voidline \'97 Implementation (Part 3/4)\
+\
+5) Slider fix (client/src/components/ui/slider.tsx)\
+- Controlled only\
+- useMemo([value])\
+- Guard onValueChange, heavy updates in onValueCommit\
+- No RAFs\
+\
+6) Audio engine (client/src/audio/AudioEngine.ts)\
+- Graph with A (pre) and B (post) chains, Delay alignment\
+- Publish frames at 50 Hz\
+- Methods: loadFromObjectUrl, play, pause, setParams, prepareProcessedPreview, onFrame, destroy\
+- FallbackEngine if worklet fails\
+\
+7) Processors (client/src/audio/processors/*)\
+Implement meter, lufs, fft, ms-eq, denoise, limiter with preallocated arrays.\
+\
+8) BLACKROOM AI (client/src/ui/BlackroomPanel.tsx + client/src/ai/*)\
+- Presets: CLUB_MASTER, VINYL_WARM, STREAMING_LOUD, RADIO_READY, AI_SUGGEST, BERLIN_CONCRETE, SUB_ABYSS, DOME_SHIFT\
+- Macros: HarmonicBoost, Subweight, TransientPunch, Airlift, SpatialFlux\
+- On Process Mastering: feature extract \uc0\u8594  ONNX inference \u8594  prepareProcessedPreview \u8594  setPhase2Source('post')\
+\
+C/No Voidline \'97 Implementation (Part 4/4)\
+\
+9) GPU visuals (client/src/graphics/*)\
+- Global Ticker, palette, gl2d\
+- Visuals: WaveformGL, SpectrumGL, OrbitalGL\
+- Integrate tabs in MasteringSpectrum\
+- No per-component RAFs\
+\
+10) Phase-2 monitors\
+- Use phase2Source selectors everywhere\
+- Emphasize post when active\
+\
+11) Phase-3 Export (client/src/export/*)\
+- Render chain with OfflineAudioContext\
+- Encode WAV/MP3/FLAC with mastered_by=cno_voidline tags\
+- Bundle zip via fflate\
+- Export card with progress visuals\
+\
+12) Safari/Replit hardening\
+- Guard AudioContext start, detect AudioWorklet, fallback badge\
+\
+13) Tests (Vitest + RTL)\
+- lufs.spec.ts, limiter.spec.ts, correlation.spec.ts, frame.route.spec.ts\
+- slider.loop.spec.tsx, mastering.order.spec.tsx, phase2.source.spec.tsx\
+- ticker.spec.ts, waveform.smoke.spec.tsx, spectrum.pick.spec.tsx\
+\
+14) Acceptance\
+- Header minimal\
+- Phase order strict (BLACKROOM first in Phase-2)\
+- Process Mastering flips to processed\
+- GPU visuals smooth 60fps\
+- Export has mastered_by tags\
+- Tests green, build clean\
+}

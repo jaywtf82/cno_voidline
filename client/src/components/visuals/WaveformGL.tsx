@@ -1,175 +1,188 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { Ticker } from '@/graphics/Ticker';
 import { palette } from '@/graphics/palette';
 import { usePhase2Source, usePhase2Time } from '@/state/useSessionStore';
-import { Badge } from '@/components/ui/badge';
 
-export const WaveformGL: React.FC<{ className?: string }> = ({ className }) => {
+export const WaveformGL: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGL2RenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
-  const buffersRef = useRef<{ position: WebGLBuffer | null; color: WebGLBuffer | null }>({
-    position: null,
-    color: null
-  });
-  
-  const phase2Source = usePhase2Source();
   const timeData = usePhase2Time();
-  
-  // Initialize WebGL
+  const phase2Source = usePhase2Source();
+
+  // Initialize WebGL2
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const gl = canvas.getContext('webgl2');
-    if (!gl) return;
-    
+    if (!gl) {
+      console.warn('WebGL2 not supported, falling back to canvas');
+      return;
+    }
+
     glRef.current = gl;
-    
+
     // Vertex shader
     const vertexShaderSource = `#version 300 es
       in vec2 a_position;
-      in vec4 a_color;
-      out vec4 v_color;
+      uniform vec2 u_resolution;
+      uniform float u_amplitude;
       
       void main() {
-        gl_Position = vec4(a_position, 0.0, 1.0);
-        v_color = a_color;
+        vec2 position = a_position;
+        position.y *= u_amplitude;
+        
+        // Convert from pixel coordinates to clip space
+        vec2 clipSpace = ((position / u_resolution) * 2.0) - 1.0;
+        gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
       }
     `;
-    
+
     // Fragment shader
     const fragmentShaderSource = `#version 300 es
-      precision highp float;
-      in vec4 v_color;
+      precision mediump float;
+      uniform vec3 u_color;
+      uniform float u_alpha;
       out vec4 fragColor;
       
       void main() {
-        fragColor = v_color;
+        fragColor = vec4(u_color, u_alpha);
       }
     `;
+
+    const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
     
-    const vertexShader = gl.createShader(gl.VERTEX_SHADER)!;
-    gl.shaderSource(vertexShader, vertexShaderSource);
-    gl.compileShader(vertexShader);
-    
-    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!;
-    gl.shaderSource(fragmentShader, fragmentShaderSource);
-    gl.compileShader(fragmentShader);
-    
-    const program = gl.createProgram()!;
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-    
+    if (!vertexShader || !fragmentShader) return;
+
+    const program = createProgram(gl, vertexShader, fragmentShader);
+    if (!program) return;
+
     programRef.current = program;
-    
-    // Create buffers
-    buffersRef.current.position = gl.createBuffer();
-    buffersRef.current.color = gl.createBuffer();
-    
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    
-    return () => {
-      gl.deleteProgram(program);
-      gl.deleteShader(vertexShader);
-      gl.deleteShader(fragmentShader);
-      if (buffersRef.current.position) gl.deleteBuffer(buffersRef.current.position);
-      if (buffersRef.current.color) gl.deleteBuffer(buffersRef.current.color);
-    };
+
   }, []);
-  
+
   const render = useCallback((deltaTime: number) => {
     const canvas = canvasRef.current;
     const gl = glRef.current;
     const program = programRef.current;
     
-    if (!canvas || !gl || !program) return;
-    
-    // Update canvas size
-    const dpr = window.devicePixelRatio || 1;
-    const displayWidth = canvas.clientWidth * dpr;
-    const displayHeight = canvas.clientHeight * dpr;
-    
-    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-      canvas.width = displayWidth;
-      canvas.height = displayHeight;
-      gl.viewport(0, 0, displayWidth, displayHeight);
-    }
+    if (!canvas || !gl || !program || !timeData) return;
+
+    // Set viewport
+    gl.viewport(0, 0, canvas.width, canvas.height);
     
     // Clear
-    gl.clearColor(...palette.background.primary);
+    gl.clearColor(0, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
     
-    if (!timeData || timeData.length === 0) {
-      return;
-    }
-    
+    // Use shader program
     gl.useProgram(program);
     
-    // Generate waveform vertices
-    const numSamples = Math.min(timeData.length, 512);
-    const positions = new Float32Array(numSamples * 2);
-    const colors = new Float32Array(numSamples * 4);
+    // Get uniform locations
+    const resolutionLoc = gl.getUniformLocation(program, 'u_resolution');
+    const amplitudeLoc = gl.getUniformLocation(program, 'u_amplitude');
+    const colorLoc = gl.getUniformLocation(program, 'u_color');
+    const alphaLoc = gl.getUniformLocation(program, 'u_alpha');
     
+    // Set uniforms
+    gl.uniform2f(resolutionLoc, canvas.width, canvas.height);
+    gl.uniform1f(amplitudeLoc, 100); // Waveform amplitude
+    
+    // Color based on source (emphasize post when active)
     const sourceColor = phase2Source === 'post' ? palette.audio.postSource : palette.audio.preSource;
+    const [r, g, b] = hexToRgb(sourceColor);
+    gl.uniform3f(colorLoc, r / 255, g / 255, b / 255);
+    gl.uniform1f(alphaLoc, phase2Source === 'post' ? 1.0 : 0.8);
     
-    for (let i = 0; i < numSamples; i++) {
-      const x = (i / (numSamples - 1)) * 2 - 1; // -1 to 1
-      const y = timeData[i] || 0; // Amplitude
-      
-      positions[i * 2] = x;
-      positions[i * 2 + 1] = y;
-      
-      colors[i * 4] = sourceColor[0];
-      colors[i * 4 + 1] = sourceColor[1];
-      colors[i * 4 + 2] = sourceColor[2];
-      colors[i * 4 + 3] = sourceColor[3];
+    // Create waveform vertices
+    const vertices: number[] = [];
+    const samplesPerPixel = Math.max(1, Math.floor(timeData.length / canvas.width));
+    
+    for (let x = 0; x < canvas.width; x++) {
+      const sampleIndex = x * samplesPerPixel;
+      if (sampleIndex < timeData.length) {
+        const amplitude = timeData[sampleIndex] * (canvas.height * 0.4);
+        const centerY = canvas.height * 0.5;
+        
+        vertices.push(x, centerY + amplitude);
+        vertices.push(x, centerY - amplitude);
+      }
     }
     
-    // Upload position data
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffersRef.current.position);
-    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
+    // Create buffer
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
     
-    const positionLocation = gl.getAttribLocation(program, 'a_position');
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+    // Set up attribute
+    const positionLoc = gl.getAttribLocation(program, 'a_position');
+    gl.enableVertexAttribArray(positionLoc);
+    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
     
-    // Upload color data
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffersRef.current.color);
-    gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
+    // Draw
+    gl.drawArrays(gl.LINE_STRIP, 0, vertices.length / 2);
     
-    const colorLocation = gl.getAttribLocation(program, 'a_color');
-    gl.enableVertexAttribArray(colorLocation);
-    gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
+    // Cleanup
+    gl.deleteBuffer(positionBuffer);
     
-    // Draw waveform
-    gl.drawArrays(gl.LINE_STRIP, 0, numSamples);
   }, [timeData, phase2Source]);
-  
+
+  // Subscribe to global ticker
   useEffect(() => {
-    const unsubscribe = Ticker.subscribe(render);
-    return unsubscribe;
+    return Ticker.subscribe(render);
   }, [render]);
-  
+
   return (
-    <div className={`relative ${className}`}>
-      <canvas 
-        ref={canvasRef}
-        className="w-full h-full"
-        style={{ width: '100%', height: '200px' }}
-      />
-      {phase2Source === 'post' && (
-        <Badge className="absolute top-2 right-2 bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-          PROCESSED
-        </Badge>
-      )}
-      {(!timeData || timeData.length === 0) && (
-        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
-          Building preview...
-        </div>
-      )}
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={512}
+      height={200}
+      className="w-full h-32 bg-black border border-green-800 rounded"
+    />
   );
 };
+
+// WebGL utility functions
+function createShader(gl: WebGL2RenderingContext, type: number, source: string): WebGLShader | null {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+  
+  return shader;
+}
+
+function createProgram(gl: WebGL2RenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader): WebGLProgram | null {
+  const program = gl.createProgram();
+  if (!program) return null;
+  
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error('Program linking error:', gl.getProgramInfoLog(program));
+    gl.deleteProgram(program);
+    return null;
+  }
+  
+  return program;
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [0, 0, 0];
+}

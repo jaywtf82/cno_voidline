@@ -1,0 +1,58 @@
+You MUST return only: unified diffs (git diff --patch) for every file created/changed, plus trimmed dev/test/build logs. No prose, no placeholders. All code must run.
+
+C/No Voidline — Implementation (Part 4/4)
+
+9) GPU visuals (60fps, DPR aware; single RAF via Ticker)
+Create:
+- client/src/graphics/Ticker.ts — global RAF subscribe/unsubscribe; adaptive resolution when dt>24ms.
+- client/src/graphics/palette.ts — terminal theme floats.
+- client/src/graphics/gl2d.ts — WebGL2 helpers (twgl), DataTexture upload, FBOs, EMA/Hann kernels.
+Visuals:
+- client/src/components/visuals/WaveformGL.tsx — stacked A (orange) & B (cyan); emphasize B when 'post'; zoom/pan/crosshair; seed from snapshot.
+- client/src/components/visuals/SpectrumGL.tsx — 2D log-x spectrum, dual traces, hover Hz/dB, band isolate, canvas overlay labels.
+- client/src/components/visuals/OrbitalGL.tsx — three.js sphere displaced by FFT DataTexture; wireframes pre(gray)/post(cyan); inertial orbit controls.
+Integrate tabs by patching client/src/components/audio/MasteringSpectrum.tsx → tabs: Waveform | Spectrum 2D | Spectrum 3D; badge shows MONITOR: A/B/PROCESSED via usePhase2Source().
+
+10) Phase-2 monitors (source-aware)
+Patch components to use selectors:
+- WaveformGL: emphasize B when 'post'; “building preview …” ribbon until first post frame.
+- MasteringSpectrum.tsx: draw both traces, emphasize selected.
+- OrbitalSpectrum.tsx: DataTexture from selected FFT; morph toward post in 'post'.
+- MasteringMeters.tsx, StereoCorrelationMeter.tsx, VoidlineScore.tsx: read from usePhase2Metrics(); theme cyan/green in 'post'.
+
+11) Phase-3 — Export-only
+Add:
+- client/src/export/renderMaster.ts — OfflineAudioContext render of B chain.
+- client/src/export/encode.ts — WAV 24-bit, MP3 (lamejs), FLAC (flac-encoder TS).
+- client/src/export/report.ts — compare.png, spectra.png, metrics.json, voidline_report.txt.
+- client/src/export/zip.ts — bundle via fflate; include SHA-256.
+Metadata:
+- MP3: ID3v2 TXXX mastered_by=cno_voidline.
+- WAV: RIFF INFO IENG=cno_voidline.
+- FLAC: Vorbis MASTERED_BY=cno_voidline.
+UI: Export card with progress (“Interstellar beams”, “Cosmic Packet Tracker”, “Solar Flare Alert”), Reset All, Export Session. No processing controls here.
+
+12) Safari/Replit hardening
+- Start AudioContext on first click (overlay in Waveform card).
+- Feature-detect AudioWorklet; auto-fallback badge.
+- Avoid SharedArrayBuffer unless COOP/COEP present.
+
+13) Tests (Vitest + RTL)
+Add and make green:
+- client/src/audio/__tests__/lufs.spec.ts (pink noise ~ −23 LUFS ⇒ ~0 LU).
+- client/src/audio/__tests__/limiter.spec.ts (step & sine burst; no overs > ceiling).
+- client/src/audio/__tests__/correlation.spec.ts (−1/0/+1).
+- client/src/audio/__tests__/frame.route.spec.ts (routing pre/post; processedReady flips on post).
+- client/src/components/ui/__tests__/slider.loop.spec.tsx (no recursive updates).
+- client/src/pages/__tests__/mastering.order.spec.tsx (Phase-1 → Phase-2 BLACKROOM first → Phase-3 export-only).
+- client/src/pages/__tests__/phase2.source.spec.tsx (Process Mastering flips monitors to post; Waveform emphasizes B).
+- client/src/graphics/__tests__/ticker.spec.ts (subscribe/unsubscribe; adaptive res).
+- client/src/components/visuals/__tests__/waveform.smoke.spec.tsx (mount/unmount, no leaks; Ticker count baseline).
+- client/src/components/visuals/__tests__/spectrum.pick.spec.tsx (mock FFT hover Hz matches).
+
+14) Acceptance (reject if unmet)
+- Header minimal & correct; Phase order enforced (BLACKROOM first in Phase-2).
+- Process Mastering flips Phase-2 to processed; all monitors show post; Waveform emphasizes B.
+- Single RAF; smooth visuals; no jank/GC spikes.
+- Export creates WAV/MP3/FLAC with mastered_by=cno_voidline tags; zip built.
+- Tests pass; build succeeds; logs trimmed (dev boot → ready, test summary, build output).
