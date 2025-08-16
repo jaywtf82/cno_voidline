@@ -292,8 +292,8 @@ function applyMacros(params: EngineParams, macros: MacroState): EngineParams {
     },
   };
 }
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+
+export default BlackroomPanel;
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
