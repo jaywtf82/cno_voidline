@@ -329,27 +329,59 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           </div>
         </div>
 
-        {/* Mastering targets - Industry standard */}
-        <div className="mb-6">
-          <h4 className="font-mono text-sm text-green-400 mb-3">Mastering Targets:</h4>
-          <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-sm">
-              <div>
-                <div className="text-cyan-400 mb-2">Streaming Profile:</div>
-                <div className="text-gray-300 space-y-1">
-                  <div>LUFS-I: {technicalData.targets.streaming.lufs_i_min}…{technicalData.targets.streaming.lufs_i_max}</div>
-                  <div>dBTP: ≤ {technicalData.targets.streaming.dbtp_max}</div>
-                  <div>LRA: {technicalData.targets.streaming.lra_range[0]}–{technicalData.targets.streaming.lra_range[1]} LU</div>
-                  <div className="text-gray-500">PLR ~8–10 dB, PSR ≥7 dB</div>
+        {/* Mastering Targets Section */}
+        <div className="space-y-6 mb-6">
+          <h4 className="font-mono text-sm font-bold text-green-400 border-b border-green-500/30 pb-2">
+            MASTERING TARGETS
+          </h4>
+          <div className="bg-black/40 p-6 rounded-lg border border-gray-700/50">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-3">Streaming Profile</div>
+                  <div className="bg-gray-900/60 p-4 rounded-lg border border-cyan-500/30">
+                    <div className="space-y-3 font-mono text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300">LUFS-I:</span>
+                        <span className="text-cyan-400 font-bold">{technicalData.targets.streaming.lufs_i_min}…{technicalData.targets.streaming.lufs_i_max}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300">dBTP:</span>
+                        <span className="text-cyan-400 font-bold">≤ {technicalData.targets.streaming.dbtp_max}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300">LRA:</span>
+                        <span className="text-cyan-400 font-bold">{technicalData.targets.streaming.lra_range[0]}–{technicalData.targets.streaming.lra_range[1]} LU</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-600/50">
+                        <div className="text-xs text-gray-500 text-center">PLR ~8–10 dB, PSR ≥7 dB</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="text-orange-400 mb-2">Club/DJ Profile:</div>
-                <div className="text-gray-300 space-y-1">
-                  <div>LUFS-I: {technicalData.targets.club.lufs_i_min}…{technicalData.targets.club.lufs_i_max}</div>
-                  <div>dBTP: {technicalData.targets.club.dbtp_max}…−1.0</div>
-                  <div>LRA: {technicalData.targets.club.lra_range[0]}–{technicalData.targets.club.lra_range[1]} LU</div>
-                  <div className="text-gray-500">Bass mono &lt;100 Hz, corr ≥0 in lows</div>
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-3">Club/DJ Profile</div>
+                  <div className="bg-gray-900/60 p-4 rounded-lg border border-orange-500/30">
+                    <div className="space-y-3 font-mono text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300">LUFS-I:</span>
+                        <span className="text-orange-400 font-bold">{technicalData.targets.club.lufs_i_min}…{technicalData.targets.club.lufs_i_max}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300">dBTP:</span>
+                        <span className="text-orange-400 font-bold">{technicalData.targets.club.dbtp_max}…−1.0</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-300">LRA:</span>
+                        <span className="text-orange-400 font-bold">{technicalData.targets.club.lra_range[0]}–{technicalData.targets.club.lra_range[1]} LU</span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-600/50">
+                        <div className="text-xs text-gray-500 text-center">Bass mono &lt;100 Hz, corr ≥0 in lows</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
