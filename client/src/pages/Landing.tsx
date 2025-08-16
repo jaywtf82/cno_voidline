@@ -391,7 +391,6 @@ export default function Landing() {
     <div className="min-h-screen bg-terminal-bg text-terminal-text overflow-x-hidden">
       {/* Fixed Background Pattern */}
       <div className="fixed inset-0 grid-pattern opacity-[0.02] pointer-events-none" />
-
       {/* Landing Page Header */}
       <header className="app-header site-header" role="banner" aria-label="Primary">
         <div className="header-inner terminal-window p-2">
@@ -429,7 +428,6 @@ export default function Landing() {
           </div>
         </div>
       </header>
-
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8" style={{ 
         fontFamily: "'Fira Code', monospace"
       }}>
@@ -456,7 +454,7 @@ export default function Landing() {
               </div>
 
               <div className="flex justify-center">
-                <button className="btn btn-secondary" style={{ color: '#3FB950' }}>
+                <button className="btn btn-secondary bg-[transparent] font-medium pl-[10px] pr-[10px] text-left" style={{ color: '#3FB950' }}>
                   Drag & Drop or Choose Files to Upload ...
                 </button>
               </div>
