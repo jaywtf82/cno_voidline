@@ -1,0 +1,52 @@
+
+version: '3.8'
+
+services:
+  app:
+    build: 
+      context: ..
+      dockerfile: scripts/Dockerfile
+    container_name: cno-voidline
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://voidline_user:voidline_pass@postgres:5432/cno_voidline
+      - VITE_DEPLOYMENT_TARGET=docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - uploads:/app/uploads
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: cno-voidline-db
+    environment:
+      POSTGRES_DB: cno_voidline
+      POSTGRES_USER: voidline_user
+      POSTGRES_PASSWORD: voidline_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voidline_user -d cno_voidline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  uploads:
+
+networks:
+  default:
+    name: cno-voidline-network
