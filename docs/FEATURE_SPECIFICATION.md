@@ -1,6 +1,8 @@
 
 # C/No Voidline - Complete Feature Specification
 
+> **2025-08-16** – Synced with recent build audit and package script additions. Refer to `docs/AUDIT.md`.
+
 ## Application Overview
 
 C/No Voidline is a professional AI-powered audio mastering console that combines cutting-edge audio processing with a cinematic terminal aesthetic. The application provides real-time audio analysis, intelligent mastering algorithms, and comprehensive project management within an immersive cyberpunk-inspired interface.

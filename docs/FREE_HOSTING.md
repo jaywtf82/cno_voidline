@@ -1,5 +1,7 @@
 # Free Hosting Guide for C/No Voidline
 
+> **2025-08-16** – Added audit reference and noted Docker requirement for quick-start. See `docs/AUDIT.md`.
+
 A comprehensive guide to deploying the AI Audio Mastering Console using **completely free** services.
 
 ## 🚀 Quick Start (Choose Your Path)

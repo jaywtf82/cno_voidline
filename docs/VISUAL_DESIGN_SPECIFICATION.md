@@ -1,6 +1,8 @@
 
 # C/No Voidline - Visual Design Specification
 
+> **2025-08-16** – Synchronized with build audit and quick-start script notes. See `docs/AUDIT.md`.
+
 ## Interface Design Language
 
 ### Design Philosophy

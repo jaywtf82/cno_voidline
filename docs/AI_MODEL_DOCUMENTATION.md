@@ -1,5 +1,7 @@
 # C/No Voidline AI Mastering Model Documentation
 
+> **2025-08-16** – Added build audit notes and clarified quick-start script usage. See `docs/AUDIT.md`.
+
 ## Overview
 
 The C/No Voidline AI mastering system implements a sophisticated neural network architecture for intelligent audio mastering and reconstruction. This document provides comprehensive details on the AI model implementation, training methodology, and technical specifications.

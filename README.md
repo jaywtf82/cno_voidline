@@ -14,6 +14,7 @@
 # Clone and start immediately
 npm run quick-start
 ```
+> Requires Docker. If Docker isn't available, use the manual setup steps below.
 
 ### 📦 Manual Setup
 ```bash
@@ -160,6 +161,7 @@ Four built-in themes:
 - [Setup Guide](SETUP.md) - Detailed installation instructions
 - [Configuration Guide](docs/CONFIGURATION.md) - Environment and deployment config
 - [Deployment Guide](docs/DEPLOYMENT.md) - Platform-specific deployment
+- [Build Audit](docs/AUDIT.md) - Tooling versions and known issues
 - [Development Guide](docs/DEVELOPMENT.md) - Development workflow
 
 ## 🤝 Contributing
