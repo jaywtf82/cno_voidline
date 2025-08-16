@@ -234,7 +234,7 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           <h4 className="font-mono text-sm font-bold text-green-400 border-b border-green-500/30 pb-2">
             TECHNICAL ANALYSIS
           </h4>
-          
+
           {/* Basic Info Grid */}
           <div className="grid grid-cols-3 gap-4 bg-black/30 p-4 rounded-lg border border-gray-700/50">
             <div className="text-center">
@@ -343,15 +343,15 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
                     <div className="space-y-3 font-mono text-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300">LUFS-I:</span>
-                        <span className="text-cyan-400 font-bold">{technicalData.targets.streaming.lufs_i_min}…{technicalData.targets.streaming.lufs_i_max}</span>
+                        <span className="text-cyan-400 font-bold">-14 to -9</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300">dBTP:</span>
-                        <span className="text-cyan-400 font-bold">≤ {technicalData.targets.streaming.dbtp_max}</span>
+                        <span className="text-cyan-400 font-bold">≤ -1</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300">LRA:</span>
-                        <span className="text-cyan-400 font-bold">{technicalData.targets.streaming.lra_range[0]}–{technicalData.targets.streaming.lra_range[1]} LU</span>
+                        <span className="text-cyan-400 font-bold">4–8 LU</span>
                       </div>
                       <div className="pt-2 border-t border-gray-600/50">
                         <div className="text-xs text-gray-500 text-center">PLR ~8–10 dB, PSR ≥7 dB</div>
@@ -367,15 +367,15 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
                     <div className="space-y-3 font-mono text-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300">LUFS-I:</span>
-                        <span className="text-orange-400 font-bold">{technicalData.targets.club.lufs_i_min}…{technicalData.targets.club.lufs_i_max}</span>
+                        <span className="text-orange-400 font-bold">-7 to -6</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300">dBTP:</span>
-                        <span className="text-orange-400 font-bold">{technicalData.targets.club.dbtp_max}…−1.0</span>
+                        <span className="text-orange-400 font-bold">-0.8 to -1.0</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-300">LRA:</span>
-                        <span className="text-orange-400 font-bold">{technicalData.targets.club.lra_range[0]}–{technicalData.targets.club.lra_range[1]} LU</span>
+                        <span className="text-orange-400 font-bold">3–6 LU</span>
                       </div>
                       <div className="pt-2 border-t border-gray-600/50">
                         <div className="text-xs text-gray-500 text-center">Bass mono &lt;100 Hz, corr ≥0 in lows</div>
