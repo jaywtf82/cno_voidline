@@ -69,13 +69,13 @@ export default function MasteringProcess() {
   const [location, navigate] = useLocation();
 
   // State management
-  const { file, analysis, clearPreMaster } = useSessionBus();
-  const { 
-    setPlaying, 
-    setMonitor, 
-    updateExportStatus,
-    resetExportStatus
-  } = useSessionStore();
+  const file = useSessionBus(s => s.file);
+  const analysis = useSessionBus(s => s.analysis);
+  const clearPreMaster = useSessionBus(s => s.clearPreMaster);
+  const setPlaying = useSessionStore(s => s.setPlaying);
+  const setMonitor = useSessionStore(s => s.setMonitor);
+  const updateExportStatus = useSessionStore(s => s.updateExportStatus);
+  const resetExportStatus = useSessionStore(s => s.resetExportStatus);
 
   const { metricsA, metricsB, voidlineScore } = useSessionMetrics();
   const { fftA, fftB } = useSessionFFT();
