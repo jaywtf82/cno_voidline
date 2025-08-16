@@ -19,7 +19,7 @@
  * - Session export with metadata
  */
 
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,13 +81,13 @@ export default function MasteringProcess() {
   const { metricsA, metricsB, voidlineScore } = useSessionMetrics();
   const { fftA, fftB } = useSessionFFT();
   const { playing, monitor } = useSessionPlayback();
-  const exportStatus = useExportStatus();
+  const exportStatus = useSessionStore((state) => state.exportStatus);
 
   // UI state
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedBand, setSelectedBand] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
-  const [sessionData, setSessionData] = useState(useSessionStore.getSnapshot()); // Initialize with current snapshot
+  // const sessionData = useSessionStore.getSnapshot(); // Initialize with current snapshot - REMOVED
 
   // Audio processing parameters
   const [processorParams, setProcessorParams] = useState<ProcessorParams>({
@@ -227,7 +227,7 @@ export default function MasteringProcess() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isInitialized, selectedBand]);
+  }, [isInitialized, selectedBand, handlePlayPause, handleMonitorChange, handleResetParameters, handleExport]); // Added dependencies
 
   // Playback controls
   const handlePlayPause = useCallback(async () => {
