@@ -1,21 +1,6 @@
-// Professional Audio Engine with A/B chain processing
-import { FramePayload, EngineParams, Metrics } from '@/types/audio';
 
-export interface ProcessorParams {
-  midGains: [number, number, number];
-  sideGains: [number, number, number];
-  midFreqs: [number, number, number];
-  sideFreqs: [number, number, number];
-  midQs: [number, number, number];
-  sideQs: [number, number, number];
-  denoiseAmount: number;
-  noiseGateThreshold: number;
-  threshold: number;
-  ceiling: number;
-  lookAheadSamples: number;
-  attack: number;
-  release: number;
-}
+// Professional Audio Engine with A/B chain processing
+import { FramePayload, EngineParams, Metrics, ProcessorParams } from '@/types/audio';
 
 export class AudioEngine {
   private context: AudioContext;
@@ -37,6 +22,7 @@ export class AudioEngine {
   private currentMonitor: 'A' | 'B' = 'A';
   private frameCallback: ((frame: FramePayload) => void) | null = null;
   private publishInterval: number = 20; // 50Hz
+  private fallbackProcessingId: number | null = null;
   
   constructor() {
     this.context = new AudioContext({ sampleRate: 48000 });
@@ -62,6 +48,11 @@ export class AudioEngine {
     
     // Initialize monitoring
     this.setMonitor('A');
+  }
+  
+  async loadAudio(audioBuffer: AudioBuffer): Promise<void> {
+    this.audioBuffer = audioBuffer;
+    await this.initializeProcessors();
   }
   
   async loadFromObjectUrl(objectUrl: string): Promise<void> {
@@ -139,6 +130,7 @@ export class AudioEngine {
     // Fallback processing using built-in Web Audio API
     const processAudio = () => {
       if (!this.isPlaying || !this.frameCallback) {
+        this.fallbackProcessingId = null;
         return;
       }
       
@@ -190,7 +182,7 @@ export class AudioEngine {
       this.frameCallback(frame);
       
       // Schedule next update
-      setTimeout(processAudio, this.publishInterval);
+      this.fallbackProcessingId = setTimeout(processAudio, this.publishInterval);
     };
     
     // Start processing
@@ -220,15 +212,28 @@ export class AudioEngine {
   
   stop(): void {
     if (this.sourceA) {
-      this.sourceA.stop();
+      try {
+        this.sourceA.stop();
+      } catch (e) {
+        // Source may already be stopped
+      }
       this.sourceA.disconnect();
       this.sourceA = null;
     }
     
     if (this.sourceB) {
-      this.sourceB.stop();
+      try {
+        this.sourceB.stop();
+      } catch (e) {
+        // Source may already be stopped
+      }
       this.sourceB.disconnect();
       this.sourceB = null;
+    }
+    
+    if (this.fallbackProcessingId) {
+      clearTimeout(this.fallbackProcessingId);
+      this.fallbackProcessingId = null;
     }
     
     this.isPlaying = false;
@@ -248,6 +253,12 @@ export class AudioEngine {
       this.gainA.gain.value = 0;
       this.gainB.gain.value = 1;
     }
+  }
+  
+  updateProcessorParams(params: ProcessorParams): void {
+    // Apply processing parameters
+    // This would update the processing chain
+    console.log('Applying processor params:', params);
   }
   
   setParams(params: EngineParams): void {
@@ -290,7 +301,11 @@ export class FallbackEngine extends AudioEngine {
 // Global engine instance
 let globalEngine: AudioEngine | null = null;
 
-export async function initializeAudioEngine(): Promise<AudioEngine> {
+export async function initializeAudioEngine(config?: {
+  bufferSize?: number;
+  sampleRate?: number;
+  lookAheadMs?: number;
+}): Promise<AudioEngine> {
   if (globalEngine) {
     globalEngine.destroy();
   }
@@ -302,3 +317,5 @@ export async function initializeAudioEngine(): Promise<AudioEngine> {
 export function getAudioEngine(): AudioEngine | null {
   return globalEngine;
 }
+
+export { ProcessorParams };
