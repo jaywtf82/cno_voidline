@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useLocation } from 'wouter';
 import { AppShell } from '@/components/layout/AppShell';
