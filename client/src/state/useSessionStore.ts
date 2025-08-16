@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
 
 export interface AudioMetrics {
   peak: number;
@@ -19,6 +20,19 @@ export interface ExportStatus {
   message?: string;
 }
 
+export type Phase2Source = 'pre' | 'post';
+
+export interface ProcessedSnapshot {
+  metrics: AudioMetrics;
+  fft: Float32Array;
+}
+
+export interface FramePayload {
+  src: Phase2Source;
+  metrics: AudioMetrics;
+  fft: Float32Array;
+}
+
 export interface SessionState {
   playing: boolean;
   monitor: 'A' | 'B';
@@ -28,6 +42,9 @@ export interface SessionState {
   fftB: Float32Array | null;
   voidlineScore: number;
   exportStatus: ExportStatus;
+  phase2Source: Phase2Source;
+  processedReady: boolean;
+  lastProcessedSnapshot?: ProcessedSnapshot;
 }
 
 export interface SessionActions {
@@ -41,6 +58,9 @@ export interface SessionActions {
   updateExportStatus(status: Partial<ExportStatus>): void;
   resetExportStatus(): void;
   updateProcessorParams?(params: any): void;
+  setPhase2Source(src: Phase2Source): void;
+  activateProcessedPreview(snap: ProcessedSnapshot): void;
+  pushFrameFromEngine(f: FramePayload): void;
 }
 
 export type SessionStore = SessionState & SessionActions;
@@ -70,6 +90,9 @@ export const useSessionStore = create<SessionStore>()(
       phase: 'idle',
       progress: 0,
     },
+    phase2Source: 'pre',
+    processedReady: false,
+    lastProcessedSnapshot: undefined,
     
     setPlaying: (playing: boolean) => set({ playing }),
     
@@ -117,6 +140,22 @@ export const useSessionStore = create<SessionStore>()(
       // Optional method for storing processor parameters
       // Can be expanded later if needed
     },
+
+    setPhase2Source: (src: Phase2Source) => set({ phase2Source: src }),
+
+    activateProcessedPreview: (snap: ProcessedSnapshot) =>
+      set({
+        lastProcessedSnapshot: snap,
+        processedReady: true,
+      }),
+
+    pushFrameFromEngine: (f: FramePayload) => {
+      if (f.src === 'pre') {
+        set({ metricsA: f.metrics, fftA: f.fft });
+      } else {
+        set({ metricsB: f.metrics, fftB: f.fft, processedReady: true });
+      }
+    },
   }))
 );
 
@@ -146,3 +185,21 @@ export const useSessionPlayback = () => useSessionStore(
 export const useExportStatus = () => useSessionStore(
   (state) => state.exportStatus
 );
+
+export const usePhase2Metrics = () => {
+  const source = useSessionStore(s => s.phase2Source);
+  return useSessionStore(
+    s => (source === 'post' ? s.metricsB : s.metricsA),
+    shallow
+  );
+};
+
+export const usePhase2FFT = () => {
+  const source = useSessionStore(s => s.phase2Source);
+  return useSessionStore(
+    s => (source === 'post' ? s.fftB : s.fftA),
+    shallow
+  );
+};
+
+export { initialMetrics };

@@ -1,4 +1,4 @@
-import { useSessionStore } from '@/state/useSessionStore';
+import { useSessionStore, AudioMetrics } from '@/state/useSessionStore';
 
 export interface AudioEngineConfig {
   bufferSize: number;
@@ -502,6 +502,17 @@ export class AudioEngine {
         });
       }
     }
+  }
+
+  async prepareProcessedPreview(params: ProcessorParams): Promise<{ snapshot: { metrics: AudioMetrics; fft: Float32Array } }> {
+    this.updateProcessorParams(params);
+    const state = useSessionStore.getState();
+    return {
+      snapshot: {
+        metrics: state.metricsB,
+        fft: state.fftB ? new Float32Array(state.fftB) : new Float32Array(),
+      },
+    };
   }
   
   onUpdate(callback: (deltaTime: number) => void): void {
