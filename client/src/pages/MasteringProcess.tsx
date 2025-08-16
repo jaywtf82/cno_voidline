@@ -489,10 +489,10 @@ export default function MasteringProcess() {
               </CardHeader>
               <CardContent>
                 <StereoCorrelationMeter 
-                  correlationA={metricsA.correlation}
-                  correlationB={metricsB.correlation}
-                  widthA={metricsA.width}
-                  widthB={metricsB.width}
+                  correlationA={metricsA.corr}
+                  correlationB={metricsB.corr}
+                  widthA={metricsA.widthPct}
+                  widthB={metricsB.widthPct}
                   monitor={monitor}
                 />
               </CardContent>

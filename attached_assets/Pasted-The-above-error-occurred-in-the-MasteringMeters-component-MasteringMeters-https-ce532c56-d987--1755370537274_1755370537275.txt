@@ -1,0 +1,50 @@
+The above error occurred in the <MasteringMeters> component:
+
+MasteringMeters@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/components/audio/MasteringMeters.tsx:21:5
+div
+_c9@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/components/ui/card.tsx:114:10
+div
+_c@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/components/ui/card.tsx:20:9
+div
+div
+div
+div
+MasteringProcess@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/pages/MasteringProcess.tsx:48:43
+Route@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:323:14
+Switch@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:380:27
+Router@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/App.tsx:35:49
+TooltipProviderProvider@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-IO7CZYUM.js:44:13
+TooltipProvider@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js:2213:43
+ThemeProvider@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/components/ThemeProvider.tsx:62:5
+QueryClientProvider@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js:2805:9
+App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+The above error occurred in the <StereoCorrelationMeter> component:
+
+StereoCorrelationMeter@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/components/audio/StereoCorrelationMeter.tsx:22:15
+div
+_c9@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/components/ui/card.tsx:114:10
+div
+_c@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/components/ui/card.tsx:20:9
+div
+div
+div
+div
+MasteringProcess@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/pages/MasteringProcess.tsx:48:43
+Route@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:323:14
+Switch@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:380:27
+Router@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/App.tsx:35:49
+TooltipProviderProvider@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-IO7CZYUM.js:44:13
+TooltipProvider@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js:2213:43
+ThemeProvider@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/src/components/ThemeProvider.tsx:62:5
+QueryClientProvider@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js:2805:9
+App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+t@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12639
+value@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32772
+@https://ce532c56-d987-4aee-a4a4-7bdaed5f2722-00-16ugqgl86vcq6.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34410
+undefined is not an object (evaluating 'value.toFixed')

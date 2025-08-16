@@ -111,7 +111,8 @@ export function StereoCorrelationMeter({
   const otherWidth = monitor === 'A' ? widthB : widthA;
   const currentCorr = monitor === 'A' ? correlationA : correlationB;
 
-  const getCorrelationStatus = (corr: number) => {
+  const getCorrelationStatus = (corr: number | undefined) => {
+    if (corr === undefined || !Number.isFinite(corr)) return { text: 'NO DATA', color: 'text-gray-400' };
     if (corr >= 0.8) return { text: 'EXCELLENT', color: 'text-green-400' };
     if (corr >= 0.5) return { text: 'GOOD', color: 'text-green-400' };
     if (corr >= 0.2) return { text: 'WARNING', color: 'text-yellow-400' };
@@ -142,19 +143,19 @@ export function StereoCorrelationMeter({
         <div className={`space-y-1 ${isProcessed ? 'opacity-50' : ''}`}>
           <div className="text-blue-400">Channel A</div>
           <div className="font-mono text-green-400">
-            {correlationA.toFixed(3)}
+            {(correlationA !== undefined && Number.isFinite(correlationA)) ? correlationA.toFixed(3) : '--'}
           </div>
           <div className="text-gray-400">
-            Width: {widthA.toFixed(0)}%
+            Width: {(widthA !== undefined && Number.isFinite(widthA)) ? widthA.toFixed(0) : '--'}%
           </div>
         </div>
         <div className={`space-y-1 ${isProcessed ? '' : 'opacity-50'}`}>
           <div className="text-orange-400">Channel B</div>
           <div className="font-mono text-green-400">
-            {correlationB.toFixed(3)}
+            {(correlationB !== undefined && Number.isFinite(correlationB)) ? correlationB.toFixed(3) : '--'}
           </div>
           <div className="text-gray-400">
-            Width: {widthB.toFixed(0)}%
+            Width: {(widthB !== undefined && Number.isFinite(widthB)) ? widthB.toFixed(0) : '--'}%
           </div>
         </div>
       </div>
@@ -175,13 +176,13 @@ export function StereoCorrelationMeter({
           <div className="flex justify-between items-center mt-1">
             <span className="text-gray-400">Correlation:</span>
             <span className="font-mono text-green-400">
-              {currentCorr.toFixed(3)}
+              {(currentCorr !== undefined && Number.isFinite(currentCorr)) ? currentCorr.toFixed(3) : '--'}
             </span>
           </div>
           <div className="flex justify-between items-center mt-1">
             <span className="text-gray-400">Stereo Width:</span>
             <span className="font-mono text-green-400">
-              {currentWidth.toFixed(0)}%
+              {(currentWidth !== undefined && Number.isFinite(currentWidth)) ? currentWidth.toFixed(0) : '--'}%
             </span>
           </div>
         </div>

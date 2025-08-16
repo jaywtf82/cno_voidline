@@ -1,24 +1,30 @@
 import React from 'react';
-import { AudioMetrics, useSessionStore } from '@/state/useSessionStore';
+import { useSessionStore, usePhase2Metrics } from '@/state/useSessionStore';
+import { Metrics } from '@/types/audio';
 import { Badge } from '@/components/ui/badge';
 
 interface MasteringMetersProps {
-  metricsA: AudioMetrics;
-  metricsB: AudioMetrics;
+  metricsA: Metrics;
+  metricsB: Metrics;
   monitor: 'A' | 'B';
 }
 
 export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMetersProps) {
   const phase2Source = useSessionStore(s => s.phase2Source);
   const isProcessed = phase2Source === 'post';
-  const formatDb = (value: number) => {
-    if (value === -Infinity) return '-∞';
+  const formatDb = (value: number | undefined) => {
+    if (value === undefined || value === null || value === -Infinity || !Number.isFinite(value)) return '-∞';
     return value.toFixed(1);
   };
 
-  const formatLufs = (value: number) => {
-    if (value <= -70) return '-∞';
+  const formatLufs = (value: number | undefined) => {
+    if (value === undefined || value === null || !Number.isFinite(value) || value <= -70) return '-∞';
     return value.toFixed(1);
+  };
+
+  const formatNumber = (value: number | undefined, decimals = 1) => {
+    if (value === undefined || value === null || !Number.isFinite(value)) return '--';
+    return value.toFixed(decimals);
   };
 
   const getMeterColor = (value: number, type: 'peak' | 'lufs' | 'correlation') => {
@@ -53,20 +59,20 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className={`space-y-1 ${isProcessed ? 'opacity-50' : ''}`}>
             <div className="text-blue-400">Channel A</div>
-            <div className={`font-mono ${getMeterColor(metricsA.peak, 'peak')}`}>
-              {formatDb(metricsA.peak)} dB
+            <div className={`font-mono ${getMeterColor(metricsA.peakDb || -Infinity, 'peak')}`}>
+              {formatDb(metricsA.peakDb)} dB
             </div>
             <div className="text-gray-400">
-              TP: {formatDb(metricsA.truePeak)} dB
+              TP: {formatDb(metricsA.truePeakDb)} dB
             </div>
           </div>
           <div className={`space-y-1 ${isProcessed ? '' : 'opacity-50'}`}>
             <div className="text-orange-400">Channel B</div>
-            <div className={`font-mono ${getMeterColor(metricsB.peak, 'peak')}`}>
-              {formatDb(metricsB.peak)} dB
+            <div className={`font-mono ${getMeterColor(metricsB.peakDb || -Infinity, 'peak')}`}>
+              {formatDb(metricsB.peakDb)} dB
             </div>
             <div className="text-gray-400">
-              TP: {formatDb(metricsB.truePeak)} dB
+              TP: {formatDb(metricsB.truePeakDb)} dB
             </div>
           </div>
         </div>
@@ -78,26 +84,26 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className={`space-y-1 ${isProcessed ? 'opacity-50' : ''}`}>
             <div className="text-blue-400">Channel A</div>
-            <div className={`font-mono ${getMeterColor(metricsA.lufsIntegrated, 'lufs')}`}>
-              I: {formatLufs(metricsA.lufsIntegrated)}
+            <div className={`font-mono ${getMeterColor(metricsA.lufsI || -70, 'lufs')}`}>
+              I: {formatLufs(metricsA.lufsI)}
             </div>
             <div className="text-gray-400">
-              S: {formatLufs(metricsA.lufsShort)}
+              S: {formatLufs(metricsA.lufsS)}
             </div>
             <div className="text-gray-400">
-              LRA: {metricsA.lufsRange.toFixed(1)} LU
+              LRA: {formatNumber(metricsA.lra)} LU
             </div>
           </div>
           <div className={`space-y-1 ${isProcessed ? '' : 'opacity-50'}`}>
             <div className="text-orange-400">Channel B</div>
-            <div className={`font-mono ${getMeterColor(metricsB.lufsIntegrated, 'lufs')}`}>
-              I: {formatLufs(metricsB.lufsIntegrated)}
+            <div className={`font-mono ${getMeterColor(metricsB.lufsI || -70, 'lufs')}`}>
+              I: {formatLufs(metricsB.lufsI)}
             </div>
             <div className="text-gray-400">
-              S: {formatLufs(metricsB.lufsShort)}
+              S: {formatLufs(metricsB.lufsS)}
             </div>
             <div className="text-gray-400">
-              LRA: {metricsB.lufsRange.toFixed(1)} LU
+              LRA: {formatNumber(metricsB.lra)} LU
             </div>
           </div>
         </div>
@@ -110,19 +116,19 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
           <div className={`space-y-1 ${isProcessed ? 'opacity-50' : ''}`}>
             <div className="text-blue-400">Channel A</div>
             <div className="font-mono text-green-400">
-              RMS: {formatDb(metricsA.rms)} dB
+              RMS: {formatDb(metricsA.rmsDb)} dB
             </div>
             <div className="text-gray-400">
-              Noise: {formatDb(metricsA.noiseFloor)} dB
+              Noise: {formatDb(metricsA.noiseFloorDb)} dB
             </div>
           </div>
           <div className={`space-y-1 ${isProcessed ? '' : 'opacity-50'}`}>
             <div className="text-orange-400">Channel B</div>
             <div className="font-mono text-green-400">
-              RMS: {formatDb(metricsB.rms)} dB
+              RMS: {formatDb(metricsB.rmsDb)} dB
             </div>
             <div className="text-gray-400">
-              Noise: {formatDb(metricsB.noiseFloor)} dB
+              Noise: {formatDb(metricsB.noiseFloorDb)} dB
             </div>
           </div>
         </div>
@@ -140,14 +146,14 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
           <div className="grid grid-cols-2 gap-2">
             <div>
               <div className="text-gray-400">Peak</div>
-              <div className={`font-mono ${getMeterColor(currentMetrics.peak, 'peak')}`}>
-                {formatDb(currentMetrics.peak)} dB
+              <div className={`font-mono ${getMeterColor(currentMetrics.peakDb || -Infinity, 'peak')}`}>
+                {formatDb(currentMetrics.peakDb)} dB
               </div>
             </div>
             <div>
               <div className="text-gray-400">LUFS-I</div>
-              <div className={`font-mono ${getMeterColor(currentMetrics.lufsIntegrated, 'lufs')}`}>
-                {formatLufs(currentMetrics.lufsIntegrated)}
+              <div className={`font-mono ${getMeterColor(currentMetrics.lufsI || -70, 'lufs')}`}>
+                {formatLufs(currentMetrics.lufsI)}
               </div>
             </div>
           </div>
