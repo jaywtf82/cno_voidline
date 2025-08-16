@@ -1,0 +1,134 @@
+You MUST return only: unified diffs (git diff --patch) for every file created/changed, plus trimmed dev/test/build logs. No prose, no placeholders. All code must run.
+
+Project: C/No Voidline — Full Implementation (Post-Chain Live Preview, BLACKROOM first in Phase-2, Export-only Phase-3, GPU visuals, Tests)
+Repo: /workspace/cno_voidline
+Stack: Vite • React 18 • TypeScript (strict) • Tailwind • Radix • wouter • AudioWorklet (+fallback) • WebGL2 (twgl.js) • three
+
+0) Baseline (run then code)
+- npm i
+- npm i three twgl.js onnxruntime-web lamejs flac-encoder-typescript browser-id3-writer fflate
+- npm run dev -- --port 5173
+Keep build clean: fix all TS/ESLint you introduce.
+
+1) Global rules
+- Single global RAF (graphics Ticker). No component-level requestAnimationFrame.
+- Subscribe only to store slices (shallow). No whole-object subscriptions.
+- No allocations in hot loops/processors; preallocate typed arrays.
+- Equality guards around state updates; never setState in render.
+- Respect prefers-reduced-motion (<=30fps; disable glow pulses).
+
+2) Types (client/src/types/audio.ts)
+export type Metrics={
+  peakDb:number; truePeakDb:number; rmsDb:number; lufsI:number; lufsS:number; lra:number;
+  corr:number; widthPct:number; noiseFloorDb:number; headroomDb:number;
+};
+export type EngineParams={
+  msEq:{m:{low:number;mid:number;high:number}; s:{low:number;mid:number;high:number}};
+  denoise:{amount:number};
+  limiter:{threshold:number; ceiling:number; lookaheadMs:number; knee:number};
+  macros?:{harmonicBoost:number; subweight:number; transientPunch:number; airlift:number; spatialFlux:number};
+};
+export type FramePayload={src:'pre'|'post'; metrics:Metrics; fft:Float32Array; time?:Float32Array};
+
+3) Store (client/src/state/useSessionStore.ts)
+State: phase2Source:'pre'|'post' (default 'pre'); processedReady:boolean;
+lastProcessedSnapshot?:{metrics:Metrics; fft:Float32Array};
+metricsA:Metrics; metricsB:Metrics;
+fftA:Float32Array|null; fftB:Float32Array|null;
+timeA?:Float32Array|null; timeB?:Float32Array|null;
+Actions: setPhase2Source(src); activateProcessedPreview(snap); pushFrameFromEngine(f:FramePayload).
+Router in pushFrameFromEngine:
+ if(f.src==='pre') set({metricsA:f.metrics, fftA:f.fft, timeA:f.time??null});
+ else set({metricsB:f.metrics, fftB:f.fft, timeB:f.time??null, processedReady:true});
+Selectors:
+usePhase2Source; usePhase2Metrics; usePhase2Fft; usePhase2Time; useProcessedSnapshot
+(phase2Source==='post' selects B else A; use shallow compare).
+
+4) Mastering layout (client/src/pages/MasteringProcess.tsx)
+Header minimal: “C/NO VOIDLINE MASTER” + file badge ({name} • {size}). Remove Play/Stop, A/B segmented control, AI Suggest toggle.
+Phase order enforced:
+- Phase-1: Technical Analysis (pre snapshot; numbers only).
+- Phase-2: FIRST card = BLACKROOM AI+Manual (Signal Modulation Zone) with “Process Mastering” CTA; THEN monitors (Waveform/Spectrum tabs, Meters, Stereo, Voidline Score).
+- Phase-3: Export-only card (Actions/Export).
+Match screenshots/metadata.
+
+5) Slider loop fix (client/src/components/ui/slider.tsx)
+Controlled only (no defaultValue when value exists). Memoize value array: useMemo(()=>[value],[value]).
+Guard onValueChange via useRef equality; do heavy work in onValueCommit. Remove any RAFs.
+Refactor EQ/Denoise/Limiter/Macros to call engine.setParams(...) in onValueCommit.
+
+6) Audio engine (client/src/audio/AudioEngine.ts)
+Graph:
+Source
+ ├─► A: Split→Merger→meter(A)→lufs(A)→fft(A)→Delay(A)→Monitor(A)
+ └─► B: M/S Encode→ms-eq→denoise→limiter(lookahead)
+       → M/S Decode→Merger→meter(B)→lufs(B)→fft(B)→Monitor(B)
+Delay(A)=limiter.lookaheadMs for A/B sync (±1 frame).
+Publish frames @50Hz via worklet postMessage {src,metrics,fft,time(512 decimated)}.
+API: loadFromObjectUrl(url), play(), pause(), setParams(p) with one-pole smoothing,
+prepareProcessedPreview(params)→{snapshot:{metrics,fft}}, onFrame(cb)→unsubscribe, destroy().
+FallbackEngine when AudioWorklet not available: taps via AnalyserNode; emit src:'post'; show small “worklet off” badge.
+
+7) Processors (client/src/audio/processors/*) — fully implemented, no stubs
+- meter-processor.ts: peak, true-peak (IIR est.), RMS, corr (Pearson), width (M/S energies), noise floor (rolling p10).
+- lufs-processor.ts: BS.1770-4 (K-weight, 400ms blocks, abs/rel gates) → I/S + LRA.
+- fft-processor.ts: 4096 Hann/BH FFT, K-weighted magnitudes, double-buffer transfer.
+- ms-eq-processor.ts: M/S encode; 3 peaking bands (M & S), DF-II, smoothed params.
+- denoise-processor.ts: 1024 STFT gate/Wiener; learns noise in silence; emits sweepIndex.
+- limiter-processor.ts: look-ahead circular buffer; soft-knee; attack/release; outputs true-peak & gain reduction.
+Preallocate all arrays; zero allocations in process().
+
+8) BLACKROOM AI + Manual
+Files: client/src/ui/BlackroomPanel.tsx; client/src/ai/featureExtract.ts; client/src/ai/blackroomModel.ts
+Presets: CLUB_MASTER, VINYL_WARM, STREAMING_LOUD, RADIO_READY, AI_SUGGEST, BERLIN_CONCRETE, SUB_ABYSS, DOME_SHIFT.
+Macros: harmonicBoost, subweight, transientPunch, airlift, spatialFlux.
+On “Process Mastering”: feature extract (LUFS I/S, LRA, corr, spectral tilt, crest, bass/air energy, sibilance) → ONNX models/blackroom-v2.onnx via onnxruntime-web (deterministic JSON fallback if missing) → await engine.prepareProcessedPreview(params) → activateProcessedPreview(snapshot) → setPhase2Source('post'). Show badge “PREVIEW: PROCESSED” in 'post'. Macro/manual updates keep 'post'.
+
+9) GPU visuals (single RAF via Ticker)
+Infra: client/src/graphics/Ticker.ts (subscribe/unsubscribe; adaptive res when dt>24ms), palette.ts, gl2d.ts (twgl helpers, DataTexture, FBOs, EMA/Hann).
+Visuals:
+- client/src/components/visuals/WaveformGL.tsx — A(orange)+B(cyan) stacked; emphasize B when 'post'; zoom/pan/crosshair; seed from snapshot.
+- client/src/components/visuals/SpectrumGL.tsx — 2D log-x spectrum; dual traces; hover Hz/dB; band isolate; canvas overlay labels.
+- client/src/components/visuals/OrbitalGL.tsx — three.js sphere displaced by FFT DataTexture; wireframes pre(gray)/post(cyan); inertial controls.
+Integrate tabs by patching client/src/components/audio/MasteringSpectrum.tsx → tabs: Waveform | Spectrum 2D | Spectrum 3D; badge MONITOR: A/B/PROCESSED via usePhase2Source().
+
+10) Phase-2 monitors use selectors
+WaveformGL (or ABWaveform): emphasize B when 'post'; “building preview …” ribbon until first post frame.
+MasteringSpectrum/OrbitalSpectrum: draw both, emphasize selected; DataTexture from selected FFT.
+MasteringMeters, StereoCorrelationMeter, VoidlineScore: from usePhase2Metrics(); cyan/green theme in 'post'.
+
+11) Phase-3 Export-only (client/src/export/*)
+renderMaster.ts — OfflineAudioContext render of B chain.
+encode.ts — WAV 24-bit, MP3 (lamejs), FLAC (flac-encoder TS).
+report.ts — compare.png, spectra.png, metrics.json, voidline_report.txt.
+zip.ts — bundle via fflate; include SHA-256.
+Metadata: MP3 ID3v2 TXXX mastered_by=cno_voidline; WAV RIFF INFO IENG=cno_voidline; FLAC Vorbis MASTERED_BY=cno_voidline.
+Export card shows progress beams + chunk tracker + x-run alert + checksum; buttons: Reset All, Export Session. No processing controls here.
+
+12) Safari/Replit hardening
+Start AudioContext after first click (overlay on Waveform card). Feature-detect AudioWorklet; auto-fallback; avoid SharedArrayBuffer unless COOP/COEP.
+
+13) Tests (Vitest + RTL) — all green
+client/src/audio/__tests__/lufs.spec.ts (pink noise −23 LUFS ≈ 0 LU),
+limiter.spec.ts (step & sine burst; no overs > ceiling),
+correlation.spec.ts (−1/0/+1),
+frame.route.spec.ts (pre/post routing; processedReady flips on post).
+client/src/components/ui/__tests__/slider.loop.spec.tsx (no recursive updates).
+client/src/pages/__tests__/mastering.order.spec.tsx (Phase-1 → Phase-2 BLACKROOM first → Phase-3 export-only).
+client/src/pages/__tests__/phase2.source.spec.tsx (Process Mastering flips monitors to post; Waveform emphasizes B).
+client/src/graphics/__tests__/ticker.spec.ts (subscribe/unsubscribe; adaptive res).
+client/src/components/visuals/__tests__/waveform.smoke.spec.tsx (mount/unmount; no leaks; Ticker returns to baseline).
+client/src/components/visuals/__tests__/spectrum.pick.spec.tsx (mock FFT hover Hz matches).
+
+14) Return format (exact)
+- Summary: 6–10 bullets (what was broken + how fixed).
+- Patches: unified diffs for every file touched/created.
+- Logs: dev boot until “ready”, test summary, build output (errors/warnings only).
+
+15) Acceptance (reject if any unmet)
+- Minimal header correct; Phase order enforced (BLACKROOM first).
+- “Process Mastering” flips to processed; all monitors read post; Waveform emphasizes B.
+- Single RAF; smooth visuals; no jank/GC spikes.
+- Export WAV/MP3/FLAC with mastered_by=cno_voidline; zip built.
+- No infinite update loops (fixed sliders).
+- Tests pass; build succeeds; repo scripts unchanged.
