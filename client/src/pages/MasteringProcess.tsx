@@ -47,8 +47,7 @@ import {
   useSessionStore, 
   useSessionMetrics, 
   useSessionFFT, 
-  useSessionPlayback,
-  useExportStatus 
+  useSessionPlayback
 } from '@/state/useSessionStore';
 import { initializeAudioEngine, getAudioEngine, ProcessorParams } from '@/audio/AudioEngine';
 import { analyzePreMaster } from '@/analysis/preMaster';
@@ -227,7 +226,7 @@ export default function MasteringProcess() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isInitialized, selectedBand, handlePlayPause, handleMonitorChange, handleResetParameters, handleExport]); // Added dependencies
+  }, [isInitialized, selectedBand]); // Removed circular dependencies
 
   // Playback controls
   const handlePlayPause = useCallback(async () => {

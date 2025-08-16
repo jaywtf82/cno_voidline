@@ -120,29 +120,36 @@ export const useSessionStore = create<SessionStore>()(
   }))
 );
 
-// Shallow selectors for performance
+// Shallow selectors for performance with shallow comparison
 export const useSessionMetrics = () => useSessionStore(
   (state) => ({
     metricsA: state.metricsA,
     metricsB: state.metricsB,
     voidlineScore: state.voidlineScore,
-  })
+  }),
+  (a, b) => 
+    a.metricsA === b.metricsA && 
+    a.metricsB === b.metricsB && 
+    a.voidlineScore === b.voidlineScore
 );
 
 export const useSessionFFT = () => useSessionStore(
   (state) => ({
     fftA: state.fftA,
     fftB: state.fftB,
-  })
+  }),
+  (a, b) => a.fftA === b.fftA && a.fftB === b.fftB
 );
 
 export const useSessionPlayback = () => useSessionStore(
   (state) => ({
     playing: state.playing,
     monitor: state.monitor,
-  })
+  }),
+  (a, b) => a.playing === b.playing && a.monitor === b.monitor
 );
 
 export const useExportStatus = () => useSessionStore(
-  (state) => state.exportStatus
+  (state) => state.exportStatus,
+  (a, b) => a.phase === b.phase && a.progress === b.progress && a.message === b.message
 );
