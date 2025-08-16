@@ -46,26 +46,27 @@ export function AnalysisProgress({
   ];
 
   useEffect(() => {
+    // Always ensure we have a valid number for progress
+    const safeProgress = typeof progress === 'number' && !isNaN(progress) ? 
+      Math.max(0, Math.min(100, progress)) : 0;
+
     if (isAnalyzing) {
-      // Smooth progress animation with NaN protection
+      // Smooth progress animation with robust NaN protection
       const animateProgress = () => {
         setDisplayProgress(prev => {
-          // Ensure progress is a valid number
-          const targetProgress = isNaN(progress) ? 0 : Math.max(0, Math.min(100, progress));
-          const currentProgress = isNaN(prev) ? 0 : prev;
+          const currentProgress = typeof prev === 'number' && !isNaN(prev) ? prev : 0;
+          const diff = safeProgress - currentProgress;
           
-          const diff = targetProgress - currentProgress;
-          if (Math.abs(diff) < 0.1) return targetProgress;
-          return currentProgress + (diff * 0.3); // Smooth interpolation
+          if (Math.abs(diff) < 0.5) return safeProgress;
+          return currentProgress + (diff * 0.2); // Smoother interpolation
         });
       };
 
-      const interval = setInterval(animateProgress, 50);
+      const interval = setInterval(animateProgress, 32); // 60fps-ish
       return () => clearInterval(interval);
     } else {
-      // Ensure progress is valid when not analyzing
-      const validProgress = isNaN(progress) ? 0 : Math.max(0, Math.min(100, progress));
-      setDisplayProgress(validProgress);
+      // Immediately set to safe progress when not analyzing
+      setDisplayProgress(safeProgress);
     }
   }, [progress, isAnalyzing]);
 
@@ -104,7 +105,8 @@ export function AnalysisProgress({
           AUDIO ANALYSIS
         </h3>
         <div className="text-cyan-400/60 font-mono text-xs">
-          {Math.round(isNaN(displayProgress) ? 0 : displayProgress)}%
+          {typeof displayProgress === 'number' && !isNaN(displayProgress) ? 
+            Math.round(Math.max(0, Math.min(100, displayProgress))) : 0}%
         </div>
       </div>
 
@@ -113,9 +115,12 @@ export function AnalysisProgress({
         <div className="w-full h-2 bg-black/60 border border-cyan-500/20 rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 relative"
-            initial={{ width: 0 }}
-            animate={{ width: `${isNaN(displayProgress) ? 0 : Math.max(0, Math.min(100, displayProgress))}%` }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
+            initial={{ width: "0%" }}
+            animate={{ 
+              width: `${typeof displayProgress === 'number' && !isNaN(displayProgress) ? 
+                Math.max(0, Math.min(100, Math.round(displayProgress))) : 0}%` 
+            }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
           >
             {/* Scanning effect */}
             {isAnalyzing && (

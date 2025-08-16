@@ -230,113 +230,104 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
         </div>
 
         {/* Technical Analysis Section */}
-          <div className="space-y-4">
-            <h4 className="font-mono text-sm font-bold" style={{ color: 'var(--color-accent)' }}>
-              TECHNICAL ANALYSIS
-            </h4>
-            <div className="space-y-3">
-              {/* Basic Info Row */}
-              <div className="flex items-center justify-between text-xs font-mono bg-black/20 p-2 rounded border border-gray-700/30">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <span className="text-gray-400">Sample rate:</span>
-                    <div className="text-white font-semibold">{safeFormat(analysisData.sampleRate, 0)} Hz</div>
-                  </div>
-                  <div className="w-px h-8 bg-gray-600"></div>
-                  <div>
-                    <span className="text-gray-400">Channels:</span>
-                    <div className="text-white font-semibold">{safeFormat(analysisData.channels, 0)}</div>
-                  </div>
-                  <div className="w-px h-8 bg-gray-600"></div>
-                  <div>
-                    <span className="text-gray-400">Duration:</span>
-                    <div className="text-white font-semibold">{formatDuration(analysisData.duration)}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Amplitude Analysis Row */}
-              <div className="flex items-center justify-between text-xs font-mono bg-black/20 p-2 rounded border border-gray-700/30">
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <span className="text-gray-400">Sample Peak:</span>
-                    <div className="text-white font-semibold">{safeFormat(analysisData.samplePeak, 2)} dBFS</div>
-                  </div>
-                  <div className="w-px h-8 bg-gray-600"></div>
-                  <div>
-                    <span className="text-gray-400">RMS:</span>
-                    <div className="text-white font-semibold">{safeFormat(analysisData.rms, 2)} dBFS</div>
-                  </div>
-                  <div className="w-px h-8 bg-gray-600"></div>
-                  <div>
-                    <span className="text-gray-400">Crest:</span>
-                    <div className="text-white font-semibold">{safeFormat(analysisData.crest, 1)} dB</div>
-                  </div>
-                </div>
-              </div>
+        <div className="space-y-6 mb-6">
+          <h4 className="font-mono text-sm font-bold text-green-400 border-b border-green-500/30 pb-2">
+            TECHNICAL ANALYSIS
+          </h4>
+          
+          {/* Basic Info Grid */}
+          <div className="grid grid-cols-3 gap-4 bg-black/30 p-4 rounded-lg border border-gray-700/50">
+            <div className="text-center">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Sample Rate</div>
+              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.sampleRate, 0)} Hz</div>
+            </div>
+            <div className="text-center border-l border-r border-gray-600/50">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Channels</div>
+              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.channels, 0)}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Duration</div>
+              <div className="text-lg font-bold text-white font-mono">{formatDuration(analysisData.duration)}</div>
             </div>
           </div>
+
+          {/* Amplitude Analysis Grid */}
+          <div className="grid grid-cols-3 gap-4 bg-black/30 p-4 rounded-lg border border-gray-700/50">
+            <div className="text-center">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Sample Peak</div>
+              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.samplePeak, 2)} dBFS</div>
+            </div>
+            <div className="text-center border-l border-r border-gray-600/50">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">RMS</div>
+              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.rms, 2)} dBFS</div>
+            </div>
+            <div className="text-center">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Crest</div>
+              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.crest, 1)} dB</div>
+            </div>
+          </div>
+        </div>
 
         {/* Loudness Analysis Section */}
-          <div className="space-y-4">
-            <h4 className="font-mono text-sm font-bold" style={{ color: 'var(--color-accent)' }}>
-              LOUDNESS ANALYSIS (K-weighted + gated):
-            </h4>
-            <div className="bg-black/20 p-4 rounded border border-gray-700/30">
-              <div className="grid grid-cols-3 gap-6 text-xs font-mono">
-                <div className="text-center space-y-2">
-                  <div className="text-gray-400 uppercase tracking-wider">Integrated LUFS</div>
-                  <div className="text-2xl font-bold text-white bg-gray-900/50 py-2 px-3 rounded">
-                    {safeFormat(analysisData.lufsI, 1)}
-                  </div>
-                  <div className="text-xs text-gray-500">ITU-R BS.1770</div>
+        <div className="space-y-6 mb-6">
+          <h4 className="font-mono text-sm font-bold text-green-400 border-b border-green-500/30 pb-2">
+            LOUDNESS ANALYSIS (K-weighted + gated)
+          </h4>
+          <div className="bg-black/40 p-6 rounded-lg border border-gray-700/50">
+            <div className="grid grid-cols-3 gap-8">
+              <div className="text-center space-y-3">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Integrated LUFS</div>
+                <div className="text-3xl font-bold text-cyan-400 bg-gray-900/60 py-3 px-4 rounded-lg border border-cyan-500/30">
+                  {safeFormat(analysisData.lufsI, 1)}
                 </div>
-                <div className="text-center space-y-2">
-                  <div className="text-gray-400 uppercase tracking-wider">True Peak</div>
-                  <div className="text-2xl font-bold text-white bg-gray-900/50 py-2 px-3 rounded">
-                    {safeFormat(analysisData.dbtp, 1)}
-                  </div>
-                  <div className="text-xs text-gray-500">dBTP (4x OS)</div>
+                <div className="text-xs text-gray-500 font-mono">ITU-R BS.1770</div>
+              </div>
+              <div className="text-center space-y-3">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">True Peak</div>
+                <div className="text-3xl font-bold text-yellow-400 bg-gray-900/60 py-3 px-4 rounded-lg border border-yellow-500/30">
+                  {safeFormat(analysisData.dbtp, 1)}
                 </div>
-                <div className="text-center space-y-2">
-                  <div className="text-gray-400 uppercase tracking-wider">Loudness Range</div>
-                  <div className="text-2xl font-bold text-white bg-gray-900/50 py-2 px-3 rounded">
-                    {safeFormat(analysisData.lra, 1)}
-                  </div>
-                  <div className="text-xs text-gray-500">LU</div>
+                <div className="text-xs text-gray-500 font-mono">dBTP (4x OS)</div>
+              </div>
+              <div className="text-center space-y-3">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Loudness Range</div>
+                <div className="text-3xl font-bold text-orange-400 bg-gray-900/60 py-3 px-4 rounded-lg border border-orange-500/30">
+                  {safeFormat(analysisData.lra, 1)}
                 </div>
+                <div className="text-xs text-gray-500 font-mono">LU</div>
               </div>
             </div>
           </div>
+        </div>
 
         {/* Quality Gates Section */}
-          <div className="space-y-4">
-            <h4 className="font-mono text-sm font-bold" style={{ color: 'var(--color-accent)' }}>
-              QUALITY GATES:
-            </h4>
-            <div className="bg-black/20 p-4 rounded border border-gray-700/30">
-              <div className="space-y-3 text-xs font-mono">
-                <div className="flex items-center justify-between py-2 px-3 bg-gray-900/30 rounded">
-                  <span className="text-gray-400">Streaming Ready:</span>
-                  <span className={`font-semibold px-2 py-1 rounded text-xs ${getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).color}`}>
-                    {getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).text}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-2 px-3 bg-gray-900/30 rounded">
-                  <span className="text-gray-400">Phase Correlation:</span>
-                  <span className={`font-semibold px-2 py-1 rounded text-xs ${getCorrelationStatus(analysisData.correlation).color}`}>
-                    {safeFormat(analysisData.correlation, 2)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-2 px-3 bg-gray-900/30 rounded">
-                  <span className="text-gray-400">Dynamic Range:</span>
-                  <span className="text-white font-semibold px-2 py-1 rounded text-xs bg-blue-900/30">
-                    {safeFormat((analysisData.crest || 0), 1)} dB
-                  </span>
-                </div>
+        <div className="space-y-6 mb-6">
+          <h4 className="font-mono text-sm font-bold text-green-400 border-b border-green-500/30 pb-2">
+            QUALITY GATES
+          </h4>
+          <div className="bg-black/40 p-6 rounded-lg border border-gray-700/50">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-3 px-4 bg-gray-900/40 rounded-lg border border-gray-700/30">
+                <span className="text-gray-300 font-medium">Streaming Ready</span>
+                <span className={`font-bold px-3 py-1 rounded-md text-sm ${getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).color} bg-black/50 border border-current/20`}>
+                  {getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).text}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-3 px-4 bg-gray-900/40 rounded-lg border border-gray-700/30">
+                <span className="text-gray-300 font-medium">Phase Correlation</span>
+                <span className={`font-bold px-3 py-1 rounded-md text-sm ${getCorrelationStatus(analysisData.correlation).color} bg-black/50 border border-current/20`}>
+                  {safeFormat(analysisData.correlation, 2)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-3 px-4 bg-gray-900/40 rounded-lg border border-gray-700/30">
+                <span className="text-gray-300 font-medium">Dynamic Range</span>
+                <span className="text-blue-400 font-bold px-3 py-1 rounded-md text-sm bg-black/50 border border-blue-400/20">
+                  {safeFormat((analysisData.crest || 0), 1)} dB
+                </span>
               </div>
             </div>
           </div>
+        </div>
 
         {/* Mastering targets - Industry standard */}
         <div className="mb-6">
