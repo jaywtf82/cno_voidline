@@ -1,4 +1,6 @@
 import React, { useRef, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useSessionStore } from '@/state/useSessionStore';
 
 interface MasteringSpectrumProps {
   fftA: Float32Array | null;
@@ -9,6 +11,8 @@ interface MasteringSpectrumProps {
 
 export function MasteringSpectrum({ fftA, fftB, monitor, sampleRate }: MasteringSpectrumProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const phase2Source = useSessionStore(s => s.phase2Source);
+  const isProcessed = phase2Source === 'post';
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -71,20 +75,20 @@ export function MasteringSpectrum({ fftA, fftB, monitor, sampleRate }: Mastering
     if (currentFFT && currentFFT.length > 0) {
       // Draw background spectrum (other channel) in darker color
       if (otherFFT && otherFFT.length > 0) {
-        ctx.strokeStyle = '#064e3b';
+        ctx.strokeStyle = isProcessed ? '#7c2d12' : '#064e3b';
         ctx.lineWidth = 1;
         ctx.globalAlpha = 0.6;
         drawSpectrum(ctx, otherFFT, width, height, nyquist);
       }
-      
+
       // Draw main spectrum (current monitor)
-      ctx.strokeStyle = '#10b981';
+      ctx.strokeStyle = isProcessed ? '#fb923c' : '#10b981';
       ctx.lineWidth = 2;
       ctx.globalAlpha = 1.0;
       drawSpectrum(ctx, currentFFT, width, height, nyquist);
     }
 
-  }, [fftA, fftB, monitor, sampleRate]);
+  }, [fftA, fftB, monitor, sampleRate, isProcessed]);
 
   const drawSpectrum = (
     ctx: CanvasRenderingContext2D, 
@@ -118,6 +122,11 @@ export function MasteringSpectrum({ fftA, fftB, monitor, sampleRate }: Mastering
 
   return (
     <div className="relative">
+      {isProcessed && (
+        <div className="absolute top-2 left-2">
+          <Badge className="bg-orange-600 text-white">PROCESSED</Badge>
+        </div>
+      )}
       <canvas
         ref={canvasRef}
         width={512}
@@ -125,7 +134,7 @@ export function MasteringSpectrum({ fftA, fftB, monitor, sampleRate }: Mastering
         className="w-full h-64 bg-black border border-green-800 rounded"
         style={{ imageRendering: 'pixelated' }}
       />
-      
+
       {/* Monitor indicator */}
       <div className="absolute top-2 right-2 bg-gray-900 px-2 py-1 rounded text-xs font-mono">
         <span className="text-green-300">MONITOR:</span>
@@ -133,7 +142,7 @@ export function MasteringSpectrum({ fftA, fftB, monitor, sampleRate }: Mastering
           {monitor}
         </span>
       </div>
-      
+
       {/* Status indicator */}
       <div className="absolute bottom-2 left-2 text-xs font-mono text-green-300">
         {(fftA || fftB) ? 'ACTIVE' : 'NO SIGNAL'}

@@ -1,5 +1,6 @@
 import React from 'react';
-import { AudioMetrics } from '@/state/useSessionStore';
+import { AudioMetrics, useSessionStore } from '@/state/useSessionStore';
+import { Badge } from '@/components/ui/badge';
 
 interface MasteringMetersProps {
   metricsA: AudioMetrics;
@@ -8,6 +9,8 @@ interface MasteringMetersProps {
 }
 
 export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMetersProps) {
+  const phase2Source = useSessionStore(s => s.phase2Source);
+  const isProcessed = phase2Source === 'post';
   const formatDb = (value: number) => {
     if (value === -Infinity) return '-∞';
     return value.toFixed(1);
@@ -39,12 +42,16 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
 
   return (
     <div className="space-y-4">
+
+      <div className="flex justify-end">
+        {isProcessed && <Badge className="bg-orange-600 text-white">PROCESSED</Badge>}
+      </div>
       
       {/* Peak Meters */}
       <div>
         <div className="text-xs font-mono text-green-300 mb-2">PEAK LEVELS</div>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="space-y-1">
+          <div className={`space-y-1 ${isProcessed ? 'opacity-50' : ''}`}>
             <div className="text-blue-400">Channel A</div>
             <div className={`font-mono ${getMeterColor(metricsA.peak, 'peak')}`}>
               {formatDb(metricsA.peak)} dB
@@ -53,7 +60,7 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
               TP: {formatDb(metricsA.truePeak)} dB
             </div>
           </div>
-          <div className="space-y-1">
+          <div className={`space-y-1 ${isProcessed ? '' : 'opacity-50'}`}>
             <div className="text-orange-400">Channel B</div>
             <div className={`font-mono ${getMeterColor(metricsB.peak, 'peak')}`}>
               {formatDb(metricsB.peak)} dB
@@ -69,7 +76,7 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
       <div>
         <div className="text-xs font-mono text-green-300 mb-2">LOUDNESS (LUFS)</div>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="space-y-1">
+          <div className={`space-y-1 ${isProcessed ? 'opacity-50' : ''}`}>
             <div className="text-blue-400">Channel A</div>
             <div className={`font-mono ${getMeterColor(metricsA.lufsIntegrated, 'lufs')}`}>
               I: {formatLufs(metricsA.lufsIntegrated)}
@@ -81,7 +88,7 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
               LRA: {metricsA.lufsRange.toFixed(1)} LU
             </div>
           </div>
-          <div className="space-y-1">
+          <div className={`space-y-1 ${isProcessed ? '' : 'opacity-50'}`}>
             <div className="text-orange-400">Channel B</div>
             <div className={`font-mono ${getMeterColor(metricsB.lufsIntegrated, 'lufs')}`}>
               I: {formatLufs(metricsB.lufsIntegrated)}
@@ -100,7 +107,7 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
       <div>
         <div className="text-xs font-mono text-green-300 mb-2">DYNAMICS</div>
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="space-y-1">
+          <div className={`space-y-1 ${isProcessed ? 'opacity-50' : ''}`}>
             <div className="text-blue-400">Channel A</div>
             <div className="font-mono text-green-400">
               RMS: {formatDb(metricsA.rms)} dB
@@ -109,7 +116,7 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
               Noise: {formatDb(metricsA.noiseFloor)} dB
             </div>
           </div>
-          <div className="space-y-1">
+          <div className={`space-y-1 ${isProcessed ? '' : 'opacity-50'}`}>
             <div className="text-orange-400">Channel B</div>
             <div className="font-mono text-green-400">
               RMS: {formatDb(metricsB.rms)} dB
@@ -123,10 +130,11 @@ export function MasteringMeters({ metricsA, metricsB, monitor }: MasteringMeters
 
       {/* Current monitor highlight */}
       <div className="pt-2 border-t border-green-800">
-        <div className="text-xs font-mono text-green-300 mb-1">
+        <div className="text-xs font-mono text-green-300 mb-1 flex items-center">
           MONITORING: <span className={monitor === 'A' ? 'text-blue-400' : 'text-orange-400'}>
             CHANNEL {monitor}
           </span>
+          {isProcessed && <Badge className="ml-2 bg-orange-600 text-white">PROCESSED</Badge>}
         </div>
         <div className="bg-gray-800 p-2 rounded text-xs">
           <div className="grid grid-cols-2 gap-2">

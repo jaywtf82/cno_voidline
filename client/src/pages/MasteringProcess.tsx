@@ -81,6 +81,7 @@ export default function MasteringProcess() {
   const { fftA, fftB } = useSessionFFT();
   const { playing, monitor } = useSessionPlayback();
   const exportStatus = useSessionStore((state) => state.exportStatus);
+  const phase2Source = useSessionStore(s => s.phase2Source);
 
   // UI state
   const [isInitialized, setIsInitialized] = useState(false);
@@ -407,6 +408,9 @@ export default function MasteringProcess() {
             <Badge variant="outline" className="border-green-500 text-green-400">
               {file.name} • {(file.size / 1024 / 1024).toFixed(1)}MB
             </Badge>
+            {phase2Source === 'post' && (
+              <Badge className="bg-orange-600 text-white">PROCESSED</Badge>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
