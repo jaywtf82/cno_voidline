@@ -155,15 +155,7 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
         </div>
         {/* Terminal Body with Drag & Drop */}
         <div
-          className={cn(
-            // Dynamic responsive padding
-            "transition-all duration-300",
-            "p-[var(--spacing-lg)]",
-            variant === "init" ? "bg-[#0B0F12]" : "bg-background/80",
-            onFileSelect && "cursor-pointer",
-            isDragOver && onFileSelect && "bg-accent-primary/10 scale-[1.02]",
-            isProcessing && "opacity-60 cursor-not-allowed"
-          )}
+          className="transition-all duration-300 p-[var(--spacing-lg)] cursor-pointer bg-[transparent] pl-[32px] pr-[32px] font-semibold"
           onDragEnter={onFileSelect ? handleDragEnter : undefined}
           onDragLeave={onFileSelect ? handleDragLeave : undefined}
           onDragOver={onFileSelect ? handleDragOver : undefined}
