@@ -238,32 +238,32 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           {/* Basic Info Grid */}
           <div className="grid grid-cols-3 gap-4 bg-black/30 p-4 rounded-lg border border-gray-700/50">
             <div className="text-center">
-              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Sample Rate</div>
-              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.sampleRate, 0)} Hz</div>
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Sample Rate</div>
+              <div className="text-sm font-bold text-white font-mono">{safeFormat(analysisData.sampleRate, 0)} Hz</div>
             </div>
             <div className="text-center border-l border-r border-gray-600/50">
-              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Channels</div>
-              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.channels, 0)}</div>
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Channels</div>
+              <div className="text-sm font-bold text-white font-mono">{safeFormat(analysisData.channels, 0)}</div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Duration</div>
-              <div className="text-lg font-bold text-white font-mono">{formatDuration(analysisData.duration)}</div>
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Duration</div>
+              <div className="text-sm font-bold text-white font-mono">{formatDuration(analysisData.duration)}</div>
             </div>
           </div>
 
           {/* Amplitude Analysis Grid */}
           <div className="grid grid-cols-3 gap-4 bg-black/30 p-4 rounded-lg border border-gray-700/50">
             <div className="text-center">
-              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Sample Peak</div>
-              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.samplePeak, 2)} dBFS</div>
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Sample Peak</div>
+              <div className="text-sm font-bold text-white font-mono">{safeFormat(analysisData.samplePeak, 2)} dBFS</div>
             </div>
             <div className="text-center border-l border-r border-gray-600/50">
-              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">RMS</div>
-              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.rms, 2)} dBFS</div>
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">RMS</div>
+              <div className="text-sm font-bold text-white font-mono">{safeFormat(analysisData.rms, 2)} dBFS</div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">Crest</div>
-              <div className="text-lg font-bold text-white font-mono">{safeFormat(analysisData.crest, 1)} dB</div>
+              <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Crest</div>
+              <div className="text-sm font-bold text-white font-mono">{safeFormat(analysisData.crest, 1)} dB</div>
             </div>
           </div>
         </div>
