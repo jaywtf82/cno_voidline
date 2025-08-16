@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Router, Route } from 'wouter';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { initializeAudioEngine } from '@/audio/AudioEngine';
@@ -8,6 +8,7 @@ import { initializeTicker } from '@/graphics/Ticker';
 import Landing from '@/pages/Landing';
 import MasteringProcess from '@/pages/MasteringProcess';
 import Console from '@/pages/Console';
+import NotFound from '@/pages/not-found';
 
 function App() {
   useEffect(() => {
@@ -36,16 +37,15 @@ function App() {
 
   return (
     <ThemeProvider>
-      <BrowserRouter>
+      <Router>
         <div className="min-h-screen bg-background text-foreground">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/mastering" element={<MasteringProcess />} />
-            <Route path="/console" element={<Console />} />
-          </Routes>
+          <Route path="/" component={Landing} />
+          <Route path="/mastering" component={MasteringProcess} />
+          <Route path="/console" component={Console} />
+          <Route component={NotFound} />
           <Toaster />
         </div>
-      </BrowserRouter>
+      </Router>
     </ThemeProvider>
   );
 }
