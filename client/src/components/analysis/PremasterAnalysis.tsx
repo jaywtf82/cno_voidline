@@ -273,28 +273,28 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           <h4 className="font-mono text-sm font-bold text-green-400 border-b border-green-500/30 pb-2">
             LOUDNESS ANALYSIS (K-weighted + gated)
           </h4>
-          <div className="bg-black/40 p-6 rounded-lg border border-gray-700/50">
-            <div className="grid grid-cols-3 gap-8">
-              <div className="text-center space-y-3">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Integrated LUFS</div>
-                <div className="text-3xl font-bold text-cyan-400 bg-gray-900/60 py-3 px-4 rounded-lg border border-cyan-500/30">
+          <div className="bg-black/40 p-4 rounded-lg border border-gray-700/50">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Integrated LUFS</div>
+                <div className="text-sm font-bold text-cyan-400 font-mono bg-gray-900/60 py-2 px-3 rounded border border-cyan-500/30">
                   {safeFormat(analysisData.lufsI, 1)}
                 </div>
-                <div className="text-xs text-gray-500 font-mono">ITU-R BS.1770</div>
+                <div className="text-xs text-gray-500 font-mono mt-1">ITU-R BS.1770</div>
               </div>
-              <div className="text-center space-y-3">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">True Peak</div>
-                <div className="text-3xl font-bold text-yellow-400 bg-gray-900/60 py-3 px-4 rounded-lg border border-yellow-500/30">
+              <div className="text-center border-l border-r border-gray-600/50">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">True Peak</div>
+                <div className="text-sm font-bold text-yellow-400 font-mono bg-gray-900/60 py-2 px-3 rounded border border-yellow-500/30">
                   {safeFormat(analysisData.dbtp, 1)}
                 </div>
-                <div className="text-xs text-gray-500 font-mono">dBTP (4x OS)</div>
+                <div className="text-xs text-gray-500 font-mono mt-1">dBTP (4x OS)</div>
               </div>
-              <div className="text-center space-y-3">
-                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Loudness Range</div>
-                <div className="text-3xl font-bold text-orange-400 bg-gray-900/60 py-3 px-4 rounded-lg border border-orange-500/30">
+              <div className="text-center">
+                <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2">Loudness Range</div>
+                <div className="text-sm font-bold text-orange-400 font-mono bg-gray-900/60 py-2 px-3 rounded border border-orange-500/30">
                   {safeFormat(analysisData.lra, 1)}
                 </div>
-                <div className="text-xs text-gray-500 font-mono">LU</div>
+                <div className="text-xs text-gray-500 font-mono mt-1">LU</div>
               </div>
             </div>
           </div>
@@ -305,23 +305,23 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           <h4 className="font-mono text-sm font-bold text-green-400 border-b border-green-500/30 pb-2">
             QUALITY GATES
           </h4>
-          <div className="bg-black/40 p-6 rounded-lg border border-gray-700/50">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 px-4 bg-gray-900/40 rounded-lg border border-gray-700/30">
-                <span className="text-gray-300 font-medium">Streaming Ready</span>
-                <span className={`font-bold px-3 py-1 rounded-md text-sm ${getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).color} bg-black/50 border border-current/20`}>
+          <div className="bg-black/40 p-4 rounded-lg border border-gray-700/50">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 px-3 bg-gray-900/40 rounded border border-gray-700/30">
+                <span className="text-gray-300 font-medium text-sm">Streaming Ready</span>
+                <span className={`font-bold px-2 py-1 rounded text-xs ${getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).color} bg-black/50 border border-current/20`}>
                   {getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).text}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-3 px-4 bg-gray-900/40 rounded-lg border border-gray-700/30">
-                <span className="text-gray-300 font-medium">Phase Correlation</span>
-                <span className={`font-bold px-3 py-1 rounded-md text-sm ${getCorrelationStatus(analysisData.correlation).color} bg-black/50 border border-current/20`}>
+              <div className="flex items-center justify-between py-2 px-3 bg-gray-900/40 rounded border border-gray-700/30">
+                <span className="text-gray-300 font-medium text-sm">Phase Correlation</span>
+                <span className={`font-bold px-2 py-1 rounded text-xs font-mono ${getCorrelationStatus(analysisData.correlation).color} bg-black/50 border border-current/20`}>
                   {safeFormat(analysisData.correlation, 2)}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-3 px-4 bg-gray-900/40 rounded-lg border border-gray-700/30">
-                <span className="text-gray-300 font-medium">Dynamic Range</span>
-                <span className="text-blue-400 font-bold px-3 py-1 rounded-md text-sm bg-black/50 border border-blue-400/20">
+              <div className="flex items-center justify-between py-2 px-3 bg-gray-900/40 rounded border border-gray-700/30">
+                <span className="text-gray-300 font-medium text-sm">Dynamic Range</span>
+                <span className="text-blue-400 font-bold px-2 py-1 rounded text-xs font-mono bg-black/50 border border-blue-400/20">
                   {safeFormat((analysisData.crest || 0), 1)} dB
                 </span>
               </div>
