@@ -99,6 +99,48 @@ const safeFormat = (value: number | undefined, decimals: number = 1): string => 
   return num.toFixed(decimals);
 };
 
+// Utility to format duration from seconds to H:MM:SS or M:SS
+const formatDuration = (durationInSeconds: string | number | undefined): string => {
+  const seconds = safeParseNumber(durationInSeconds, 0);
+  if (seconds === 0) return '0:00';
+
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+
+  const paddedS = s < 10 ? `0${s}` : `${s}`;
+
+  if (h > 0) {
+    const paddedM = m < 10 ? `0${m}` : `${m}`;
+    return `${h}:${paddedM}:${paddedS}`;
+  } else {
+    return `${m}:${paddedS}`;
+  }
+};
+
+// Placeholder functions for status checks (replace with actual logic if needed)
+const getStreamingReadyStatus = (lufsI?: number, dbtp?: number) => {
+  // Example logic: check if LUFS is within range and peak is below threshold
+  const isLoudnessOk = lufsI !== undefined && lufsI >= -14 && lufsI <= -9;
+  const isPeakOk = dbtp !== undefined && dbtp <= -1.0;
+
+  if (isLoudnessOk && isPeakOk) {
+    return { text: 'PASS', color: 'text-green-400' };
+  } else if (!isLoudnessOk && !isPeakOk) {
+    return { text: 'FAIL', color: 'text-red-400' };
+  } else {
+    return { text: 'WARNING', color: 'text-yellow-400' };
+  }
+};
+
+const getCorrelationStatus = (correlation?: number) => {
+  if (correlation === undefined) return { color: 'text-gray-500' };
+  if (correlation >= 0.85) return { color: 'text-green-400' };
+  if (correlation >= 0.5) return { color: 'text-yellow-400' };
+  return { color: 'text-red-400' };
+};
+
+
 export function PremasterAnalysis({ analysisData, className = '' }: PremasterAnalysisProps) {
   const [, navigate] = useLocation();
 
@@ -187,103 +229,114 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
           </div>
         </div>
 
-        {/* Technical specs - Core measurements */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-4 text-sm font-mono">
-              <span className="text-gray-400">Sample rate:</span>
-              <span className="text-white">{technicalData.sr} Hz</span>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-400">Channels:</span>
-              <span className="text-white">{technicalData.ch}</span>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-400">Duration:</span>
-              <div className="text-cyan-400 font-mono text-sm">
-                {technicalData.dur_s?.toFixed ? technicalData.dur_s.toFixed(2) : technicalData.dur_s}s
+        {/* Technical Analysis Section */}
+          <div className="space-y-4">
+            <h4 className="font-mono text-sm font-bold" style={{ color: 'var(--color-accent)' }}>
+              TECHNICAL ANALYSIS
+            </h4>
+            <div className="space-y-3">
+              {/* Basic Info Row */}
+              <div className="flex items-center justify-between text-xs font-mono bg-black/20 p-2 rounded border border-gray-700/30">
+                <div className="flex items-center space-x-4">
+                  <div>
+                    <span className="text-gray-400">Sample rate:</span>
+                    <div className="text-white font-semibold">{safeFormat(analysisData.sampleRate, 0)} Hz</div>
+                  </div>
+                  <div className="w-px h-8 bg-gray-600"></div>
+                  <div>
+                    <span className="text-gray-400">Channels:</span>
+                    <div className="text-white font-semibold">{safeFormat(analysisData.channels, 0)}</div>
+                  </div>
+                  <div className="w-px h-8 bg-gray-600"></div>
+                  <div>
+                    <span className="text-gray-400">Duration:</span>
+                    <div className="text-white font-semibold">{formatDuration(analysisData.duration)}</div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-4 text-sm font-mono">
-              <span className="text-gray-400">Sample Peak:</span>
-              <span className="text-white">{safeFormat(technicalData.sample_peak_dbfs, 2)} dBFS</span>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-400">RMS:</span>
-              <span className="text-white">{safeFormat(technicalData.rms_mono_dbfs, 2)} dBFS</span>
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-400">Crest:</span>
-              <span className="text-white">{safeFormat(technicalData.crest_db, 1)} dB</span>
-            </div>
-          </div>
-        </div>
 
-        {/* LUFS measurements - ITU-R BS.1770 compliant */}
-        <div className="mb-6">
-          <h4 className="font-mono text-sm text-green-400 mb-3">Loudness Analysis (K-weighted + gated):</h4>
-          <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-mono">
-              <div className="flex justify-between">
-                <span className="text-gray-400">LUFS-I:</span>
-                <span className="text-yellow-400">
-                  {technicalData.lufs_i !== null ? safeFormat(technicalData.lufs_i, 1) : 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">LUFS-S:</span>
-                <span className="text-white">
-                  {technicalData.lufs_s !== null ? safeFormat(technicalData.lufs_s, 1) : 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">LUFS-M:</span>
-                <span className="text-white">
-                  {technicalData.lufs_m !== null ? safeFormat(technicalData.lufs_m, 1) : 'N/A'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">True Peak:</span>
-                <span className="text-cyan-400">{safeFormat(technicalData.dbtp, 2)} dBTP</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">LRA:</span>
-                <span className="text-white">{safeFormat(technicalData.lra, 1)} LU</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Correlation:</span>
-                <span className="text-white">{safeFormat(technicalData.stereo_correlation, 2)}</span>
+              {/* Amplitude Analysis Row */}
+              <div className="flex items-center justify-between text-xs font-mono bg-black/20 p-2 rounded border border-gray-700/30">
+                <div className="flex items-center space-x-4">
+                  <div>
+                    <span className="text-gray-400">Sample Peak:</span>
+                    <div className="text-white font-semibold">{safeFormat(analysisData.samplePeak, 2)} dBFS</div>
+                  </div>
+                  <div className="w-px h-8 bg-gray-600"></div>
+                  <div>
+                    <span className="text-gray-400">RMS:</span>
+                    <div className="text-white font-semibold">{safeFormat(analysisData.rms, 2)} dBFS</div>
+                  </div>
+                  <div className="w-px h-8 bg-gray-600"></div>
+                  <div>
+                    <span className="text-gray-400">Crest:</span>
+                    <div className="text-white font-semibold">{safeFormat(analysisData.crest, 1)} dB</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Quality metrics */}
-        <div className="mb-6">
-          <h4 className="font-mono text-sm text-green-400 mb-3">Quality Gates:</h4>
-          <div className="bg-black/50 border border-gray-700 rounded-lg p-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm font-mono">
-              <div className="flex justify-between">
-                <span className="text-gray-400">PLR:</span>
-                <span className="text-white">{safeFormat(technicalData.plr, 1)} dB</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">PSR:</span>
-                <span className="text-white">{safeFormat(technicalData.psr, 1)} dB</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Clip Count:</span>
-                <span className={technicalData.clip_count > 0 ? "text-red-400" : "text-green-400"}>
-                  {technicalData.clip_count}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">DC L/R:</span>
-                <span className="text-white">
-                  {safeFormat(technicalData.dc_offset_l, 3)}/{safeFormat(technicalData.dc_offset_r, 3)}
-                </span>
+        {/* Loudness Analysis Section */}
+          <div className="space-y-4">
+            <h4 className="font-mono text-sm font-bold" style={{ color: 'var(--color-accent)' }}>
+              LOUDNESS ANALYSIS (K-weighted + gated):
+            </h4>
+            <div className="bg-black/20 p-4 rounded border border-gray-700/30">
+              <div className="grid grid-cols-3 gap-6 text-xs font-mono">
+                <div className="text-center space-y-2">
+                  <div className="text-gray-400 uppercase tracking-wider">Integrated LUFS</div>
+                  <div className="text-2xl font-bold text-white bg-gray-900/50 py-2 px-3 rounded">
+                    {safeFormat(analysisData.lufsI, 1)}
+                  </div>
+                  <div className="text-xs text-gray-500">ITU-R BS.1770</div>
+                </div>
+                <div className="text-center space-y-2">
+                  <div className="text-gray-400 uppercase tracking-wider">True Peak</div>
+                  <div className="text-2xl font-bold text-white bg-gray-900/50 py-2 px-3 rounded">
+                    {safeFormat(analysisData.dbtp, 1)}
+                  </div>
+                  <div className="text-xs text-gray-500">dBTP (4x OS)</div>
+                </div>
+                <div className="text-center space-y-2">
+                  <div className="text-gray-400 uppercase tracking-wider">Loudness Range</div>
+                  <div className="text-2xl font-bold text-white bg-gray-900/50 py-2 px-3 rounded">
+                    {safeFormat(analysisData.lra, 1)}
+                  </div>
+                  <div className="text-xs text-gray-500">LU</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+
+        {/* Quality Gates Section */}
+          <div className="space-y-4">
+            <h4 className="font-mono text-sm font-bold" style={{ color: 'var(--color-accent)' }}>
+              QUALITY GATES:
+            </h4>
+            <div className="bg-black/20 p-4 rounded border border-gray-700/30">
+              <div className="space-y-3 text-xs font-mono">
+                <div className="flex items-center justify-between py-2 px-3 bg-gray-900/30 rounded">
+                  <span className="text-gray-400">Streaming Ready:</span>
+                  <span className={`font-semibold px-2 py-1 rounded text-xs ${getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).color}`}>
+                    {getStreamingReadyStatus(analysisData.lufsI, analysisData.dbtp).text}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-gray-900/30 rounded">
+                  <span className="text-gray-400">Phase Correlation:</span>
+                  <span className={`font-semibold px-2 py-1 rounded text-xs ${getCorrelationStatus(analysisData.correlation).color}`}>
+                    {safeFormat(analysisData.correlation, 2)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-3 bg-gray-900/30 rounded">
+                  <span className="text-gray-400">Dynamic Range:</span>
+                  <span className="text-white font-semibold px-2 py-1 rounded text-xs bg-blue-900/30">
+                    {safeFormat((analysisData.crest || 0), 1)} dB
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
         {/* Mastering targets - Industry standard */}
         <div className="mb-6">

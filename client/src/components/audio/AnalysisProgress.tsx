@@ -47,19 +47,25 @@ export function AnalysisProgress({
 
   useEffect(() => {
     if (isAnalyzing) {
-      // Smooth progress animation
+      // Smooth progress animation with NaN protection
       const animateProgress = () => {
         setDisplayProgress(prev => {
-          const diff = progress - prev;
-          if (Math.abs(diff) < 0.1) return progress;
-          return prev + (diff * 0.3); // Smooth interpolation
+          // Ensure progress is a valid number
+          const targetProgress = isNaN(progress) ? 0 : Math.max(0, Math.min(100, progress));
+          const currentProgress = isNaN(prev) ? 0 : prev;
+          
+          const diff = targetProgress - currentProgress;
+          if (Math.abs(diff) < 0.1) return targetProgress;
+          return currentProgress + (diff * 0.3); // Smooth interpolation
         });
       };
 
       const interval = setInterval(animateProgress, 50);
       return () => clearInterval(interval);
     } else {
-      setDisplayProgress(progress);
+      // Ensure progress is valid when not analyzing
+      const validProgress = isNaN(progress) ? 0 : Math.max(0, Math.min(100, progress));
+      setDisplayProgress(validProgress);
     }
   }, [progress, isAnalyzing]);
 
@@ -98,7 +104,7 @@ export function AnalysisProgress({
           AUDIO ANALYSIS
         </h3>
         <div className="text-cyan-400/60 font-mono text-xs">
-          {Math.round(displayProgress)}%
+          {Math.round(isNaN(displayProgress) ? 0 : displayProgress)}%
         </div>
       </div>
 
@@ -108,7 +114,7 @@ export function AnalysisProgress({
           <motion.div
             className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 relative"
             initial={{ width: 0 }}
-            animate={{ width: `${displayProgress}%` }}
+            animate={{ width: `${isNaN(displayProgress) ? 0 : Math.max(0, Math.min(100, displayProgress))}%` }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           >
             {/* Scanning effect */}
