@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMasteringStore } from '@/state/masteringStore';
 import { ABTransport } from './playback/ABTransport';
 import { DualWaveCompare } from './playback/DualWaveCompare';
@@ -16,7 +16,8 @@ export interface Phase2ReconstructionProps {
 }
 
 export default function Phase2Reconstruction({ sessionId }: Phase2ReconstructionProps): JSX.Element {
-  const { currentSession, setSessionPhase } = useMasteringStore();
+  const currentSession = useMasteringStore(s => s.currentSession);
+  const setSessionPhase = useMasteringStore(s => s.setSessionPhase);
   const [reconstructionEnabled, setReconstructionEnabled] = React.useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [chainParams, setChainParams] = useState<ChainParams | null>(null);
@@ -32,22 +33,28 @@ export default function Phase2Reconstruction({ sessionId }: Phase2Reconstruction
     }
   }, [currentSession, sessionId]);
 
+  const initializedRef = useRef(false);
+
   useEffect(() => {
-    if (currentSession) {
+    if (!currentSession) return;
+    if (currentSession.currentPhase !== 'phase2') {
       setSessionPhase('phase2');
+      return;
+    }
+    if (initializedRef.current) return;
+    initializedRef.current = true;
 
-      // Initialize Phase 2 with Phase 1 results
-      liveFeed.ui.action('Phase 2 initialized - ready for reconstruction');
-      addSystemMessage('Phase 2: Intelligent Reconstruction initialized');
-      addSystemMessage(`Session: ${currentSession.fileMeta.name}`);
+    // Initialize Phase 2 with Phase 1 results
+    liveFeed.ui.action('Phase 2 initialized - ready for reconstruction');
+    addSystemMessage('Phase 2: Intelligent Reconstruction initialized');
+    addSystemMessage(`Session: ${currentSession.fileMeta.name}`);
 
-      // Check if we have Phase 1 analysis results
-      if (currentSession.analysis) {
-        addSystemMessage(`LUFS: ${currentSession.analysis.lufsI?.toFixed(1)} | dBTP: ${currentSession.analysis.dbtp?.toFixed(1)}`);
-        addSystemMessage('Phase 1 analysis data loaded successfully');
-      } else {
-        addSystemMessage('Warning: No Phase 1 analysis data found');
-      }
+    // Check if we have Phase 1 analysis results
+    if (currentSession.analysis) {
+      addSystemMessage(`LUFS: ${currentSession.analysis.lufsI?.toFixed(1)} | dBTP: ${currentSession.analysis.dbtp?.toFixed(1)}`);
+      addSystemMessage('Phase 1 analysis data loaded successfully');
+    } else {
+      addSystemMessage('Warning: No Phase 1 analysis data found');
     }
   }, [currentSession, setSessionPhase]);
 
