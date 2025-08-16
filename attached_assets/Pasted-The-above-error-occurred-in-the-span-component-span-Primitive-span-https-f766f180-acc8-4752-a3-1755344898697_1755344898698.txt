@@ -1,0 +1,58 @@
+The above error occurred in the <span> component:
+
+span
+Primitive.span@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-C6CIBY4I.js:121:11
+SliderCollectionItemSlot.SlotClone@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5S42QOQO.js:79:11
+SliderCollectionItemSlot.Slot@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5S42QOQO.js:56:11
+SliderCollectionItemSlot@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-F5DG356N.js:51:13
+span
+@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-slider.js:447:33
+SliderThumb@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-slider.js:435:41
+span
+Primitive.span@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-C6CIBY4I.js:121:11
+@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-slider.js:333:19
+SliderProvider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-C6CIBY4I.js:44:13
+@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-slider.js:198:10
+SliderCollectionSlot.SlotClone@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5S42QOQO.js:79:11
+SliderCollectionSlot.Slot@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-5S42QOQO.js:56:11
+SliderCollectionSlot@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-F5DG356N.js:40:43
+SliderCollectionProviderProvider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-C6CIBY4I.js:44:13
+SliderCollectionProvider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-F5DG356N.js:30:29
+SliderProvider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-C6CIBY4I.js:44:13
+Slider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-slider.js:80:10
+_c@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/src/components/ui/slider.tsx:21:9
+div
+div
+div
+div
+_c9@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/src/components/ui/card.tsx:114:10
+div
+_c@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/src/components/ui/card.tsx:20:9
+div
+div
+div
+div
+MasteringProcess@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/src/pages/MasteringProcess.tsx:51:43
+Route@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:323:14
+Switch@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js:380:27
+Router@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/src/App.tsx:35:49
+TooltipProviderProvider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-C6CIBY4I.js:44:13
+TooltipProvider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js:2213:43
+ThemeProvider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/src/components/ThemeProvider.tsx:62:5
+QueryClientProvider@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js:2805:9
+App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+Maximum update depth exceeded. This can happen when a component repeatedly calls setState inside componentWillUpdate or componentDidUpdate. React limits the number of nested updates to prevent infinite loops.
+AudioWorklets failed to load, using fallback: 
+TypeError {}
+AudioEngine initialization failed: 
+Error {}
+
+Failed to initialize audio: 
+Error {}
+
+t@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12639
+value@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32772
+@https://f766f180-acc8-4752-a33f-eb5201ac5b9c-00-327dq0zpginlz.riker.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34410
