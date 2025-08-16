@@ -77,10 +77,15 @@ export default function MasteringProcess() {
   const updateExportStatus = useSessionStore(s => s.updateExportStatus);
   const resetExportStatus = useSessionStore(s => s.resetExportStatus);
 
-  const { metricsA, metricsB, voidlineScore } = useSessionMetrics();
-  const { fftA, fftB } = useSessionFFT();
-  const { playing, monitor } = useSessionPlayback();
-  const exportStatus = useSessionStore((state) => state.exportStatus);
+  // Use direct selectors to prevent getSnapshot issues
+  const metricsA = useSessionStore(s => s.metricsA);
+  const metricsB = useSessionStore(s => s.metricsB);
+  const voidlineScore = useSessionStore(s => s.voidlineScore);
+  const fftA = useSessionStore(s => s.fftA);
+  const fftB = useSessionStore(s => s.fftB);
+  const playing = useSessionStore(s => s.playing);
+  const monitor = useSessionStore(s => s.monitor);
+  const exportStatus = useSessionStore(s => s.exportStatus);
   const phase2Source = useSessionStore(s => s.phase2Source);
 
   // UI state
@@ -123,7 +128,7 @@ export default function MasteringProcess() {
     { freq: processorParams.sideFreqs[2], gain: processorParams.sideGains[2], q: processorParams.sideQs[2], label: 'HIGH' },
   ], [processorParams.sideFreqs, processorParams.sideGains, processorParams.sideQs]);
 
-  // Memoized slider values to keep stable references
+  // Memoized slider values to keep stable references and prevent infinite loops
   const midGainValues = useMemo(() => processorParams.midGains.map(g => [g] as [number]), [processorParams.midGains]);
   const sideGainValues = useMemo(() => processorParams.sideGains.map(g => [g] as [number]), [processorParams.sideGains]);
   const denoiseValue = useMemo(() => [processorParams.denoiseAmount] as [number], [processorParams.denoiseAmount]);

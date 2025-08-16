@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { shallow } from 'zustand/shallow';
 
 export interface AudioMetrics {
   peak: number;
@@ -159,28 +158,25 @@ export const useSessionStore = create<SessionStore>()(
   }))
 );
 
-// Shallow selectors for performance
-export const useSessionMetrics = () => useSessionStore(
-  (state) => ({
-    metricsA: state.metricsA,
-    metricsB: state.metricsB,
-    voidlineScore: state.voidlineScore,
-  })
-);
+// Optimized selectors - use direct selectors instead to prevent getSnapshot issues
+export const useSessionMetrics = () => {
+  const metricsA = useSessionStore(s => s.metricsA);
+  const metricsB = useSessionStore(s => s.metricsB);
+  const voidlineScore = useSessionStore(s => s.voidlineScore);
+  return { metricsA, metricsB, voidlineScore };
+};
 
-export const useSessionFFT = () => useSessionStore(
-  (state) => ({
-    fftA: state.fftA,
-    fftB: state.fftB,
-  })
-);
+export const useSessionFFT = () => {
+  const fftA = useSessionStore(s => s.fftA);
+  const fftB = useSessionStore(s => s.fftB);
+  return { fftA, fftB };
+};
 
-export const useSessionPlayback = () => useSessionStore(
-  (state) => ({
-    playing: state.playing,
-    monitor: state.monitor,
-  })
-);
+export const useSessionPlayback = () => {
+  const playing = useSessionStore(s => s.playing);
+  const monitor = useSessionStore(s => s.monitor);
+  return { playing, monitor };
+};
 
 export const useExportStatus = () => useSessionStore(
   (state) => state.exportStatus
@@ -189,16 +185,14 @@ export const useExportStatus = () => useSessionStore(
 export const usePhase2Metrics = () => {
   const source = useSessionStore(s => s.phase2Source);
   return useSessionStore(
-    s => (source === 'post' ? s.metricsB : s.metricsA),
-    shallow
+    s => (source === 'post' ? s.metricsB : s.metricsA)
   );
 };
 
 export const usePhase2FFT = () => {
   const source = useSessionStore(s => s.phase2Source);
   return useSessionStore(
-    s => (source === 'post' ? s.fftB : s.fftA),
-    shallow
+    s => (source === 'post' ? s.fftB : s.fftA)
   );
 };
 
