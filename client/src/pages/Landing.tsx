@@ -55,7 +55,7 @@ async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: 
       throw new Error('Invalid audio file');
     }
 
-    onProgress?.({ progress: 5, stage: 'Validating file...' });
+    onProgress?.({ progress: 5, stage: 'Validating file...', metrics: {} });
 
     // Try to use actual audio analysis if available
     const processorModule = await import('@/lib/audio/optimizedAudioProcessor');
@@ -67,10 +67,10 @@ async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: 
       const arrayBuffer = await file.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-      onProgress?.({ progress: 15, stage: 'Initializing analysis engine...' });
+      onProgress?.({ progress: 15, stage: 'Initializing analysis engine...', metrics: {} });
       await processor.initialize();
       
-      onProgress?.({ progress: 25, stage: 'Decoding audio data...' });
+      onProgress?.({ progress: 25, stage: 'Decoding audio data...', metrics: {} });
       
       let results = {
         lufs: -14.5,
@@ -83,8 +83,12 @@ async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: 
       };
       
       let currentProgress = 30;
-      const updateProgress = (newProgress: number) => {
-        currentProgress = Math.max(currentProgress, newProgress);
+      const updateProgress = (progressUpdate: any) => {
+        if (typeof progressUpdate === 'number') {
+          currentProgress = Math.max(currentProgress, progressUpdate);
+        } else {
+          currentProgress = Math.max(currentProgress, progressUpdate.progress || currentProgress);
+        }
         onProgress?.({ progress: currentProgress, stage: 'Processing audio chunks...', metrics: results });
       };
 

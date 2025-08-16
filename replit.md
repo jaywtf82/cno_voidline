@@ -6,6 +6,13 @@ C/No Voidline is a professional-grade AI audio mastering console with a cinemati
 
 ## Recent Changes
 
+### August 16, 2025 - TerminalWindow Responsive Design Update
+- **Margin System**: Implemented 100px responsive margins for TerminalWindow component
+- **Dynamic Sizing**: TerminalWindow now scales with screen size using CSS custom properties
+- **Glass Frame Styling**: Updated TerminalWindow to match AppHeader glass frame aesthetics
+- **Performance**: Fixed audio analysis system with requestAnimationFrame and optimized worklets
+- **TypeScript**: Resolved all type safety issues in audio processing pipeline
+
 ### August 15, 2025 - Project Migration and Header Redesign
 - **Migration Complete**: Successfully migrated from Replit Agent to standard Replit environment
 - **Database Setup**: PostgreSQL database provisioned and connected with all tables created

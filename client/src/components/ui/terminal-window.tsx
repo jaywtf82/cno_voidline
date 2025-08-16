@@ -116,14 +116,15 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
           variant === "init" 
             ? "bg-[rgb(var(--surface-rgb)/.22)] backdrop-blur-[10px] border border-[rgba(63,185,80,.20)] shadow-[0_8px_24px_rgba(0,0,0,.25)]"
             : "border border-primary/30",
-          // Dynamic width matching header
+          // Dynamic width matching header with responsive margins
           "w-[var(--header-max)] mx-auto",
           className
         )}
         style={{
-          // Ensure proper responsive width like header
-          width: 'var(--header-max)',
-          margin: '0 auto'
+          // Ensure proper responsive width like header with dynamic margins
+          width: 'calc(var(--header-max) - (var(--terminal-margin) * 2))',
+          marginLeft: 'var(--terminal-margin)',
+          marginRight: 'var(--terminal-margin)'
         }}
         {...props}
       >
