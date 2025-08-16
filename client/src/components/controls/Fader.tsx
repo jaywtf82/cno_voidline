@@ -41,7 +41,7 @@ export function Fader({
     <div className={cn("space-y-3", className)}>
       <div className="flex justify-between items-center">
         <span className="font-mono text-sm text-text-muted">{label}</span>
-        <span 
+        <span
           className="font-mono text-sm text-accent-primary"
           data-testid={`text-${label.toLowerCase()}-value`}
         >
@@ -60,13 +60,13 @@ export function Fader({
               data-testid={`target-${label.toLowerCase()}`}
             />
           )}
-          
+
           {/* Current level */}
           <div
             className={cn(
               "h-full transition-all duration-300",
-              percentage > 85 ? "bg-red-400" : 
-              percentage > 70 ? "bg-yellow-400" : 
+              percentage > 85 ? "bg-red-400" :
+              percentage > 70 ? "bg-yellow-400" :
               "bg-accent-primary shadow-glow-sm"
             )}
             style={{ width: `${Math.max(0, percentage)}%` }}

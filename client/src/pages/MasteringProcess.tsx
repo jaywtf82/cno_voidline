@@ -19,7 +19,7 @@
  * - Session export with metadata
  */
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,7 +68,7 @@ interface EQBand {
 
 export default function MasteringProcess() {
   const [location, navigate] = useLocation();
-  
+
   // State management
   const { file, analysis, clearPreMaster } = useSessionBus();
   const { 
@@ -77,17 +77,18 @@ export default function MasteringProcess() {
     updateExportStatus,
     resetExportStatus
   } = useSessionStore();
-  
+
   const { metricsA, metricsB, voidlineScore } = useSessionMetrics();
   const { fftA, fftB } = useSessionFFT();
   const { playing, monitor } = useSessionPlayback();
   const exportStatus = useExportStatus();
-  
+
   // UI state
   const [isInitialized, setIsInitialized] = useState(false);
   const [selectedBand, setSelectedBand] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
-  
+  const [sessionData, setSessionData] = useState(useSessionStore.getSnapshot()); // Initialize with current snapshot
+
   // Audio processing parameters
   const [processorParams, setProcessorParams] = useState<ProcessorParams>({
     // MS EQ parameters
@@ -97,11 +98,11 @@ export default function MasteringProcess() {
     sideFreqs: [200, 1000, 5000],
     midQs: [1, 1, 1],
     sideQs: [1, 1, 1],
-    
+
     // Denoise parameters  
     denoiseAmount: 0,
     noiseGateThreshold: -60,
-    
+
     // Limiter parameters
     threshold: -6,
     ceiling: -1,
@@ -109,14 +110,14 @@ export default function MasteringProcess() {
     attack: 5,
     release: 50,
   });
-  
+
   // EQ band definitions for UI
   const midBands: EQBand[] = [
     { freq: processorParams.midFreqs[0], gain: processorParams.midGains[0], q: processorParams.midQs[0], label: 'LOW' },
     { freq: processorParams.midFreqs[1], gain: processorParams.midGains[1], q: processorParams.midQs[1], label: 'MID' },
     { freq: processorParams.midFreqs[2], gain: processorParams.midGains[2], q: processorParams.midQs[2], label: 'HIGH' },
   ];
-  
+
   const sideBands: EQBand[] = [
     { freq: processorParams.sideFreqs[0], gain: processorParams.sideGains[0], q: processorParams.sideQs[0], label: 'LOW' },
     { freq: processorParams.sideFreqs[1], gain: processorParams.sideGains[1], q: processorParams.sideQs[1], label: 'MID' },
@@ -145,10 +146,10 @@ export default function MasteringProcess() {
         const arrayBuffer = await response.arrayBuffer();
         const audioContext = new AudioContext();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        
+
         await engine.loadAudio(audioBuffer);
         console.log('Audio loaded successfully');
-        
+
         setIsInitialized(true);
         audioContext.close();
       } catch (error) {
@@ -157,7 +158,7 @@ export default function MasteringProcess() {
     };
 
     initAudio();
-    
+
     return () => {
       // Cleanup on unmount
       const engine = getAudioEngine();
@@ -181,40 +182,40 @@ export default function MasteringProcess() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isInitialized) return;
-      
+
       const engine = getAudioEngine();
       if (!engine) return;
-      
+
       switch (event.code) {
         case 'Space':
           event.preventDefault();
           handlePlayPause();
           break;
-          
+
         case 'KeyA':
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             handleMonitorChange('A');
           }
           break;
-          
+
         case 'KeyB':
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             handleMonitorChange('B');
           }
           break;
-          
+
         case 'Tab':
           event.preventDefault();
           setSelectedBand((prev) => (prev + 1) % 3);
           break;
-          
+
         case 'Escape':
           event.preventDefault();
           handleResetParameters();
           break;
-          
+
         case 'Enter':
           if (event.ctrlKey || event.metaKey) {
             event.preventDefault();
@@ -232,7 +233,7 @@ export default function MasteringProcess() {
   const handlePlayPause = useCallback(async () => {
     const engine = getAudioEngine();
     if (!engine) return;
-    
+
     try {
       if (playing) {
         engine.stop();
@@ -315,28 +316,28 @@ export default function MasteringProcess() {
   // Export functionality
   const handleExport = useCallback(async () => {
     if (!file || !isInitialized) return;
-    
+
     resetExportStatus();
     updateExportStatus({ phase: 'render', progress: 0, message: 'Preparing export...' });
-    
+
     try {
       // This would integrate with a real export system
       // For now, we'll simulate the export process
-      
+
       updateExportStatus({ phase: 'render', progress: 25, message: 'Rendering processed audio...' });
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       updateExportStatus({ phase: 'encode', progress: 50, message: 'Encoding audio file...' });
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       updateExportStatus({ phase: 'zip', progress: 75, message: 'Creating session archive...' });
       await new Promise(resolve => setTimeout(resolve, 600));
-      
+
       updateExportStatus({ phase: 'done', progress: 100, message: 'Export complete!' });
-      
+
       // In a real implementation, this would trigger a download
       console.log('Export would be triggered here with current settings:', processorParams);
-      
+
     } catch (error) {
       console.error('Export failed:', error);
       updateExportStatus({ phase: 'error', progress: 0, message: 'Export failed' });
@@ -363,7 +364,7 @@ export default function MasteringProcess() {
   return (
     <div className="min-h-screen bg-black text-green-400 p-4">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Header with file info and transport */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
@@ -372,7 +373,7 @@ export default function MasteringProcess() {
               {file.name} • {(file.size / 1024 / 1024).toFixed(1)}MB
             </Badge>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Button
               onClick={handlePlayPause}
@@ -381,7 +382,7 @@ export default function MasteringProcess() {
             >
               {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </Button>
-            
+
             <Button
               onClick={handleStop}
               disabled={!isInitialized || !playing}
@@ -390,7 +391,7 @@ export default function MasteringProcess() {
             >
               <Square className="w-4 h-4" />
             </Button>
-            
+
             <div className="flex bg-gray-900 rounded-md p-1">
               <Button
                 onClick={() => handleMonitorChange('A')}
@@ -414,10 +415,10 @@ export default function MasteringProcess() {
 
         {/* Main interface grid */}
         <div className="grid grid-cols-12 gap-4">
-          
+
           {/* Left column: Meters and info */}
           <div className="col-span-3 space-y-4">
-            
+
             {/* Metering */}
             <Card className="bg-gray-900 border-green-700">
               <CardHeader className="pb-2">
@@ -463,12 +464,12 @@ export default function MasteringProcess() {
                 <VoidlineScore score={voidlineScore} />
               </CardContent>
             </Card>
-            
+
           </div>
 
           {/* Center column: Spectrum and processing */}
           <div className="col-span-6 space-y-4">
-            
+
             {/* Spectrum analyzer */}
             <Card className="bg-gray-900 border-green-700">
               <CardHeader className="pb-2">
@@ -497,7 +498,7 @@ export default function MasteringProcess() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  
+
                   {/* Mid channel */}
                   <div>
                     <div className="text-xs font-mono mb-2 text-green-300">MID CHANNEL</div>
@@ -518,7 +519,7 @@ export default function MasteringProcess() {
                       </div>
                     ))}
                   </div>
-                  
+
                   {/* Side channel */}
                   <div>
                     <div className="text-xs font-mono mb-2 text-green-300">SIDE CHANNEL</div>
@@ -539,7 +540,7 @@ export default function MasteringProcess() {
                       </div>
                     ))}
                   </div>
-                  
+
                 </div>
               </CardContent>
             </Card>
@@ -548,7 +549,7 @@ export default function MasteringProcess() {
 
           {/* Right column: Processing and export */}
           <div className="col-span-3 space-y-4">
-            
+
             {/* Noise reduction */}
             <Card className="bg-gray-900 border-green-700">
               <CardHeader className="pb-2">
@@ -592,7 +593,7 @@ export default function MasteringProcess() {
                     className="w-full"
                   />
                 </div>
-                
+
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-mono">CEILING</span>
@@ -625,7 +626,7 @@ export default function MasteringProcess() {
                   <RotateCcw className="w-4 h-4 mr-2" />
                   Reset All
                 </Button>
-                
+
                 <Button
                   onClick={handleExport}
                   disabled={!isInitialized || exportStatus.phase === 'render' || exportStatus.phase === 'encode'}
@@ -634,7 +635,7 @@ export default function MasteringProcess() {
                   <Download className="w-4 h-4 mr-2" />
                   Export Session
                 </Button>
-                
+
                 {/* Export progress */}
                 <AnimatePresence>
                   {exportStatus.phase !== 'idle' && exportStatus.phase !== 'done' && (

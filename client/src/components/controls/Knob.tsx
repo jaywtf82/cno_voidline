@@ -45,7 +45,7 @@ export function Knob({
       const deltaY = startY - e.clientY; // Inverted for natural feel
       const sensitivity = (max - min) / 200; // Adjust sensitivity
       const newValue = Math.max(min, Math.min(max, startValue + deltaY * sensitivity));
-      
+
       // Snap to step
       const snappedValue = Math.round(newValue / step) * step;
       onChange(snappedValue);
@@ -60,7 +60,7 @@ export function Knob({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       let newValue = value;
-      
+
       switch (e.key) {
         case "ArrowUp":
         case "ArrowRight":
@@ -85,7 +85,7 @@ export function Knob({
         default:
           return;
       }
-      
+
       e.preventDefault();
       onChange(newValue);
     },
@@ -97,7 +97,7 @@ export function Knob({
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
       document.body.style.cursor = "ns-resize";
-      
+
       return () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
@@ -141,7 +141,7 @@ export function Knob({
           }}
         />
       </div>
-      
+
       <div className="font-mono text-xs text-text-muted mb-1">
         {label}
       </div>
