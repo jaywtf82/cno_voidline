@@ -40,6 +40,7 @@ export interface SessionActions {
   setVoidlineScore(score: number): void;
   updateExportStatus(status: Partial<ExportStatus>): void;
   resetExportStatus(): void;
+  updateProcessorParams?(params: any): void;
 }
 
 export type SessionStore = SessionState & SessionActions;
@@ -111,6 +112,11 @@ export const useSessionStore = create<SessionStore>()(
           message: undefined,
         },
       }),
+
+    updateProcessorParams: (params: any) => {
+      // Optional method for storing processor parameters
+      // Can be expanded later if needed
+    },
   }))
 );
 

@@ -201,13 +201,13 @@ export function PremasterAnalysis({ analysisData, className = '' }: PremasterAna
 
   const handleStartMasteringSession = () => {
     if (analysisData?.sessionId) {
-      // Navigate to mastering process with session ID
-      window.location.href = `/mastering/process?id=${analysisData.sessionId}`;
+      // Navigate to mastering process with session ID using proper routing
+      navigate(`/mastering/process?id=${analysisData.sessionId}`);
     } else {
       console.warn('No session ID available');
       // Create fallback session and navigate
       const fallbackSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      window.location.href = `/mastering/process?id=${fallbackSessionId}`;
+      navigate(`/mastering/process?id=${fallbackSessionId}`);
     }
   };
 

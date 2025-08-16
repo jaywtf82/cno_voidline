@@ -75,8 +75,7 @@ export default function MasteringProcess() {
     setPlaying, 
     setMonitor, 
     updateExportStatus,
-    resetExportStatus,
-    updateProcessorParams: updateProcessorParamsStore
+    resetExportStatus
   } = useSessionStore();
   
   const { metricsA, metricsB, voidlineScore } = useSessionMetrics();
@@ -174,9 +173,9 @@ export default function MasteringProcess() {
     const engine = getAudioEngine();
     if (engine && isInitialized) {
       engine.updateProcessorParams(processorParams);
-      updateProcessorParamsStore(processorParams);
+      // Store processor params can be added later if needed
     }
-  }, [processorParams, isInitialized, updateProcessorParamsStore]);
+  }, [processorParams, isInitialized]);
 
   // Keyboard shortcuts
   useEffect(() => {

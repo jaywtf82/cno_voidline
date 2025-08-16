@@ -258,29 +258,35 @@ export default function Landing() {
       setAudioAnalysis(analysis);
       setAnalysisComplete(true);
 
-      // Create mastering session with the analyzed audio
+      // Store the audio file and analysis in session bus for mastering process
       try {
-        const audioContext = new AudioContext();
-        const arrayBuffer = await file.arrayBuffer();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        const { useSessionBus } = await import('@/state/sessionBus');
+        
+        // Create session ID
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Store file metadata and analysis in session bus
+        const fileMeta = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified,
+          objectUrl: URL.createObjectURL(file)
+        };
 
-        const { useMasteringStore } = await import('@/state/masteringStore');
-        const sessionId = useMasteringStore.getState().createSession({
-          name: analysis.fileName,
-          size: analysis.fileSize
-        }, audioBuffer);
+        const analysisData = {
+          peakDb: analysis.samplePeak || -1.5,
+          rmsDb: analysis.rms || -17.0,
+          lufsShort: analysis.lufsS,
+          lufsIntegrated: analysis.lufsI || -14.0,
+          noiseFloorDb: -60,
+          corr: analysis.correlation || 0.85,
+          sampleRate: analysis.sampleRate || 48000,
+          durationSec: analysis.duration || 0
+        };
 
-        // Set analysis data in the mastering session
-        useMasteringStore.getState().setAnalysis({
-          lufsI: analysis.lufsI,
-          dbtp: analysis.dbtp,
-          lra: analysis.lra,
-          rms: analysis.rms,
-          correlation: analysis.correlation,
-          voidlineScore: analysis.voidlineScore,
-          samplePeak: analysis.samplePeak,
-          crest: analysis.crest
-        });
+        // Store in session bus
+        useSessionBus.getState().setPreMaster(fileMeta, analysisData);
 
         // Update the session ID in our analysis
         setAudioAnalysis((prev: any) => ({ ...prev, sessionId }));
@@ -312,17 +318,33 @@ export default function Landing() {
       setAudioAnalysis(fallbackAnalysis);
       setAnalysisComplete(true);
 
-      // Create fallback mastering session
+      // Create fallback session in session bus
       try {
-        const audioContext = new AudioContext();
-        const arrayBuffer = await file.arrayBuffer();
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        const { useSessionBus } = await import('@/state/sessionBus');
+        
+        // Create session ID
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Store file metadata and fallback analysis
+        const fileMeta = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified,
+          objectUrl: URL.createObjectURL(file)
+        };
 
-        const { useMasteringStore } = await import('@/state/masteringStore');
-        const sessionId = useMasteringStore.getState().createSession({
-          name: fallbackAnalysis.fileName,
-          size: fallbackAnalysis.fileSize
-        }, audioBuffer);
+        const analysisData = {
+          peakDb: fallbackAnalysis.samplePeak,
+          rmsDb: fallbackAnalysis.rms,
+          lufsIntegrated: fallbackAnalysis.lufsI,
+          noiseFloorDb: -60,
+          corr: fallbackAnalysis.correlation,
+          sampleRate: fallbackAnalysis.sampleRate,
+          durationSec: fallbackAnalysis.duration
+        };
+
+        useSessionBus.getState().setPreMaster(fileMeta, analysisData);
 
         // Set fallback analysis data
         useMasteringStore.getState().setAnalysis({
