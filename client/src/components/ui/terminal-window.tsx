@@ -130,12 +130,7 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
       >
         {/* Terminal Header - Match AppHeader styling */}
         <div
-          className={cn(
-            "flex items-center justify-between",
-            // Match header inner padding and height
-            "px-[var(--spacing-sm)] py-[var(--spacing-xs)] min-h-[var(--header-h)]",
-            variant === "init" ? "bg-[#12151A]" : "bg-black/50"
-          )}
+          className="flex items-center justify-between px-[var(--spacing-sm)] py-[var(--spacing-xs)] min-h-[var(--header-h)] bg-[transparent]"
         >
           {/* Left side - Command */}
           <div className="flex items-center space-x-2">
@@ -158,7 +153,6 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
             <span className="dot green" />
           </div>
         </div>
-
         {/* Terminal Body with Drag & Drop */}
         <div
           className={cn(
