@@ -28,8 +28,8 @@ export function Fader({
   const [isHovered, setIsHovered] = useState(false);
 
   const handleValueChange = useCallback(
-    (newValue: number[]) => {
-      onChange(newValue[0]);
+    (v: number) => {
+      onChange(v);
     },
     [onChange]
   );
@@ -84,7 +84,7 @@ export function Fader({
           onMouseLeave={() => setIsHovered(false)}
         >
           <Slider
-            value={[value]}
+            value={value}
             onValueChange={handleValueChange}
             min={min}
             max={max}
