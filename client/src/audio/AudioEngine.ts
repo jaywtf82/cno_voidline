@@ -318,4 +318,4 @@ export function getAudioEngine(): AudioEngine | null {
   return globalEngine;
 }
 
-export { ProcessorParams };
+// ProcessorParams is imported from types/audio.ts
