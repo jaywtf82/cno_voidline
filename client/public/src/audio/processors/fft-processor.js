@@ -1,36 +1,7 @@
-// fft-processor.ts - Real-time FFT analysis with efficient transfer
-declare const sampleRate: number;
-
-interface FFTState {
-  // Input buffers
-  inputBuffer: Float32Array;
-  bufferIndex: number;
-  
-  // FFT working arrays (pre-allocated)
-  fftReal: Float32Array;
-  fftImag: Float32Array;
-  magnitudes: Float32Array;
-  
-  // Windowing
-  windowFunction: Float32Array;
-  
-  // Output buffer for transfer
-  outputBuffer: Float32Array;
-  
-  // Transfer management
-  transferBuffer: ArrayBuffer;
-  transferView: Float32Array;
-}
+// fft-processor.js - Real-time FFT analysis with efficient transfer
 
 class FFTProcessor extends AudioWorkletProcessor {
-  private state: FFTState;
-  private frameCount = 0;
-  private fftSize: number;
-  private overlap: number;
-  private hopSize: number;
-  private updateRate: number; // ~25Hz for FFT updates
-  
-  constructor(options?: AudioWorkletNodeOptions) {
+  constructor(options) {
     super();
     
     this.fftSize = options?.processorOptions?.fftSize || 4096;
@@ -40,11 +11,14 @@ class FFTProcessor extends AudioWorkletProcessor {
     
     this.initializeState();
     this.precomputeWindow();
+    
+    this.frameCount = 0;
   }
   
-  private initializeState(): void {
+  initializeState() {
     this.state = {
       inputBuffer: new Float32Array(this.fftSize),
+      outputBuffer: new Float32Array(this.fftSize),
       bufferIndex: 0,
       
       fftReal: new Float32Array(this.fftSize),
@@ -53,9 +27,6 @@ class FFTProcessor extends AudioWorkletProcessor {
       
       windowFunction: new Float32Array(this.fftSize),
       
-      outputBuffer: new Float32Array(this.fftSize / 2),
-      
-      // Create transferable buffer
       transferBuffer: new ArrayBuffer(this.fftSize / 2 * 4), // Float32 = 4 bytes
       transferView: new Float32Array(0), // Will be set properly
     };
@@ -64,8 +35,8 @@ class FFTProcessor extends AudioWorkletProcessor {
     this.state.transferView = new Float32Array(this.state.transferBuffer);
   }
   
-  private precomputeWindow(): void {
-    // Blackman-Harris window for good side-lobe suppression
+  precomputeWindow() {
+    // Blackman-Harris window
     for (let i = 0; i < this.fftSize; i++) {
       const n = i / (this.fftSize - 1);
       this.state.windowFunction[i] = 
@@ -76,7 +47,7 @@ class FFTProcessor extends AudioWorkletProcessor {
     }
   }
   
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+  process(inputs, outputs) {
     const input = inputs[0];
     const output = outputs[0];
     
@@ -117,7 +88,7 @@ class FFTProcessor extends AudioWorkletProcessor {
     return true;
   }
   
-  private shiftBuffer(): void {
+  shiftBuffer() {
     // Shift buffer by hop size to create overlap
     const remainingSize = this.fftSize - this.hopSize;
     
@@ -128,31 +99,31 @@ class FFTProcessor extends AudioWorkletProcessor {
     this.state.bufferIndex = remainingSize;
   }
   
-  private computeFFT(): void {
+  computeFFT() {
     // Apply window function
     for (let i = 0; i < this.fftSize; i++) {
       this.state.fftReal[i] = this.state.inputBuffer[i] * this.state.windowFunction[i];
       this.state.fftImag[i] = 0;
     }
     
-    // Perform FFT (Cooley-Tukey radix-2)
+    // Perform FFT
     this.fftRadix2();
     
-    // Compute magnitudes (first half of spectrum)
+    // Compute magnitudes
     for (let i = 0; i < this.fftSize / 2; i++) {
       const real = this.state.fftReal[i];
       const imag = this.state.fftImag[i];
       this.state.magnitudes[i] = Math.sqrt(real * real + imag * imag);
     }
     
-    // Apply K-weighting approximation for better loudness representation
+    // Apply K-weighting approximation
     this.applyKWeighting();
     
     // Prepare for transfer
     this.prepareTransfer();
   }
   
-  private fftRadix2(): void {
+  fftRadix2() {
     const N = this.fftSize;
     const real = this.state.fftReal;
     const imag = this.state.fftImag;
@@ -168,12 +139,12 @@ class FFTProcessor extends AudioWorkletProcessor {
       j ^= bit;
       
       if (i < j) {
-        // Swap real[i] and real[j]
+        // Swap real parts
         let temp = real[i];
         real[i] = real[j];
         real[j] = temp;
         
-        // Swap imag[i] and imag[j]  
+        // Swap imaginary parts
         temp = imag[i];
         imag[i] = imag[j];
         imag[j] = temp;
@@ -201,7 +172,6 @@ class FFTProcessor extends AudioWorkletProcessor {
           real[i + j + len / 2] = u_real - v_real;
           imag[i + j + len / 2] = u_imag - v_imag;
           
-          // Update twiddle factor
           const temp_w_real = w_real * wlen_real - w_imag * wlen_imag;
           w_imag = w_real * wlen_imag + w_imag * wlen_real;
           w_real = temp_w_real;
@@ -210,15 +180,14 @@ class FFTProcessor extends AudioWorkletProcessor {
     }
   }
   
-  private applyKWeighting(): void {
-    // Approximate K-weighting frequency response for each bin
+  applyKWeighting() {
+    // Approximate K-weighting frequency response
     const nyquist = sampleRate / 2;
     const binWidth = nyquist / (this.fftSize / 2);
     
     for (let i = 0; i < this.fftSize / 2; i++) {
       const frequency = i * binWidth;
       
-      // K-weighting approximation (simplified)
       let weight = 1;
       
       if (frequency < 100) {
@@ -229,13 +198,13 @@ class FFTProcessor extends AudioWorkletProcessor {
         weight = 1 + 0.2 * Math.log10(frequency / 2000);
       }
       
-      weight = Math.max(0.1, Math.min(2, weight)); // Clamp reasonable range
+      weight = Math.max(0.1, Math.min(2, weight));
       this.state.magnitudes[i] *= weight;
     }
   }
   
-  private prepareTransfer(): void {
-    // Normalize magnitudes to 0-1 range for consistent visualization
+  prepareTransfer() {
+    // Normalize magnitudes to 0-1 range
     let maxMagnitude = 0;
     for (let i = 0; i < this.state.magnitudes.length; i++) {
       maxMagnitude = Math.max(maxMagnitude, this.state.magnitudes[i]);
@@ -250,7 +219,7 @@ class FFTProcessor extends AudioWorkletProcessor {
       this.state.transferView.fill(0);
     }
     
-    // Send with transferable buffer for efficiency
+    // Send with transferable buffer
     this.port.postMessage({
       fftData: this.state.transferView,
       maxMagnitude,

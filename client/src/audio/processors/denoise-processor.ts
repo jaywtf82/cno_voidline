@@ -1,120 +1,287 @@
-/**
- * denoise-processor.ts - Spectral subtraction denoising processor
- * Implements short-time spectral gating and Wiener filtering for artifact cleanup
- */
+// denoise-processor.ts - Spectral subtraction noise reduction
+declare const sampleRate: number;
 
-interface DenoiseParams {
-  enabled: boolean;
-  alpha: number;     // Spectral gate strength [0,1]
-  mode: 'spectral' | 'wiener';
+interface DenoiseState {
+  // FFT buffers
+  inputBuffer: Float32Array;
+  outputBuffer: Float32Array;
+  bufferIndex: number;
+  
+  // FFT working arrays
+  fftReal: Float32Array;
+  fftImag: Float32Array;
+  ifftReal: Float32Array;
+  ifftImag: Float32Array;
+  magnitudes: Float32Array;
+  phases: Float32Array;
+  
+  // Noise estimation
+  noiseProfile: Float32Array;
+  noiseFrameCount: number;
+  isLearning: boolean;
+  
+  // Windowing
+  windowFunction: Float32Array;
+  overlapBuffer: Float32Array;
+  
+  // Sweep state
+  sweepIndex: number;
 }
 
 class DenoiseProcessor extends AudioWorkletProcessor {
-  private sampleRate = 48000;
+  private state: DenoiseState;
   private fftSize = 1024;
   private hopSize = 512; // 50% overlap
-  private windowSize = 1024;
-  
-  // Buffers
-  private inputBuffer: Float32Array[] = [];
-  private outputBuffer: Float32Array[] = [];
-  private overlapBuffer: Float32Array[] = [];
-  private windowFunction: Float32Array;
-  
-  // Noise profile
-  private noiseProfile: Float32Array = new Float32Array(this.fftSize / 2 + 1);
-  private noiseFrameCount = 0;
-  private noiseThreshold = -60; // dBFS threshold for noise detection
-  private noiseUpdateRate = 0.01; // Exponential averaging rate
+  private frameCount = 0;
   
   // Parameters
-  private params: DenoiseParams = {
-    enabled: false,
-    alpha: 0.1,
-    mode: 'spectral'
+  private params = {
+    amount: 0, // 0-100 noise reduction amount
+    threshold: -60, // dB threshold for noise gate
   };
   
-  // FFT processing
-  private fftReal: Float32Array = new Float32Array(this.fftSize);
-  private fftImag: Float32Array = new Float32Array(this.fftSize);
-  private magnitude: Float32Array = new Float32Array(this.fftSize / 2 + 1);
-  private phase: Float32Array = new Float32Array(this.fftSize / 2 + 1);
-  
-  // Progress reporting
-  private frameCount = 0;
-  private totalFrames = 0;
-
-  static get parameterDescriptors() {
-    return [];
-  }
-
-  constructor() {
+  constructor(options?: AudioWorkletNodeOptions) {
     super();
-    this.sampleRate = sampleRate;
-    this.initializeBuffers();
-    this.createWindow();
-    this.port.onmessage = this.handleMessage.bind(this);
-  }
-
-  private handleMessage(event: MessageEvent) {
-    const { type, params } = event.data;
     
-    switch (type) {
-      case 'updateParams':
-        this.params = { ...this.params, ...params };
-        break;
-      case 'reset':
-        this.resetProcessor();
-        break;
-      case 'captureNoiseProfile':
-        this.captureNoiseProfile();
-        break;
-    }
-  }
-
-  private initializeBuffers(): void {
-    // Initialize stereo buffers
-    for (let ch = 0; ch < 2; ch++) {
-      this.inputBuffer[ch] = new Float32Array(this.windowSize);
-      this.outputBuffer[ch] = new Float32Array(this.windowSize);
-      this.overlapBuffer[ch] = new Float32Array(this.hopSize);
-    }
-  }
-
-  private createWindow(): void {
-    // Hann window for STFT
-    this.windowFunction = new Float32Array(this.windowSize);
-    for (let i = 0; i < this.windowSize; i++) {
-      this.windowFunction[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (this.windowSize - 1)));
-    }
-  }
-
-  private resetProcessor(): void {
-    this.inputBuffer.forEach(buffer => buffer.fill(0));
-    this.outputBuffer.forEach(buffer => buffer.fill(0));
-    this.overlapBuffer.forEach(buffer => buffer.fill(0));
-    this.noiseProfile.fill(0);
-    this.noiseFrameCount = 0;
-    this.frameCount = 0;
-  }
-
-  private captureNoiseProfile(): void {
-    // Reset noise profile for new capture
-    this.noiseProfile.fill(0);
-    this.noiseFrameCount = 0;
+    const bufferSize = options?.processorOptions?.bufferSize || 1024;
+    this.fftSize = Math.max(256, Math.min(2048, bufferSize));
+    this.hopSize = this.fftSize / 2;
     
-    this.port.postMessage({
-      type: 'noise-profile-reset',
-      message: 'Noise profile capture started'
-    });
+    this.initializeState();
+    this.precomputeWindow();
+    
+    // Message handler for parameter updates
+    this.port.onmessage = (event) => {
+      const { type, ...params } = event.data;
+      if (type === 'updateParams') {
+        this.updateParameters(params);
+      }
+    };
   }
-
-  private fft(real: Float32Array, imag: Float32Array, size: number): void {
-    // Simple Cooley-Tukey FFT implementation
-    // Bit-reverse ordering
+  
+  private initializeState(): void {
+    this.state = {
+      inputBuffer: new Float32Array(this.fftSize),
+      outputBuffer: new Float32Array(this.fftSize),
+      bufferIndex: 0,
+      
+      fftReal: new Float32Array(this.fftSize),
+      fftImag: new Float32Array(this.fftSize),
+      ifftReal: new Float32Array(this.fftSize),
+      ifftImag: new Float32Array(this.fftSize),
+      magnitudes: new Float32Array(this.fftSize / 2),
+      phases: new Float32Array(this.fftSize / 2),
+      
+      noiseProfile: new Float32Array(this.fftSize / 2),
+      noiseFrameCount: 0,
+      isLearning: true, // Learn noise profile initially
+      
+      windowFunction: new Float32Array(this.fftSize),
+      overlapBuffer: new Float32Array(this.fftSize),
+      
+      sweepIndex: 0,
+    };
+  }
+  
+  private precomputeWindow(): void {
+    // Hann window
+    for (let i = 0; i < this.fftSize; i++) {
+      this.state.windowFunction[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (this.fftSize - 1)));
+    }
+  }
+  
+  private updateParameters(newParams: any): void {
+    Object.assign(this.params, newParams);
+    
+    // Reset learning if amount changed significantly
+    if (Math.abs(newParams.amount - this.params.amount) > 10) {
+      this.state.noiseFrameCount = 0;
+      this.state.isLearning = true;
+    }
+  }
+  
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    const input = inputs[0];
+    const output = outputs[0];
+    
+    if (!input || input.length < 2 || !output || output.length < 2) {
+      return true;
+    }
+    
+    const leftChannel = input[0];
+    const rightChannel = input[1];
+    const outLeft = output[0];
+    const outRight = output[1];
+    const blockSize = leftChannel.length;
+    
+    // Process stereo (apply same processing to both channels)
+    this.processChannel(leftChannel, outLeft);
+    this.processChannel(rightChannel, outRight);
+    
+    this.frameCount += blockSize;
+    
+    // Send sweep index for visualization
+    if (this.frameCount % 512 === 0) {
+      this.port.postMessage({
+        sweepIndex: this.state.sweepIndex,
+        isLearning: this.state.isLearning,
+      });
+    }
+    
+    return true;
+  }
+  
+  private processChannel(input: Float32Array, output: Float32Array): void {
+    const blockSize = input.length;
+    
+    for (let i = 0; i < blockSize; i++) {
+      // Store input sample
+      this.state.inputBuffer[this.state.bufferIndex] = input[i];
+      this.state.bufferIndex++;
+      
+      // Process when buffer is full
+      if (this.state.bufferIndex >= this.fftSize) {
+        this.processFrame();
+        this.state.bufferIndex = this.hopSize; // Maintain overlap
+      }
+      
+      // Output from output buffer
+      output[i] = this.state.outputBuffer[i];
+    }
+    
+    // Shift output buffer
+    for (let i = 0; i < this.fftSize - blockSize; i++) {
+      this.state.outputBuffer[i] = this.state.outputBuffer[i + blockSize];
+    }
+    
+    // Clear the end
+    for (let i = this.fftSize - blockSize; i < this.fftSize; i++) {
+      this.state.outputBuffer[i] = 0;
+    }
+  }
+  
+  private processFrame(): void {
+    // Skip processing if amount is 0
+    if (this.params.amount <= 0) {
+      // Just copy input to output with windowing
+      for (let i = 0; i < this.fftSize; i++) {
+        this.state.outputBuffer[i] += this.state.inputBuffer[i] * this.state.windowFunction[i];
+      }
+      return;
+    }
+    
+    // Apply window to input
+    for (let i = 0; i < this.fftSize; i++) {
+      this.state.fftReal[i] = this.state.inputBuffer[i] * this.state.windowFunction[i];
+      this.state.fftImag[i] = 0;
+    }
+    
+    // Forward FFT
+    this.fft(this.state.fftReal, this.state.fftImag, false);
+    
+    // Extract magnitudes and phases
+    for (let i = 0; i < this.fftSize / 2; i++) {
+      const real = this.state.fftReal[i];
+      const imag = this.state.fftImag[i];
+      this.state.magnitudes[i] = Math.sqrt(real * real + imag * imag);
+      this.state.phases[i] = Math.atan2(imag, real);
+    }
+    
+    // Update noise profile during learning phase
+    if (this.state.isLearning) {
+      this.updateNoiseProfile();
+    }
+    
+    // Apply spectral subtraction
+    this.applySpectralSubtraction();
+    
+    // Reconstruct complex spectrum
+    for (let i = 0; i < this.fftSize / 2; i++) {
+      const mag = this.state.magnitudes[i];
+      const phase = this.state.phases[i];
+      this.state.ifftReal[i] = mag * Math.cos(phase);
+      this.state.ifftImag[i] = mag * Math.sin(phase);
+    }
+    
+    // Mirror for negative frequencies
+    for (let i = 1; i < this.fftSize / 2; i++) {
+      this.state.ifftReal[this.fftSize - i] = this.state.ifftReal[i];
+      this.state.ifftImag[this.fftSize - i] = -this.state.ifftImag[i];
+    }
+    
+    // Inverse FFT
+    this.fft(this.state.ifftReal, this.state.ifftImag, true);
+    
+    // Overlap-add to output buffer with windowing
+    for (let i = 0; i < this.fftSize; i++) {
+      this.state.outputBuffer[i] += this.state.ifftReal[i] * this.state.windowFunction[i];
+    }
+    
+    // Shift input buffer for next frame
+    for (let i = 0; i < this.hopSize; i++) {
+      this.state.inputBuffer[i] = this.state.inputBuffer[i + this.hopSize];
+    }
+    
+    this.state.sweepIndex++;
+  }
+  
+  private updateNoiseProfile(): void {
+    // Average noise profile over initial frames
+    const alpha = 1.0 / (this.state.noiseFrameCount + 1);
+    
+    for (let i = 0; i < this.fftSize / 2; i++) {
+      this.state.noiseProfile[i] = 
+        (1 - alpha) * this.state.noiseProfile[i] + 
+        alpha * this.state.magnitudes[i];
+    }
+    
+    this.state.noiseFrameCount++;
+    
+    // Stop learning after enough frames
+    if (this.state.noiseFrameCount >= 10) {
+      this.state.isLearning = false;
+    }
+  }
+  
+  private applySpectralSubtraction(): void {
+    const alpha = this.params.amount / 100; // 0-1 scaling
+    const threshold = Math.pow(10, this.params.threshold / 20); // Convert dB to linear
+    
+    for (let i = 0; i < this.fftSize / 2; i++) {
+      const signal = this.state.magnitudes[i];
+      const noise = this.state.noiseProfile[i];
+      
+      if (signal < threshold) {
+        // Apply noise gate
+        this.state.magnitudes[i] *= 0.1; // Reduce by 20dB
+        continue;
+      }
+      
+      // Spectral subtraction
+      const snr = noise > 0 ? signal / noise : 1;
+      let gain = 1 - alpha * (1 / snr);
+      
+      // Over-subtraction factor for better noise reduction
+      const overSubtraction = 2.0;
+      if (snr < overSubtraction) {
+        gain = 1 - alpha * overSubtraction / snr;
+      }
+      
+      // Limit gain reduction and apply smoothing
+      gain = Math.max(0.1, Math.min(1, gain)); // -20dB to 0dB
+      
+      this.state.magnitudes[i] *= gain;
+    }
+  }
+  
+  private fft(real: Float32Array, imag: Float32Array, inverse: boolean): void {
+    const N = this.fftSize;
+    const direction = inverse ? 1 : -1;
+    
+    // Bit-reversal
     let j = 0;
-    for (let i = 1; i < size; i++) {
-      let bit = size >> 1;
+    for (let i = 1; i < N; i++) {
+      let bit = N >> 1;
       while (j & bit) {
         j ^= bit;
         bit >>= 1;
@@ -122,223 +289,53 @@ class DenoiseProcessor extends AudioWorkletProcessor {
       j ^= bit;
       
       if (i < j) {
-        [real[i], real[j]] = [real[j], real[i]];
-        [imag[i], imag[j]] = [imag[j], imag[i]];
+        // Swap real parts
+        let temp = real[i];
+        real[i] = real[j];
+        real[j] = temp;
+        
+        // Swap imaginary parts
+        temp = imag[i];
+        imag[i] = imag[j];
+        imag[j] = temp;
       }
     }
     
-    // FFT computation
-    for (let len = 2; len <= size; len <<= 1) {
-      const wlen = 2 * Math.PI / len;
-      const wpr = Math.cos(wlen);
-      const wpi = -Math.sin(wlen);
+    // Cooley-Tukey FFT
+    for (let len = 2; len <= N; len *= 2) {
+      const wlen = direction * 2 * Math.PI / len;
+      const wlen_real = Math.cos(wlen);
+      const wlen_imag = Math.sin(wlen);
       
-      for (let i = 0; i < size; i += len) {
-        let wr = 1;
-        let wi = 0;
+      for (let i = 0; i < N; i += len) {
+        let w_real = 1;
+        let w_imag = 0;
         
         for (let j = 0; j < len / 2; j++) {
-          const u = i + j;
-          const v = i + j + len / 2;
+          const u_real = real[i + j];
+          const u_imag = imag[i + j];
+          const v_real = real[i + j + len / 2] * w_real - imag[i + j + len / 2] * w_imag;
+          const v_imag = real[i + j + len / 2] * w_imag + imag[i + j + len / 2] * w_real;
           
-          const tr = real[v] * wr - imag[v] * wi;
-          const ti = real[v] * wi + imag[v] * wr;
+          real[i + j] = u_real + v_real;
+          imag[i + j] = u_imag + v_imag;
+          real[i + j + len / 2] = u_real - v_real;
+          imag[i + j + len / 2] = u_imag - v_imag;
           
-          real[v] = real[u] - tr;
-          imag[v] = imag[u] - ti;
-          real[u] += tr;
-          imag[u] += ti;
-          
-          const temp = wr * wpr - wi * wpi;
-          wi = wi * wpr + wr * wpi;
-          wr = temp;
+          const temp_w_real = w_real * wlen_real - w_imag * wlen_imag;
+          w_imag = w_real * wlen_imag + w_imag * wlen_real;
+          w_real = temp_w_real;
         }
       }
     }
-  }
-
-  private ifft(real: Float32Array, imag: Float32Array, size: number): void {
-    // Inverse FFT: conjugate, FFT, conjugate, scale
-    for (let i = 0; i < size; i++) {
-      imag[i] = -imag[i];
-    }
     
-    this.fft(real, imag, size);
-    
-    for (let i = 0; i < size; i++) {
-      real[i] /= size;
-      imag[i] = -imag[i] / size;
-    }
-  }
-
-  private calculateMagnitudePhase(real: Float32Array, imag: Float32Array): void {
-    const bins = this.fftSize / 2 + 1;
-    
-    for (let i = 0; i < bins; i++) {
-      this.magnitude[i] = Math.sqrt(real[i] * real[i] + imag[i] * imag[i]);
-      this.phase[i] = Math.atan2(imag[i], real[i]);
-    }
-  }
-
-  private reconstructFromMagnitudePhase(real: Float32Array, imag: Float32Array, magnitude: Float32Array, phase: Float32Array): void {
-    const bins = this.fftSize / 2 + 1;
-    
-    // Fill positive frequencies
-    for (let i = 0; i < bins; i++) {
-      real[i] = magnitude[i] * Math.cos(phase[i]);
-      imag[i] = magnitude[i] * Math.sin(phase[i]);
-    }
-    
-    // Mirror for negative frequencies (real FFT)
-    for (let i = bins; i < this.fftSize; i++) {
-      const mirrorIdx = this.fftSize - i;
-      real[i] = real[mirrorIdx];
-      imag[i] = -imag[mirrorIdx];
-    }
-  }
-
-  private updateNoiseProfile(magnitude: Float32Array, rmsLevel: number): void {
-    // Update noise profile if signal is below threshold
-    const rmsDb = 20 * Math.log10(rmsLevel + 1e-10);
-    
-    if (rmsDb < this.noiseThreshold) {
-      for (let i = 0; i < magnitude.length; i++) {
-        // Exponential averaging
-        this.noiseProfile[i] = this.noiseProfile[i] * (1 - this.noiseUpdateRate) + magnitude[i] * this.noiseUpdateRate;
-      }
-      this.noiseFrameCount++;
-      
-      // Report noise profile update every 10 frames
-      if (this.noiseFrameCount % 10 === 0) {
-        this.port.postMessage({
-          type: 'noise-profile-update',
-          frameCount: this.noiseFrameCount,
-          rmsLevel: rmsDb
-        });
+    // Normalize for inverse transform
+    if (inverse) {
+      for (let i = 0; i < N; i++) {
+        real[i] /= N;
+        imag[i] /= N;
       }
     }
-  }
-
-  private applySpectralGate(magnitude: Float32Array): Float32Array {
-    const processedMagnitude = new Float32Array(magnitude.length);
-    const epsilon = 1e-10;
-    
-    for (let i = 0; i < magnitude.length; i++) {
-      const signal = magnitude[i];
-      const noise = this.noiseProfile[i] + epsilon;
-      
-      if (this.params.mode === 'spectral') {
-        // Spectral subtraction with over-subtraction factor
-        const gain = Math.max(epsilon, 1 - this.params.alpha * (noise / signal));
-        processedMagnitude[i] = signal * gain;
-      } else if (this.params.mode === 'wiener') {
-        // Wiener filter
-        const signalPower = signal * signal;
-        const noisePower = noise * noise;
-        const gain = signalPower / (signalPower + this.params.alpha * noisePower);
-        processedMagnitude[i] = signal * gain;
-      }
-    }
-    
-    return processedMagnitude;
-  }
-
-  private processFrame(channel: number, samples: Float32Array): Float32Array {
-    const output = new Float32Array(samples.length);
-    
-    if (!this.params.enabled) {
-      output.set(samples);
-      return output;
-    }
-    
-    // Apply window
-    for (let i = 0; i < this.windowSize; i++) {
-      this.fftReal[i] = samples[i] * this.windowFunction[i];
-      this.fftImag[i] = 0;
-    }
-    
-    // Forward FFT
-    this.fft(this.fftReal, this.fftImag, this.fftSize);
-    
-    // Calculate magnitude and phase
-    this.calculateMagnitudePhase(this.fftReal, this.fftImag);
-    
-    // Update noise profile during quiet periods
-    const rmsLevel = Math.sqrt(samples.reduce((sum, x) => sum + x * x, 0) / samples.length);
-    this.updateNoiseProfile(this.magnitude, rmsLevel);
-    
-    // Apply denoising
-    const processedMagnitude = this.applySpectralGate(this.magnitude);
-    
-    // Reconstruct complex spectrum
-    this.reconstructFromMagnitudePhase(this.fftReal, this.fftImag, processedMagnitude, this.phase);
-    
-    // Inverse FFT
-    this.ifft(this.fftReal, this.fftImag, this.fftSize);
-    
-    // Apply window and overlap-add
-    for (let i = 0; i < this.windowSize; i++) {
-      output[i] = this.fftReal[i] * this.windowFunction[i];
-    }
-    
-    // Add overlap from previous frame
-    for (let i = 0; i < this.hopSize; i++) {
-      output[i] += this.overlapBuffer[channel][i];
-    }
-    
-    // Store overlap for next frame
-    for (let i = 0; i < this.hopSize; i++) {
-      this.overlapBuffer[channel][i] = output[i + this.hopSize];
-    }
-    
-    return output;
-  }
-
-  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
-    const input = inputs[0];
-    const output = outputs[0];
-    
-    if (!input || input.length === 0 || !output || output.length === 0) return true;
-    
-    const leftChannel = input[0];
-    const rightChannel = input.length > 1 ? input[1] : leftChannel;
-    const outputLeft = output[0];
-    const outputRight = output.length > 1 ? output[1] : output[0];
-    
-    if (!leftChannel || !outputLeft) return true;
-    
-    // Process if we have enough samples for a frame
-    if (leftChannel.length >= this.hopSize) {
-      const leftOutput = this.processFrame(0, leftChannel);
-      const rightOutput = this.processFrame(1, rightChannel);
-      
-      outputLeft.set(leftOutput.subarray(0, leftChannel.length));
-      if (outputRight && outputRight !== outputLeft) {
-        outputRight.set(rightOutput.subarray(0, rightChannel.length));
-      }
-      
-      // Report sweeper progress
-      this.frameCount++;
-      if (this.frameCount % 20 === 0) {
-        const progress = this.params.enabled ? 
-          (this.frameCount % 100) / 100 : 0;
-        
-        this.port.postMessage({
-          type: 'sweeper-progress',
-          progress: progress,
-          stage: this.params.enabled ? 'Processing spectral frames...' : 'Bypassed',
-          noiseFrames: this.noiseFrameCount
-        });
-      }
-    } else {
-      // Pass through if frame too small
-      outputLeft.set(leftChannel);
-      if (outputRight && outputRight !== outputLeft) {
-        outputRight.set(rightChannel);
-      }
-    }
-    
-    return true;
   }
 }
 

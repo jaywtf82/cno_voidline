@@ -1,133 +1,131 @@
-/**
- * ms-eq-processor.ts - Mid/Side EQ with 3-band parametric filtering
- * Encodes to M/S, applies separate EQ to mid and side, then decodes back to L/R
- */
+// ms-eq-processor.ts - Mid/Side EQ processor with 3 peaking bands each
+declare const sampleRate: number;
 
 interface BiquadState {
   x1: number;
-  x2: number; 
+  x2: number;
   y1: number;
   y2: number;
-  b0: number;
-  b1: number;
-  b2: number;
-  a1: number;
-  a2: number;
 }
 
-interface EQBand {
-  freq: number;
-  gain: number;
-  q: number;
-}
-
-interface MSEQParams {
-  mid: {
-    low: EQBand;
-    mid: EQBand;
-    high: EQBand;
+interface MSEQState {
+  // M/S encoding/decoding
+  msDecoded: boolean;
+  
+  // Biquad states for each band (3 mid + 3 side = 6 total)
+  midBands: [BiquadState, BiquadState, BiquadState];
+  sideBands: [BiquadState, BiquadState, BiquadState];
+  
+  // Parameter smoothing states
+  smoothedGains: {
+    mid: [number, number, number];
+    side: [number, number, number];
   };
-  side: {
-    low: EQBand;
-    mid: EQBand;
-    high: EQBand;
+  
+  // Current biquad coefficients
+  coefficients: {
+    mid: Array<{ b0: number; b1: number; b2: number; a1: number; a2: number }>;
+    side: Array<{ b0: number; b1: number; b2: number; a1: number; a2: number }>;
   };
 }
 
 class MSEQProcessor extends AudioWorkletProcessor {
-  private sampleRate = 48000;
-  
-  // Biquad filters for mid channel
-  private midLowFilter: BiquadState;
-  private midMidFilter: BiquadState;
-  private midHighFilter: BiquadState;
-  
-  // Biquad filters for side channel
-  private sideLowFilter: BiquadState;
-  private sideMidFilter: BiquadState;
-  private sideHighFilter: BiquadState;
+  private state: MSEQState;
   
   // Current parameters
-  private params: MSEQParams;
+  private params = {
+    midGains: [0, 0, 0] as [number, number, number],
+    sideGains: [0, 0, 0] as [number, number, number],
+    midFreqs: [200, 1000, 5000] as [number, number, number],
+    sideFreqs: [200, 1000, 5000] as [number, number, number],
+    midQs: [1, 1, 1] as [number, number, number],
+    sideQs: [1, 1, 1] as [number, number, number],
+  };
   
-  // Parameter smoothing
-  private paramSmoothingCoeff = 0.01; // ~1ms time constant
-
-  static get parameterDescriptors() {
-    return [];
-  }
-
+  // Smoothing time constants (α = exp(-1/(τ·sr)))
+  private readonly smoothingAlpha = Math.exp(-1 / (0.05 * sampleRate)); // 50ms smoothing
+  
   constructor() {
     super();
-    this.sampleRate = sampleRate;
     
-    // Initialize default parameters
-    this.params = {
-      mid: {
-        low: { freq: 100, gain: 0, q: 0.7 },
-        mid: { freq: 1000, gain: 0, q: 0.7 },
-        high: { freq: 8000, gain: 0, q: 0.7 }
+    this.state = {
+      msDecoded: false,
+      
+      midBands: [
+        { x1: 0, x2: 0, y1: 0, y2: 0 },
+        { x1: 0, x2: 0, y1: 0, y2: 0 },
+        { x1: 0, x2: 0, y1: 0, y2: 0 },
+      ],
+      sideBands: [
+        { x1: 0, x2: 0, y1: 0, y2: 0 },
+        { x1: 0, x2: 0, y1: 0, y2: 0 },
+        { x1: 0, x2: 0, y1: 0, y2: 0 },
+      ],
+      
+      smoothedGains: {
+        mid: [0, 0, 0],
+        side: [0, 0, 0],
       },
-      side: {
-        low: { freq: 100, gain: 0, q: 0.7 },
-        mid: { freq: 1000, gain: 0, q: 0.7 },
-        high: { freq: 8000, gain: 0, q: 0.7 }
+      
+      coefficients: {
+        mid: [],
+        side: [],
+      },
+    };
+    
+    // Initialize coefficients
+    this.updateAllCoefficients();
+    
+    // Set up message handler
+    this.port.onmessage = (event) => {
+      const { type, ...params } = event.data;
+      if (type === 'updateParams') {
+        this.updateParameters(params);
       }
     };
-    
-    // Initialize biquad filters
-    this.midLowFilter = this.createBiquadState();
-    this.midMidFilter = this.createBiquadState();
-    this.midHighFilter = this.createBiquadState();
-    this.sideLowFilter = this.createBiquadState();
-    this.sideMidFilter = this.createBiquadState();
-    this.sideHighFilter = this.createBiquadState();
-    
-    // Update filter coefficients
-    this.updateAllFilters();
-    
-    this.port.onmessage = this.handleMessage.bind(this);
   }
-
-  private handleMessage(event: MessageEvent) {
-    const { type, params } = event.data;
+  
+  private updateParameters(newParams: any): void {
+    // Update parameters with new values
+    Object.assign(this.params, newParams);
+    this.updateAllCoefficients();
+  }
+  
+  private updateAllCoefficients(): void {
+    this.state.coefficients.mid = [];
+    this.state.coefficients.side = [];
     
-    switch (type) {
-      case 'updateParams':
-        this.params = { ...this.params, ...params };
-        this.updateAllFilters();
-        break;
+    // Compute coefficients for mid bands
+    for (let i = 0; i < 3; i++) {
+      this.state.coefficients.mid.push(
+        this.computePeakingCoefficients(
+          this.params.midFreqs[i],
+          this.params.midGains[i],
+          this.params.midQs[i]
+        )
+      );
+    }
+    
+    // Compute coefficients for side bands
+    for (let i = 0; i < 3; i++) {
+      this.state.coefficients.side.push(
+        this.computePeakingCoefficients(
+          this.params.sideFreqs[i],
+          this.params.sideGains[i],
+          this.params.sideQs[i]
+        )
+      );
     }
   }
-
-  private createBiquadState(): BiquadState {
-    return {
-      x1: 0, x2: 0, y1: 0, y2: 0,
-      b0: 1, b1: 0, b2: 0, a1: 0, a2: 0
-    };
-  }
-
-  private updateAllFilters(): void {
-    // Update mid channel filters
-    this.updatePeakingFilter(this.midLowFilter, this.params.mid.low);
-    this.updatePeakingFilter(this.midMidFilter, this.params.mid.mid);
-    this.updatePeakingFilter(this.midHighFilter, this.params.mid.high);
-    
-    // Update side channel filters
-    this.updatePeakingFilter(this.sideLowFilter, this.params.side.low);
-    this.updatePeakingFilter(this.sideMidFilter, this.params.side.mid);
-    this.updatePeakingFilter(this.sideHighFilter, this.params.side.high);
-  }
-
-  private updatePeakingFilter(filter: BiquadState, band: EQBand): void {
-    // Peaking EQ biquad coefficients
-    const A = Math.pow(10, band.gain / 40); // dB to linear
-    const omega = 2 * Math.PI * band.freq / this.sampleRate;
+  
+  private computePeakingCoefficients(freq: number, gainDb: number, Q: number) {
+    const A = Math.pow(10, gainDb / 40); // sqrt of linear gain
+    const omega = 2 * Math.PI * freq / sampleRate;
     const sin = Math.sin(omega);
     const cos = Math.cos(omega);
-    const alpha = sin / (2 * band.q);
+    const alpha = sin / (2 * Q);
     
-    // Peaking filter coefficients
+    // Peaking EQ coefficients
     const b0 = 1 + alpha * A;
     const b1 = -2 * cos;
     const b2 = 1 - alpha * A;
@@ -136,154 +134,136 @@ class MSEQProcessor extends AudioWorkletProcessor {
     const a2 = 1 - alpha / A;
     
     // Normalize by a0
-    filter.b0 = b0 / a0;
-    filter.b1 = b1 / a0;
-    filter.b2 = b2 / a0;
-    filter.a1 = a1 / a0;
-    filter.a2 = a2 / a0;
+    return {
+      b0: b0 / a0,
+      b1: b1 / a0,
+      b2: b2 / a0,
+      a1: a1 / a0,
+      a2: a2 / a0,
+    };
   }
-
-  private processBiquad(filter: BiquadState, input: number): number {
+  
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    const input = inputs[0];
+    const output = outputs[0];
+    
+    if (!input || input.length < 2 || !output || output.length < 2) {
+      return true;
+    }
+    
+    const leftChannel = input[0];
+    const rightChannel = input[1];
+    const outLeft = output[0];
+    const outRight = output[1];
+    const blockSize = leftChannel.length;
+    
+    // Process each sample
+    for (let i = 0; i < blockSize; i++) {
+      const left = leftChannel[i];
+      const right = rightChannel[i];
+      
+      // Convert L/R to M/S
+      let mid = (left + right) * 0.5;
+      let side = (left - right) * 0.5;
+      
+      // Apply smoothed gain parameters
+      this.updateSmoothedGains();
+      
+      // Process mid channel through 3 peaking bands
+      for (let band = 0; band < 3; band++) {
+        mid = this.processBiquad(mid, this.state.midBands[band], this.state.coefficients.mid[band]);
+      }
+      
+      // Process side channel through 3 peaking bands
+      for (let band = 0; band < 3; band++) {
+        side = this.processBiquad(side, this.state.sideBands[band], this.state.coefficients.side[band]);
+      }
+      
+      // Convert M/S back to L/R
+      outLeft[i] = mid + side;
+      outRight[i] = mid - side;
+    }
+    
+    return true;
+  }
+  
+  private updateSmoothedGains(): void {
+    // Smooth gain parameters to avoid clicks
+    for (let i = 0; i < 3; i++) {
+      this.state.smoothedGains.mid[i] += 
+        this.smoothingAlpha * (this.params.midGains[i] - this.state.smoothedGains.mid[i]);
+      
+      this.state.smoothedGains.side[i] += 
+        this.smoothingAlpha * (this.params.sideGains[i] - this.state.smoothedGains.side[i]);
+    }
+  }
+  
+  private processBiquad(
+    input: number, 
+    state: BiquadState, 
+    coeffs: { b0: number; b1: number; b2: number; a1: number; a2: number }
+  ): number {
     // Transposed Direct Form II
-    const output = filter.b0 * input + filter.b1 * filter.x1 + filter.b2 * filter.x2 - filter.a1 * filter.y1 - filter.a2 * filter.y2;
+    const output = coeffs.b0 * input + state.x1;
     
-    // Update delay line
-    filter.x2 = filter.x1;
-    filter.x1 = input;
-    filter.y2 = filter.y1;
-    filter.y1 = output;
+    state.x1 = coeffs.b1 * input - coeffs.a1 * output + state.x2;
+    state.x2 = coeffs.b2 * input - coeffs.a2 * output;
     
     return output;
   }
+}
 
-  private processChannel(filters: BiquadState[], input: number): number {
-    // Process through all three bands in series
-    let output = input;
-    for (const filter of filters) {
-      output = this.processBiquad(filter, output);
-    }
-    return output;
-  }
-
-  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
+// Register both encoder and decoder as separate processors
+class MSEncoder extends AudioWorkletProcessor {
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const input = inputs[0];
     const output = outputs[0];
     
-    if (!input || input.length === 0 || !output || output.length === 0) return true;
+    if (!input || input.length < 2 || !output || output.length < 2) {
+      return true;
+    }
     
     const leftChannel = input[0];
-    const rightChannel = input.length > 1 ? input[1] : leftChannel;
-    const outputLeft = output[0];
-    const outputRight = output.length > 1 ? output[1] : output[0];
+    const rightChannel = input[1];
+    const outMid = output[0];
+    const outSide = output[1];
+    const blockSize = leftChannel.length;
     
-    if (!leftChannel || !outputLeft) return true;
-    
-    const frameSize = leftChannel.length;
-    const sqrt2 = Math.SQRT2;
-    
-    for (let i = 0; i < frameSize; i++) {
+    // Convert L/R to M/S
+    for (let i = 0; i < blockSize; i++) {
       const left = leftChannel[i];
       const right = rightChannel[i];
       
-      // Encode to Mid/Side
-      const mid = (left + right) / sqrt2;
-      const side = (left - right) / sqrt2;
-      
-      // Process mid channel through mid EQ chain
-      const processedMid = this.processChannel([
-        this.midLowFilter,
-        this.midMidFilter, 
-        this.midHighFilter
-      ], mid);
-      
-      // Process side channel through side EQ chain
-      const processedSide = this.processChannel([
-        this.sideLowFilter,
-        this.sideMidFilter,
-        this.sideHighFilter
-      ], side);
-      
-      // Decode back to Left/Right
-      const decodedLeft = (processedMid + processedSide) / sqrt2;
-      const decodedRight = (processedMid - processedSide) / sqrt2;
-      
-      // Output
-      outputLeft[i] = decodedLeft;
-      if (outputRight && outputRight !== outputLeft) {
-        outputRight[i] = decodedRight;
-      }
+      outMid[i] = (left + right) * 0.5;   // Mid
+      outSide[i] = (left - right) * 0.5;  // Side
     }
     
     return true;
   }
 }
 
-// MS Encoder worklet (standalone for modular graph)
-class MSEncoderProcessor extends AudioWorkletProcessor {
-  static get parameterDescriptors() {
-    return [];
-  }
-
-  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
+class MSDecoder extends AudioWorkletProcessor {
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const input = inputs[0];
     const output = outputs[0];
     
-    if (!input || input.length === 0 || !output || output.length === 0) return true;
-    
-    const leftChannel = input[0];
-    const rightChannel = input.length > 1 ? input[1] : leftChannel;
-    const outputMid = output[0];
-    const outputSide = output.length > 1 ? output[1] : output[0];
-    
-    if (!leftChannel || !outputMid) return true;
-    
-    const sqrt2 = Math.SQRT2;
-    
-    for (let i = 0; i < leftChannel.length; i++) {
-      const left = leftChannel[i];
-      const right = rightChannel[i];
-      
-      // Encode to Mid/Side
-      outputMid[i] = (left + right) / sqrt2;
-      if (outputSide && outputSide !== outputMid) {
-        outputSide[i] = (left - right) / sqrt2;
-      }
+    if (!input || input.length < 2 || !output || output.length < 2) {
+      return true;
     }
-    
-    return true;
-  }
-}
-
-// MS Decoder worklet (standalone for modular graph)
-class MSDecoderProcessor extends AudioWorkletProcessor {
-  static get parameterDescriptors() {
-    return [];
-  }
-
-  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
-    const input = inputs[0];
-    const output = outputs[0];
-    
-    if (!input || input.length === 0 || !output || output.length === 0) return true;
     
     const midChannel = input[0];
-    const sideChannel = input.length > 1 ? input[1] : new Float32Array(midChannel.length);
-    const outputLeft = output[0];
-    const outputRight = output.length > 1 ? output[1] : output[0];
+    const sideChannel = input[1];
+    const outLeft = output[0];
+    const outRight = output[1];
+    const blockSize = midChannel.length;
     
-    if (!midChannel || !outputLeft) return true;
-    
-    const sqrt2 = Math.SQRT2;
-    
-    for (let i = 0; i < midChannel.length; i++) {
+    // Convert M/S back to L/R
+    for (let i = 0; i < blockSize; i++) {
       const mid = midChannel[i];
       const side = sideChannel[i];
       
-      // Decode to Left/Right
-      outputLeft[i] = (mid + side) / sqrt2;
-      if (outputRight && outputRight !== outputLeft) {
-        outputRight[i] = (mid - side) / sqrt2;
-      }
+      outLeft[i] = mid + side;   // Left
+      outRight[i] = mid - side;  // Right
     }
     
     return true;
@@ -291,5 +271,5 @@ class MSDecoderProcessor extends AudioWorkletProcessor {
 }
 
 registerProcessor('ms-eq-processor', MSEQProcessor);
-registerProcessor('ms-encoder', MSEncoderProcessor);
-registerProcessor('ms-decoder', MSDecoderProcessor);
+registerProcessor('ms-encoder', MSEncoder);
+registerProcessor('ms-decoder', MSDecoder);

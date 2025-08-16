@@ -1,68 +1,6 @@
-// lufs-processor.ts - ITU-R BS.1770-4 compliant LUFS measurement
-declare const sampleRate: number;
-
-interface LufsState {
-  // K-weighting filter state (cascaded biquads)
-  // High-pass stage (K1)
-  hp_z1_l: number;
-  hp_z1_r: number;
-  hp_z2_l: number;
-  hp_z2_r: number;
-  
-  // High-frequency shelf (K2)  
-  hf_z1_l: number;
-  hf_z1_r: number;
-  hf_z2_l: number;
-  hf_z2_r: number;
-  
-  // 400ms block buffer for integrated measurement
-  blockBuffer: Float32Array;
-  blockIndex: number;
-  blockFull: boolean;
-  
-  // Loudness blocks for gating
-  loudnessBlocks: Float32Array;
-  blockWriteIndex: number;
-  numBlocks: number;
-  
-  // Short-term measurement (3 seconds = 7.5 blocks of 400ms)
-  shortTermBlocks: Float32Array;
-  shortTermIndex: number;
-  shortTermFull: boolean;
-  
-  // LRA calculation (sliding window of blocks)
-  lraBlocks: Float32Array;
-  lraIndex: number;
-  lraFull: boolean;
-}
+// lufs-processor.js - ITU-R BS.1770-4 compliant LUFS measurement
 
 class LufsProcessor extends AudioWorkletProcessor {
-  private state: LufsState;
-  private frameCount = 0;
-  private updateRate: number; // 50Hz
-  private blockSize: number; // 400ms in samples
-  private samplesInBlock = 0;
-  
-  // K-weighting coefficients (pre-computed for efficiency)
-  private readonly kWeightingCoeffs = {
-    // High-pass (K1) - f_c ≈ 38 Hz
-    hp: {
-      b0: 1.53512485958697,
-      b1: -2.69169618940638,
-      b2: 1.19839281085285,
-      a1: -1.69065929318241,
-      a2: 0.73248077421585,
-    },
-    // High-frequency shelf (K2) - f_c ≈ 1681 Hz, +4dB
-    hf: {
-      b0: 1.0,
-      b1: -2.0,
-      b2: 1.0,
-      a1: -1.99004745483398,
-      a2: 0.99007225036621,
-    }
-  };
-  
   constructor() {
     super();
     
@@ -95,9 +33,29 @@ class LufsProcessor extends AudioWorkletProcessor {
       lraIndex: 0,
       lraFull: false,
     };
+    
+    // K-weighting coefficients
+    this.kWeightingCoeffs = {
+      hp: {
+        b0: 1.53512485958697,
+        b1: -2.69169618940638,
+        b2: 1.19839281085285,
+        a1: -1.69065929318241,
+        a2: 0.73248077421585,
+      },
+      hf: {
+        b0: 1.0,
+        b1: -2.0,
+        b2: 1.0,
+        a1: -1.99004745483398,
+        a2: 0.99007225036621,
+      }
+    };
+    
+    this.frameCount = 0;
   }
   
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+  process(inputs, outputs) {
     const input = inputs[0];
     const output = outputs[0];
     
@@ -147,7 +105,7 @@ class LufsProcessor extends AudioWorkletProcessor {
     return true;
   }
   
-  private applyKWeighting(sample: number, channel: 'L' | 'R'): number {
+  applyKWeighting(sample, channel) {
     const { hp, hf } = this.kWeightingCoeffs;
     
     // Get channel-specific filter states
@@ -183,7 +141,7 @@ class LufsProcessor extends AudioWorkletProcessor {
     return hf_out;
   }
   
-  private processBlock(): void {
+  processBlock() {
     // Calculate mean square for this 400ms block
     let blockSum = 0;
     for (let i = 0; i < this.blockSize; i++) {
@@ -192,12 +150,12 @@ class LufsProcessor extends AudioWorkletProcessor {
     
     const blockMeanSquare = blockSum / this.blockSize;
     
-    // Convert to loudness units (-0.691 is the ITU-R constant)
+    // Convert to loudness units
     const blockLoudness = blockMeanSquare > 0 ? 
       -0.691 + 10 * Math.log10(blockMeanSquare) : -70;
     
     // Store block for integrated measurement (if above absolute gate)
-    if (blockLoudness > -70) {  // Absolute gate at -70 LUFS
+    if (blockLoudness > -70) {
       if (this.state.numBlocks < this.state.loudnessBlocks.length) {
         this.state.loudnessBlocks[this.state.blockWriteIndex] = blockLoudness;
         this.state.blockWriteIndex = (this.state.blockWriteIndex + 1) % this.state.loudnessBlocks.length;
@@ -209,7 +167,7 @@ class LufsProcessor extends AudioWorkletProcessor {
       }
     }
     
-    // Store for short-term measurement (3 seconds = ~7.5 blocks)
+    // Store for short-term measurement
     this.state.shortTermBlocks[this.state.shortTermIndex] = blockLoudness;
     this.state.shortTermIndex = (this.state.shortTermIndex + 1) % this.state.shortTermBlocks.length;
     if (this.state.shortTermIndex === 0) {
@@ -224,7 +182,7 @@ class LufsProcessor extends AudioWorkletProcessor {
     }
   }
   
-  private sendMetrics(): void {
+  sendMetrics() {
     const lufsIntegrated = this.calculateIntegratedLoudness();
     const lufsShort = this.calculateShortTermLoudness();
     const lufsRange = this.calculateLRA();
@@ -236,11 +194,11 @@ class LufsProcessor extends AudioWorkletProcessor {
     });
   }
   
-  private calculateIntegratedLoudness(): number {
+  calculateIntegratedLoudness() {
     if (this.state.numBlocks === 0) return -70;
     
     // Get valid blocks (above absolute gate)
-    const validBlocks: number[] = [];
+    const validBlocks = [];
     const count = Math.min(this.state.numBlocks, this.state.loudnessBlocks.length);
     
     for (let i = 0; i < count; i++) {
@@ -252,12 +210,12 @@ class LufsProcessor extends AudioWorkletProcessor {
     
     if (validBlocks.length === 0) return -70;
     
-    // Calculate relative gate (-10 LU below mean)
+    // Calculate relative gate
     const meanLoudness = validBlocks.reduce((sum, l) => sum + Math.pow(10, l / 10), 0) / validBlocks.length;
     const meanLoudnessDb = 10 * Math.log10(meanLoudness);
-    const relativeGate = meanLoudnessDb - 10; // -10 LU below mean
+    const relativeGate = meanLoudnessDb - 10;
     
-    // Apply relative gate and calculate final integrated loudness
+    // Apply relative gate
     const gatedBlocks = validBlocks.filter(l => l >= relativeGate);
     
     if (gatedBlocks.length === 0) return -70;
@@ -266,10 +224,9 @@ class LufsProcessor extends AudioWorkletProcessor {
     return -0.691 + 10 * Math.log10(finalMean);
   }
   
-  private calculateShortTermLoudness(): number {
+  calculateShortTermLoudness() {
     if (!this.state.shortTermFull && this.state.shortTermIndex < 3) return -70;
     
-    // Use available blocks (up to 3 seconds worth)
     const blocksToUse = this.state.shortTermFull ? 
       this.state.shortTermBlocks.length : this.state.shortTermIndex;
     
@@ -278,7 +235,7 @@ class LufsProcessor extends AudioWorkletProcessor {
     
     for (let i = 0; i < blocksToUse; i++) {
       const loudness = this.state.shortTermBlocks[i];
-      if (loudness > -70) {  // Above absolute gate
+      if (loudness > -70) {
         sum += Math.pow(10, loudness / 10);
         count++;
       }
@@ -287,11 +244,10 @@ class LufsProcessor extends AudioWorkletProcessor {
     return count > 0 ? -0.691 + 10 * Math.log10(sum / count) : -70;
   }
   
-  private calculateLRA(): number {
+  calculateLRA() {
     if (!this.state.lraFull && this.state.lraIndex < 5) return 0;
     
-    // Collect valid blocks for LRA calculation
-    const validBlocks: number[] = [];
+    const validBlocks = [];
     const blocksToUse = this.state.lraFull ? 
       this.state.lraBlocks.length : this.state.lraIndex;
     
@@ -304,17 +260,15 @@ class LufsProcessor extends AudioWorkletProcessor {
     
     if (validBlocks.length < 2) return 0;
     
-    // Sort for percentile calculation
     validBlocks.sort((a, b) => a - b);
     
-    // Calculate 10th and 95th percentiles
     const p10Index = Math.floor(validBlocks.length * 0.10);
     const p95Index = Math.floor(validBlocks.length * 0.95);
     
     const p10 = validBlocks[p10Index];
     const p95 = validBlocks[Math.min(p95Index, validBlocks.length - 1)];
     
-    return Math.max(0, p95 - p10); // LRA in LU
+    return Math.max(0, p95 - p10);
   }
 }
 

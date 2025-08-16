@@ -1,628 +1,556 @@
-/**
- * AudioEngine.ts - Core audio processing engine with A/B mastering chain
- * Implements exact graph: Source → Split(A/B) → Processing → Latency Alignment → Output
- */
+import { useSessionStore } from '@/state/useSessionStore';
 
-import { WorkletLoader } from './WorkletLoader';
-
-export interface AudioMetrics {
-  peak: number;
-  rms: number;
-  truePeak: number;
-  correlation: number;
-  stereoWidth: number;
-  noiseFloor: number;
-  lufsI: number;
-  lufsS: number;
-  lufsM: number;
-  lra: number;
-  dbtp: number;
+export interface AudioEngineConfig {
+  bufferSize: number;
+  sampleRate: number;
+  lookAheadMs: number;
 }
 
-export interface MasterParams {
-  // M/S EQ parameters
-  msEq: {
-    mid: { low: { freq: number; gain: number; q: number }; mid: { freq: number; gain: number; q: number }; high: { freq: number; gain: number; q: number } };
-    side: { low: { freq: number; gain: number; q: number }; mid: { freq: number; gain: number; q: number }; high: { freq: number; gain: number; q: number } };
-  };
-  // Denoise parameters
-  denoise: { enabled: boolean; alpha: number; mode: 'spectral' | 'wiener' };
+export interface ProcessorParams {
+  // MS EQ parameters
+  midGains: [number, number, number]; // 3 bands
+  sideGains: [number, number, number];
+  midFreqs: [number, number, number];
+  sideFreqs: [number, number, number];
+  midQs: [number, number, number];
+  sideQs: [number, number, number];
+  
+  // Denoise parameters  
+  denoiseAmount: number;
+  noiseGateThreshold: number;
+  
   // Limiter parameters
-  limiter: { threshold: number; ceiling: number; attack: number; release: number; lookahead: number };
-  // Target metrics
-  targets: { lufs: number; dbtp: number; lra: number };
-}
-
-export interface RenderedAssets {
-  wav: ArrayBuffer;
-  mp3: ArrayBuffer;
-  flac: ArrayBuffer;
-  comparePng: ArrayBuffer;
-  spectraPng: ArrayBuffer;
-  report: string;
-  metrics: AudioMetrics;
-  checksum: string;
-  renderMs: number;
+  threshold: number;
+  ceiling: number;
+  lookAheadSamples: number;
+  attack: number;
+  release: number;
 }
 
 export class AudioEngine {
-  private context: AudioContext | null = null;
-  private sourceBuffer: AudioBuffer | null = null;
-  private isInitialized = false;
-  private isProcessing = false;
-  
-  // A/B Chain nodes
+  private audioContext: AudioContext | null = null;
   private sourceNode: AudioBufferSourceNode | null = null;
-  private splitterNode: ChannelSplitterNode | null = null;
-  private mergerNodeA: ChannelMergerNode | null = null;
-  private mergerNodeB: ChannelMergerNode | null = null;
-  private delayNodeA: DelayNode | null = null;
-  private gainNodeA: GainNode | null = null;
-  private gainNodeB: GainNode | null = null;
+  private audioBuffer: AudioBuffer | null = null;
+  private isPlaying = false;
+  private workletSupported = true;
   
-  // Processing chain (B path)
-  private msEncodeWorklet: AudioWorkletNode | null = null;
-  private msEqWorklet: AudioWorkletNode | null = null;
-  private denoiseWorklet: AudioWorkletNode | null = null;
-  private limiterWorklet: AudioWorkletNode | null = null;
-  private msDecodeWorklet: AudioWorkletNode | null = null;
+  // Audio graph nodes
+  private splitterA: ChannelSplitterNode | null = null;
+  private mergerA: ChannelMergerNode | null = null;
+  private meterA: AudioWorkletNode | AnalyserNode | null = null;
+  private lufsA: AudioWorkletNode | AnalyserNode | null = null;
+  private fftA: AudioWorkletNode | AnalyserNode | null = null;
+  private delayA: DelayNode | null = null;
+  private gainA: GainNode | null = null;
   
-  // Analysis nodes (both paths)
-  private meterWorkletA: AudioWorkletNode | null = null;
-  private meterWorkletB: AudioWorkletNode | null = null;
-  private lufsWorkletA: AudioWorkletNode | null = null;
-  private lufsWorkletB: AudioWorkletNode | null = null;
-  private fftWorkletA: AudioWorkletNode | null = null;
-  private fftWorkletB: AudioWorkletNode | null = null;
+  private splitterB: ChannelSplitterNode | null = null;
+  private msEncoder: AudioWorkletNode | null = null;
+  private msEQ: AudioWorkletNode | null = null;
+  private denoise: AudioWorkletNode | null = null;
+  private limiter: AudioWorkletNode | null = null;
+  private msDecoder: AudioWorkletNode | null = null;
+  private mergerB: ChannelMergerNode | null = null;
+  private meterB: AudioWorkletNode | AnalyserNode | null = null;
+  private lufsB: AudioWorkletNode | AnalyserNode | null = null;
+  private fftB: AudioWorkletNode | AnalyserNode | null = null;
+  private gainB: GainNode | null = null;
   
-  // Current parameters
-  private currentParams: MasterParams = this.getDefaultParams();
-  private workletLoader = new WorkletLoader();
+  private destinationA: GainNode | null = null;
+  private destinationB: GainNode | null = null;
+  private mainOutput: GainNode | null = null;
   
-  // A/B monitoring
-  private monitorGainA: GainNode | null = null;
-  private monitorGainB: GainNode | null = null;
-  private abRatio = 0; // 0 = A only, 1 = B only
+  private rafId: number | null = null;
+  private updateCallback: ((deltaTime: number) => void) | null = null;
+  private lastTime = 0;
   
-  // Metrics callbacks
-  private metricsCallbacks: ((metrics: AudioMetrics, path: 'A' | 'B') => void)[] = [];
-
-  constructor() {}
-
+  private currentParams: ProcessorParams = {
+    midGains: [0, 0, 0],
+    sideGains: [0, 0, 0],
+    midFreqs: [200, 1000, 5000],
+    sideFreqs: [200, 1000, 5000],
+    midQs: [1, 1, 1],
+    sideQs: [1, 1, 1],
+    denoiseAmount: 0,
+    noiseGateThreshold: -60,
+    threshold: -6,
+    ceiling: -1,
+    lookAheadSamples: 0,
+    attack: 5,
+    release: 50,
+  };
+  
+  constructor(private config: AudioEngineConfig = {
+    bufferSize: 4096,
+    sampleRate: 48000,
+    lookAheadMs: 5.0,
+  }) {}
+  
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
-
-    this.context = new AudioContext();
-    await this.workletLoader.loadAllWorklets(this.context);
-    this.isInitialized = true;
+    try {
+      this.audioContext = new AudioContext({
+        sampleRate: this.config.sampleRate,
+        latencyHint: 'interactive',
+      });
+      
+      // Calculate look-ahead delay in samples
+      this.currentParams.lookAheadSamples = Math.floor(
+        this.config.lookAheadMs * this.audioContext.sampleRate / 1000
+      );
+      
+      // Try to load audio worklets
+      try {
+        await this.loadAudioWorklets();
+        console.log('AudioWorklets loaded successfully');
+      } catch (error) {
+        console.warn('AudioWorklets failed to load, using fallback:', error);
+        this.workletSupported = false;
+      }
+      
+      // Create the audio graph
+      await this.createAudioGraph();
+      
+      // Start the update loop
+      this.startUpdateLoop();
+      
+    } catch (error) {
+      console.error('AudioEngine initialization failed:', error);
+      throw error;
+    }
   }
-
+  
+  private async loadAudioWorklets(): Promise<void> {
+    if (!this.audioContext) throw new Error('AudioContext not initialized');
+    
+    const workletModules = [
+      '/src/audio/processors/meter-processor.js',
+      '/src/audio/processors/lufs-processor.js', 
+      '/src/audio/processors/fft-processor.js',
+      '/src/audio/processors/ms-eq-processor.js',
+      '/src/audio/processors/denoise-processor.js',
+      '/src/audio/processors/limiter-processor.js',
+    ];
+    
+    for (const module of workletModules) {
+      await this.audioContext.audioWorklet.addModule(module);
+    }
+  }
+  
+  private async createAudioGraph(): Promise<void> {
+    if (!this.audioContext) throw new Error('AudioContext not initialized');
+    
+    // Channel A (original signal with delay compensation)
+    this.splitterA = this.audioContext.createChannelSplitter(2);
+    this.mergerA = this.audioContext.createChannelMerger(2);
+    
+    if (this.workletSupported) {
+      this.meterA = new AudioWorkletNode(this.audioContext, 'meter-processor');
+      this.lufsA = new AudioWorkletNode(this.audioContext, 'lufs-processor');  
+      this.fftA = new AudioWorkletNode(this.audioContext, 'fft-processor', {
+        processorOptions: { fftSize: this.config.bufferSize }
+      });
+      
+      // Set up message handlers for channel A
+      this.setupWorkletHandlers('A', this.meterA, this.lufsA, this.fftA);
+    } else {
+      // Fallback to AnalyserNodes
+      this.meterA = this.audioContext.createAnalyser();
+      this.lufsA = this.audioContext.createAnalyser();
+      this.fftA = this.audioContext.createAnalyser();
+      this.setupAnalyserFallback('A');
+    }
+    
+    // Delay compensation for channel A (matches limiter look-ahead)
+    this.delayA = this.audioContext.createDelay(0.1); // Max 100ms
+    this.delayA.delayTime.value = this.currentParams.lookAheadSamples / this.audioContext.sampleRate;
+    
+    this.gainA = this.audioContext.createGain();
+    
+    // Channel B (processed signal)
+    this.splitterB = this.audioContext.createChannelSplitter(2);
+    
+    if (this.workletSupported) {
+      // M/S processing chain
+      this.msEncoder = new AudioWorkletNode(this.audioContext, 'ms-encoder');
+      this.msEQ = new AudioWorkletNode(this.audioContext, 'ms-eq-processor');
+      this.denoise = new AudioWorkletNode(this.audioContext, 'denoise-processor', {
+        processorOptions: { bufferSize: 1024 }
+      });
+      this.limiter = new AudioWorkletNode(this.audioContext, 'limiter-processor', {
+        processorOptions: { lookAheadSamples: this.currentParams.lookAheadSamples }
+      });
+      this.msDecoder = new AudioWorkletNode(this.audioContext, 'ms-decoder');
+      
+      this.meterB = new AudioWorkletNode(this.audioContext, 'meter-processor');
+      this.lufsB = new AudioWorkletNode(this.audioContext, 'lufs-processor');
+      this.fftB = new AudioWorkletNode(this.audioContext, 'fft-processor', {
+        processorOptions: { fftSize: this.config.bufferSize }
+      });
+      
+      // Set up message handlers for channel B  
+      this.setupWorkletHandlers('B', this.meterB, this.lufsB, this.fftB);
+      this.setupProcessorHandlers();
+    } else {
+      // Simplified fallback processing
+      this.meterB = this.audioContext.createAnalyser();
+      this.lufsB = this.audioContext.createAnalyser(); 
+      this.fftB = this.audioContext.createAnalyser();
+      this.setupAnalyserFallback('B');
+    }
+    
+    this.mergerB = this.audioContext.createChannelMerger(2);
+    this.gainB = this.audioContext.createGain();
+    
+    // Output routing
+    this.destinationA = this.audioContext.createGain();
+    this.destinationB = this.audioContext.createGain();
+    this.mainOutput = this.audioContext.createGain();
+    
+    // Connect Channel A (original with delay)
+    this.connectChannelA();
+    
+    // Connect Channel B (processed)
+    this.connectChannelB();
+    
+    // Connect outputs  
+    this.destinationA.connect(this.mainOutput);
+    this.destinationB.connect(this.mainOutput);
+    this.mainOutput.connect(this.audioContext.destination);
+    
+    // Initialize monitor routing (A by default)
+    this.setMonitor('A');
+  }
+  
+  private connectChannelA(): void {
+    if (!this.splitterA || !this.meterA || !this.lufsA || !this.fftA || 
+        !this.delayA || !this.mergerA || !this.gainA || !this.destinationA) {
+      return;
+    }
+    
+    // Split -> Meter -> LUFS -> FFT -> Delay -> Merge -> Gain -> Output
+    this.splitterA.connect(this.mergerA);
+    this.mergerA.connect(this.meterA as AudioNode);
+    (this.meterA as AudioNode).connect(this.lufsA as AudioNode);
+    (this.lufsA as AudioNode).connect(this.fftA as AudioNode);
+    (this.fftA as AudioNode).connect(this.delayA);
+    this.delayA.connect(this.gainA);
+    this.gainA.connect(this.destinationA);
+  }
+  
+  private connectChannelB(): void {
+    if (!this.workletSupported) {
+      // Simple fallback routing
+      if (this.splitterB && this.mergerB && this.meterB && this.lufsB && 
+          this.fftB && this.gainB && this.destinationB) {
+        this.splitterB.connect(this.mergerB);
+        this.mergerB.connect(this.meterB as AudioNode);
+        (this.meterB as AudioNode).connect(this.lufsB as AudioNode);
+        (this.lufsB as AudioNode).connect(this.fftB as AudioNode);
+        (this.fftB as AudioNode).connect(this.gainB);
+        this.gainB.connect(this.destinationB);
+      }
+      return;
+    }
+    
+    if (!this.splitterB || !this.msEncoder || !this.msEQ || !this.denoise ||
+        !this.limiter || !this.msDecoder || !this.mergerB || !this.meterB ||
+        !this.lufsB || !this.fftB || !this.gainB || !this.destinationB) {
+      return;
+    }
+    
+    // Split -> MS Encode -> EQ -> Denoise -> Limiter -> MS Decode -> Merge -> Meter -> LUFS -> FFT -> Gain -> Output
+    this.splitterB.connect(this.msEncoder);
+    this.msEncoder.connect(this.msEQ);
+    this.msEQ.connect(this.denoise);
+    this.denoise.connect(this.limiter);
+    this.limiter.connect(this.msDecoder);
+    this.msDecoder.connect(this.mergerB);
+    this.mergerB.connect(this.meterB as AudioNode);
+    (this.meterB as AudioNode).connect(this.lufsB as AudioNode);
+    (this.lufsB as AudioNode).connect(this.fftB as AudioNode);
+    (this.fftB as AudioNode).connect(this.gainB);
+    this.gainB.connect(this.destinationB);
+  }
+  
+  private setupWorkletHandlers(
+    channel: 'A' | 'B',
+    meter: AudioWorkletNode,
+    lufs: AudioWorkletNode, 
+    fft: AudioWorkletNode
+  ): void {
+    const store = useSessionStore.getState();
+    
+    meter.port.onmessage = (event) => {
+      const { peak, rms, truePeak, correlation, width, noiseFloor } = event.data;
+      if (channel === 'A') {
+        store.updateMetricsA({ peak, rms, truePeak, correlation, width, noiseFloor });
+      } else {
+        store.updateMetricsB({ peak, rms, truePeak, correlation, width, noiseFloor });
+      }
+    };
+    
+    lufs.port.onmessage = (event) => {
+      const { lufsIntegrated, lufsShort, lufsRange } = event.data;
+      if (channel === 'A') {
+        store.updateMetricsA({ lufsIntegrated, lufsShort, lufsRange });
+      } else {
+        store.updateMetricsB({ lufsIntegrated, lufsShort, lufsRange });
+      }
+    };
+    
+    fft.port.onmessage = (event) => {
+      const { fftData } = event.data;
+      if (fftData instanceof Float32Array) {
+        if (channel === 'A') {
+          store.updateFFTA(fftData);
+        } else {
+          store.updateFFTB(fftData);
+        }
+      }
+    };
+  }
+  
+  private setupProcessorHandlers(): void {
+    if (!this.denoise || !this.limiter) return;
+    
+    const store = useSessionStore.getState();
+    
+    this.denoise.port.onmessage = (event) => {
+      const { sweepIndex } = event.data;
+      // Could update a sweep visualization here
+    };
+    
+    this.limiter.port.onmessage = (event) => {
+      const { gainReduction, truePeak } = event.data;
+      // Update limiter-specific metrics
+      store.updateMetricsB({ truePeak });
+    };
+  }
+  
+  private setupAnalyserFallback(channel: 'A' | 'B'): void {
+    // Fallback using AnalyserNode when worklets fail
+    const analyser = channel === 'A' ? this.meterA as AnalyserNode : this.meterB as AnalyserNode;
+    if (!analyser) return;
+    
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.3;
+    
+    // We'll update these in the RAF loop since AnalyserNodes don't send messages
+  }
+  
+  private startUpdateLoop(): void {
+    const update = (currentTime: number) => {
+      const deltaTime = currentTime - this.lastTime;
+      this.lastTime = currentTime;
+      
+      // Update fallback analysers if needed
+      if (!this.workletSupported) {
+        this.updateAnalyserFallback();
+      }
+      
+      // Call external update callback
+      if (this.updateCallback) {
+        this.updateCallback(deltaTime);
+      }
+      
+      this.rafId = requestAnimationFrame(update);
+    };
+    
+    this.rafId = requestAnimationFrame(update);
+  }
+  
+  private updateAnalyserFallback(): void {
+    if (!this.workletSupported) return;
+    
+    const store = useSessionStore.getState();
+    
+    // Update Channel A fallback
+    if (this.meterA instanceof AnalyserNode) {
+      const dataArray = new Float32Array(this.meterA.frequencyBinCount);
+      this.meterA.getFloatFrequencyData(dataArray);
+      
+      // Simple peak estimation
+      let peak = -Infinity;
+      for (let i = 0; i < dataArray.length; i++) {
+        peak = Math.max(peak, dataArray[i]);
+      }
+      
+      store.updateMetricsA({ peak, rms: peak - 6 }); // Rough RMS estimate
+      store.updateFFTA(dataArray);
+    }
+    
+    // Update Channel B fallback  
+    if (this.meterB instanceof AnalyserNode) {
+      const dataArray = new Float32Array(this.meterB.frequencyBinCount);
+      this.meterB.getFloatFrequencyData(dataArray);
+      
+      let peak = -Infinity;
+      for (let i = 0; i < dataArray.length; i++) {
+        peak = Math.max(peak, dataArray[i]);
+      }
+      
+      store.updateMetricsB({ peak, rms: peak - 6 });
+      store.updateFFTB(dataArray);
+    }
+  }
+  
   async loadAudio(buffer: AudioBuffer): Promise<void> {
-    if (!this.context) throw new Error('Engine not initialized');
+    if (!this.audioContext) throw new Error('AudioEngine not initialized');
     
-    this.sourceBuffer = buffer;
-    await this.buildAudioGraph();
-  }
-
-  private async buildAudioGraph(): Promise<void> {
-    if (!this.context || !this.sourceBuffer) return;
-
-    // Clean up existing nodes
-    this.cleanup();
-
-    // Create source
-    this.sourceNode = this.context.createBufferSource();
-    this.sourceNode.buffer = this.sourceBuffer;
-
-    // Create splitter for A/B paths
-    this.splitterNode = this.context.createChannelSplitter(2);
-    this.mergerNodeA = this.context.createChannelMerger(2);
-    this.mergerNodeB = this.context.createChannelMerger(2);
-
-    // Create delay for latency compensation (A path)
-    this.delayNodeA = this.context.createDelay(0.1); // Max 100ms delay
-    this.updateLatencyCompensation();
-
-    // Create A/B monitoring gains
-    this.monitorGainA = this.context.createGain();
-    this.monitorGainB = this.context.createGain();
-    this.gainNodeA = this.context.createGain();
-    this.gainNodeB = this.context.createGain();
-
-    // Create processing worklets (B path)
-    this.msEncodeWorklet = new AudioWorkletNode(this.context, 'ms-encoder');
-    this.msEqWorklet = new AudioWorkletNode(this.context, 'ms-eq-processor');
-    this.denoiseWorklet = new AudioWorkletNode(this.context, 'denoise-processor');
-    this.limiterWorklet = new AudioWorkletNode(this.context, 'limiter-processor');
-    this.msDecodeWorklet = new AudioWorkletNode(this.context, 'ms-decoder');
-
-    // Create analysis worklets (both paths)
-    this.meterWorkletA = new AudioWorkletNode(this.context, 'meter-processor');
-    this.meterWorkletB = new AudioWorkletNode(this.context, 'meter-processor');
-    this.lufsWorkletA = new AudioWorkletNode(this.context, 'lufs-processor');
-    this.lufsWorkletB = new AudioWorkletNode(this.context, 'lufs-processor');
-    this.fftWorkletA = new AudioWorkletNode(this.context, 'fft-processor');
-    this.fftWorkletB = new AudioWorkletNode(this.context, 'fft-processor');
-
-    // Connect A path (original): Source → Split → Delay → Meter → LUFS → FFT → Monitor → Dest
-    this.sourceNode.connect(this.splitterNode);
-    this.splitterNode.connect(this.mergerNodeA, 0, 0);
-    this.splitterNode.connect(this.mergerNodeA, 1, 1);
-    this.mergerNodeA.connect(this.delayNodeA);
-    this.delayNodeA.connect(this.meterWorkletA);
-    this.meterWorkletA.connect(this.lufsWorkletA);
-    this.lufsWorkletA.connect(this.fftWorkletA);
-    this.fftWorkletA.connect(this.gainNodeA);
-    this.gainNodeA.connect(this.monitorGainA);
-    this.monitorGainA.connect(this.context.destination);
-
-    // Connect B path (processed): Source → Split → MS Encode → MS EQ → Denoise → Limiter → MS Decode → Meter → LUFS → FFT → Monitor → Dest
-    this.splitterNode.connect(this.mergerNodeB, 0, 0);
-    this.splitterNode.connect(this.mergerNodeB, 1, 1);
-    this.mergerNodeB.connect(this.msEncodeWorklet);
-    this.msEncodeWorklet.connect(this.msEqWorklet);
-    this.msEqWorklet.connect(this.denoiseWorklet);
-    this.denoiseWorklet.connect(this.limiterWorklet);
-    this.limiterWorklet.connect(this.msDecodeWorklet);
-    this.msDecodeWorklet.connect(this.meterWorkletB);
-    this.meterWorkletB.connect(this.lufsWorkletB);
-    this.lufsWorkletB.connect(this.fftWorkletB);
-    this.fftWorkletB.connect(this.gainNodeB);
-    this.gainNodeB.connect(this.monitorGainB);
-    this.monitorGainB.connect(this.context.destination);
-
-    // Set up metrics callbacks
-    this.setupMetricsCallbacks();
-
-    // Apply current parameters
-    this.updateAllParameters();
-  }
-
-  private setupMetricsCallbacks(): void {
-    // Meter callbacks
-    this.meterWorkletA?.port.addEventListener('message', (e) => {
-      if (e.data.type === 'metrics') {
-        this.notifyMetrics({ ...e.data.metrics }, 'A');
-      }
-    });
-
-    this.meterWorkletB?.port.addEventListener('message', (e) => {
-      if (e.data.type === 'metrics') {
-        this.notifyMetrics({ ...e.data.metrics }, 'B');
-      }
-    });
-
-    // LUFS callbacks
-    this.lufsWorkletA?.port.addEventListener('message', (e) => {
-      if (e.data.type === 'lufs') {
-        this.notifyMetrics({ lufsI: e.data.integrated, lufsS: e.data.shortTerm, lufsM: e.data.momentary, lra: e.data.lra }, 'A');
-      }
-    });
-
-    this.lufsWorkletB?.port.addEventListener('message', (e) => {
-      if (e.data.type === 'lufs') {
-        this.notifyMetrics({ lufsI: e.data.integrated, lufsS: e.data.shortTerm, lufsM: e.data.momentary, lra: e.data.lra }, 'B');
-      }
-    });
-
-    // Start message ports
-    this.meterWorkletA?.port.start();
-    this.meterWorkletB?.port.start();
-    this.lufsWorkletA?.port.start();
-    this.lufsWorkletB?.port.start();
-  }
-
-  private updateLatencyCompensation(): void {
-    if (!this.delayNodeA || !this.currentParams) return;
+    this.audioBuffer = buffer;
     
-    // Calculate total processing latency from limiter lookahead
-    const lookaheadMs = this.currentParams.limiter.lookahead;
-    const sampleRate = this.context?.sampleRate || 48000;
-    const delaySamples = Math.ceil((lookaheadMs / 1000) * sampleRate);
-    const delaySeconds = delaySamples / sampleRate;
-    
-    this.delayNodeA.delayTime.setValueAtTime(delaySeconds, this.context?.currentTime || 0);
-  }
-
-  setABRatio(ratio: number): void {
-    this.abRatio = Math.max(0, Math.min(1, ratio));
-    
-    if (this.monitorGainA && this.monitorGainB && this.context) {
-      // Crossfade with 5ms ramps to prevent zipper noise
-      const fadeTime = 0.005;
-      const currentTime = this.context.currentTime;
-      
-      this.monitorGainA.gain.setTargetAtTime(1 - this.abRatio, currentTime, fadeTime);
-      this.monitorGainB.gain.setTargetAtTime(this.abRatio, currentTime, fadeTime);
+    // Ensure audio context is running
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
     }
   }
-
-  updateMasterParams(params: Partial<MasterParams>): void {
-    this.currentParams = { ...this.currentParams, ...params };
-    this.updateAllParameters();
-    this.updateLatencyCompensation();
-  }
-
-  private updateAllParameters(): void {
-    // Update MS EQ
-    this.msEqWorklet?.port.postMessage({
-      type: 'updateParams',
-      params: this.currentParams.msEq
-    });
-
-    // Update denoise
-    this.denoiseWorklet?.port.postMessage({
-      type: 'updateParams',
-      params: this.currentParams.denoise
-    });
-
-    // Update limiter
-    this.limiterWorklet?.port.postMessage({
-      type: 'updateParams',
-      params: this.currentParams.limiter
-    });
-  }
-
-  onMetrics(callback: (metrics: AudioMetrics, path: 'A' | 'B') => void): void {
-    this.metricsCallbacks.push(callback);
-  }
-
-  private notifyMetrics(metrics: Partial<AudioMetrics>, path: 'A' | 'B'): void {
-    const fullMetrics: AudioMetrics = {
-      peak: -60,
-      rms: -60,
-      truePeak: -60,
-      correlation: 0,
-      stereoWidth: 0,
-      noiseFloor: -60,
-      lufsI: -70,
-      lufsS: -70,
-      lufsM: -70,
-      lra: 0,
-      dbtp: -60,
-      ...metrics
-    };
-
-    this.metricsCallbacks.forEach(cb => cb(fullMetrics, path));
-  }
-
-  async startPlayback(): Promise<void> {
-    if (!this.sourceNode || this.isProcessing) return;
+  
+  async play(): Promise<void> {
+    if (!this.audioContext || !this.audioBuffer) {
+      throw new Error('Audio not loaded');
+    }
     
-    this.isProcessing = true;
-    this.sourceNode.start(0);
-  }
-
-  stopPlayback(): void {
-    if (this.sourceNode && this.isProcessing) {
-      this.sourceNode.stop();
-      this.isProcessing = false;
+    if (this.isPlaying) {
+      this.stop();
     }
-  }
-
-  async renderMaster(params: MasterParams): Promise<RenderedAssets> {
-    if (!this.sourceBuffer || !this.context) {
-      throw new Error('No audio loaded or context not initialized');
+    
+    // Create new source node
+    this.sourceNode = this.audioContext.createBufferSource();
+    this.sourceNode.buffer = this.audioBuffer;
+    
+    // Connect to both channels
+    if (this.splitterA) {
+      this.sourceNode.connect(this.splitterA);
     }
-
-    const start = performance.now();
-
-    // Create offline context matching the source
-    const duration = this.sourceBuffer.duration;
-    const sampleRate = this.context.sampleRate;
-    const offlineContext = new OfflineAudioContext(2, Math.ceil(duration * sampleRate), sampleRate);
-
-    // Load worklets in offline context
-    await this.workletLoader.loadAllWorklets(offlineContext);
-
-    // Build identical processing chain in offline context
-    const source = offlineContext.createBufferSource();
-    source.buffer = this.sourceBuffer;
-
-    const splitter = offlineContext.createChannelSplitter(2);
-    const merger = offlineContext.createChannelMerger(2);
-
-    // Create processing worklets
-    const msEncode = new AudioWorkletNode(offlineContext, 'ms-encoder');
-    const msEq = new AudioWorkletNode(offlineContext, 'ms-eq-processor');
-    const denoise = new AudioWorkletNode(offlineContext, 'denoise-processor');
-    const limiter = new AudioWorkletNode(offlineContext, 'limiter-processor');
-    const msDecode = new AudioWorkletNode(offlineContext, 'ms-decoder');
-
-    // Set parameters
-    msEq.port.postMessage({ type: 'updateParams', params: params.msEq });
-    denoise.port.postMessage({ type: 'updateParams', params: params.denoise });
-    limiter.port.postMessage({ type: 'updateParams', params: params.limiter });
-
-    // Connect processing chain: Source → Split → MS Encode → MS EQ → Denoise → Limiter → MS Decode → Destination
-    source.connect(splitter);
-    splitter.connect(merger, 0, 0);
-    splitter.connect(merger, 1, 1);
-    merger.connect(msEncode);
-    msEncode.connect(msEq);
-    msEq.connect(denoise);
-    denoise.connect(limiter);
-    limiter.connect(msDecode);
-    msDecode.connect(offlineContext.destination);
-
-    // Render
-    source.start(0);
-    const renderedBuffer = await offlineContext.startRendering();
-
-    // Encode formats
-    const wav = await this.encodeWav(renderedBuffer, 24);
-    const mp3 = await this.encodeMp3(renderedBuffer);
-    const flac = await this.encodeFlac(renderedBuffer);
-
-    // Generate visuals
-    const comparePng = await this.renderWaveformComparisonPng(this.sourceBuffer, renderedBuffer);
-    const spectraPng = await this.renderAverageSpectraPng(this.sourceBuffer, renderedBuffer);
-
-    // Calculate final metrics
-    const metrics = await this.calculateFinalMetrics(renderedBuffer);
-    const report = this.buildTextReport(metrics, params);
-    const checksum = await this.sha256(wav);
-
-    return {
-      wav,
-      mp3,
-      flac,
-      comparePng,
-      spectraPng,
-      report,
-      metrics,
-      checksum,
-      renderMs: performance.now() - start
+    if (this.splitterB) {
+      this.sourceNode.connect(this.splitterB);
+    }
+    
+    this.sourceNode.start();
+    this.isPlaying = true;
+    
+    useSessionStore.getState().setPlaying(true);
+    
+    this.sourceNode.onended = () => {
+      this.isPlaying = false;
+      useSessionStore.getState().setPlaying(false);
     };
   }
-
-  private async encodeWav(buffer: AudioBuffer, bitDepth: 16 | 24 = 24): Promise<ArrayBuffer> {
-    const length = buffer.length;
-    const channels = buffer.numberOfChannels;
-    const sampleRate = buffer.sampleRate;
-    const bytesPerSample = bitDepth / 8;
-    const blockAlign = channels * bytesPerSample;
-    const byteRate = sampleRate * blockAlign;
-    const dataSize = length * blockAlign;
-    const bufferSize = 44 + dataSize;
-
-    const arrayBuffer = new ArrayBuffer(bufferSize);
-    const view = new DataView(arrayBuffer);
-
-    // Write WAV header
-    const writeString = (offset: number, string: string) => {
-      for (let i = 0; i < string.length; i++) {
-        view.setUint8(offset + i, string.charCodeAt(i));
-      }
-    };
-
-    writeString(0, 'RIFF');
-    view.setUint32(4, bufferSize - 8, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, channels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, byteRate, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, bitDepth, true);
-    writeString(36, 'data');
-    view.setUint32(40, dataSize, true);
-
-    // Write audio data
-    let offset = 44;
-    const maxValue = Math.pow(2, bitDepth - 1) - 1;
-
-    for (let i = 0; i < length; i++) {
-      for (let channel = 0; channel < channels; channel++) {
-        const channelData = buffer.getChannelData(channel);
-        const sample = Math.max(-1, Math.min(1, channelData[i]));
-        const intSample = Math.round(sample * maxValue);
-
-        if (bitDepth === 16) {
-          view.setInt16(offset, intSample, true);
-          offset += 2;
-        } else if (bitDepth === 24) {
-          view.setInt8(offset, intSample & 0xFF);
-          view.setInt8(offset + 1, (intSample >> 8) & 0xFF);
-          view.setInt8(offset + 2, (intSample >> 16) & 0xFF);
-          offset += 3;
-        }
-      }
-    }
-
-    return arrayBuffer;
-  }
-
-  private async encodeMp3(buffer: AudioBuffer): Promise<ArrayBuffer> {
-    // This is a placeholder - would need lamejs implementation
-    // For now, return empty buffer
-    return new ArrayBuffer(0);
-  }
-
-  private async encodeFlac(buffer: AudioBuffer): Promise<ArrayBuffer> {
-    // This is a placeholder - would need flac-encoder implementation
-    // For now, return empty buffer
-    return new ArrayBuffer(0);
-  }
-
-  private async renderWaveformComparisonPng(original: AudioBuffer, processed: AudioBuffer): Promise<ArrayBuffer> {
-    // Create canvas for waveform rendering
-    const canvas = new OffscreenCanvas(1200, 400);
-    const ctx = canvas.getContext('2d')!;
-
-    // Draw comparison waveforms
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, 1200, 400);
-
-    // Draw original waveform (top half)
-    ctx.strokeStyle = '#666666';
-    ctx.lineWidth = 1;
-    this.drawWaveform(ctx, original, 0, 0, 1200, 200);
-
-    // Draw processed waveform (bottom half)
-    ctx.strokeStyle = '#22c55e';
-    ctx.lineWidth = 1;
-    this.drawWaveform(ctx, processed, 0, 200, 1200, 200);
-
-    // Convert to PNG
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
-    return await blob.arrayBuffer();
-  }
-
-  private drawWaveform(ctx: CanvasRenderingContext2D, buffer: AudioBuffer, x: number, y: number, width: number, height: number): void {
-    const data = buffer.getChannelData(0);
-    const step = Math.ceil(data.length / width);
-    const amp = height / 2;
-
-    ctx.beginPath();
-    for (let i = 0; i < width; i++) {
-      let min = 1.0;
-      let max = -1.0;
-      
-      for (let j = 0; j < step; j++) {
-        const datum = data[(i * step) + j];
-        if (datum < min) min = datum;
-        if (datum > max) max = datum;
-      }
-      
-      ctx.moveTo(x + i, y + amp + (min * amp));
-      ctx.lineTo(x + i, y + amp + (max * amp));
-    }
-    ctx.stroke();
-  }
-
-  private async renderAverageSpectraPng(original: AudioBuffer, processed: AudioBuffer): Promise<ArrayBuffer> {
-    // Placeholder for spectrum analysis rendering
-    const canvas = new OffscreenCanvas(1200, 400);
-    const ctx = canvas.getContext('2d')!;
-    
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, 1200, 400);
-    
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
-    return await blob.arrayBuffer();
-  }
-
-  private async calculateFinalMetrics(buffer: AudioBuffer): Promise<AudioMetrics> {
-    // Calculate final metrics from rendered buffer
-    const leftChannel = buffer.getChannelData(0);
-    const rightChannel = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : leftChannel;
-
-    let peak = 0;
-    let rmsSum = 0;
-    let correlation = 0;
-
-    for (let i = 0; i < leftChannel.length; i++) {
-      const l = leftChannel[i];
-      const r = rightChannel[i];
-      
-      peak = Math.max(peak, Math.abs(l), Math.abs(r));
-      rmsSum += (l * l + r * r) / 2;
-      correlation += l * r;
-    }
-
-    const rms = Math.sqrt(rmsSum / leftChannel.length);
-    const normalizedCorrelation = correlation / leftChannel.length;
-
-    return {
-      peak: 20 * Math.log10(peak + 1e-10),
-      rms: 20 * Math.log10(rms + 1e-10),
-      truePeak: 20 * Math.log10(peak + 1e-10), // Simplified
-      correlation: normalizedCorrelation,
-      stereoWidth: 1 - Math.abs(normalizedCorrelation),
-      noiseFloor: -60, // Placeholder
-      lufsI: -14, // Placeholder
-      lufsS: -14, // Placeholder
-      lufsM: -14, // Placeholder
-      lra: 8, // Placeholder
-      dbtp: 20 * Math.log10(peak + 1e-10)
-    };
-  }
-
-  private buildTextReport(metrics: AudioMetrics, params: MasterParams): string {
-    const timestamp = new Date().toISOString();
-    
-    return `C/No Voidline Mastering Report
-========================================
-
-Generated: ${timestamp}
-Engine: AudioEngine v1.0
-
-LOUDNESS METRICS
-================
-Integrated LUFS: ${metrics.lufsI.toFixed(1)}
-True Peak (dBTP): ${metrics.dbtp.toFixed(1)}
-Loudness Range: ${metrics.lra.toFixed(1)} LU
-RMS Level: ${metrics.rms.toFixed(1)} dBFS
-Peak Level: ${metrics.peak.toFixed(1)} dBFS
-
-STEREO METRICS
-==============
-Correlation: ${metrics.correlation.toFixed(3)}
-Stereo Width: ${(metrics.stereoWidth * 100).toFixed(1)}%
-Noise Floor: ${metrics.noiseFloor.toFixed(1)} dBFS
-
-PROCESSING CHAIN
-================
-MS EQ: Mid ${params.msEq.mid.low.gain.toFixed(1)}dB@${params.msEq.mid.low.freq}Hz, Side ${params.msEq.side.low.gain.toFixed(1)}dB@${params.msEq.side.low.freq}Hz
-Denoise: ${params.denoise.enabled ? 'Enabled' : 'Disabled'} (α=${params.denoise.alpha.toFixed(2)})
-Limiter: ${params.limiter.threshold.toFixed(1)}dB threshold, ${params.limiter.ceiling.toFixed(1)}dB ceiling
-
-TARGET COMPLIANCE
-=================
-Target LUFS: ${params.targets.lufs.toFixed(1)} (Δ=${(metrics.lufsI - params.targets.lufs).toFixed(1)})
-Target dBTP: ${params.targets.dbtp.toFixed(1)} (Δ=${(metrics.dbtp - params.targets.dbtp).toFixed(1)})
-Target LRA: ${params.targets.lra.toFixed(1)} (Δ=${(metrics.lra - params.targets.lra).toFixed(1)})
-
-========================================
-C/No Voidline - Frequencies attained. Stillness remains.
-`;
-  }
-
-  private async sha256(buffer: ArrayBuffer): Promise<string> {
-    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  private getDefaultParams(): MasterParams {
-    return {
-      msEq: {
-        mid: {
-          low: { freq: 100, gain: 0, q: 0.7 },
-          mid: { freq: 1000, gain: 0, q: 0.7 },
-          high: { freq: 8000, gain: 0, q: 0.7 }
-        },
-        side: {
-          low: { freq: 100, gain: 0, q: 0.7 },
-          mid: { freq: 1000, gain: 0, q: 0.7 },
-          high: { freq: 8000, gain: 0, q: 0.7 }
-        }
-      },
-      denoise: { enabled: false, alpha: 0.1, mode: 'spectral' },
-      limiter: { threshold: -1, ceiling: -0.1, attack: 1, release: 100, lookahead: 5 },
-      targets: { lufs: -14, dbtp: -1, lra: 8 }
-    };
-  }
-
-  private cleanup(): void {
+  
+  stop(): void {
     if (this.sourceNode) {
+      this.sourceNode.stop();
       this.sourceNode.disconnect();
       this.sourceNode = null;
     }
-    // Clean up all other nodes...
+    
+    this.isPlaying = false;
+    useSessionStore.getState().setPlaying(false);
   }
-
-  getCurrentDurationSec(): number {
-    return this.sourceBuffer?.duration || 0;
+  
+  setMonitor(monitor: 'A' | 'B'): void {
+    if (!this.destinationA || !this.destinationB) return;
+    
+    if (monitor === 'A') {
+      this.destinationA.gain.value = 1;
+      this.destinationB.gain.value = 0;
+    } else {
+      this.destinationA.gain.value = 0; 
+      this.destinationB.gain.value = 1;
+    }
+    
+    useSessionStore.getState().setMonitor(monitor);
   }
-
-  destroy(): void {
-    this.cleanup();
-    if (this.context && this.context.state !== 'closed') {
-      this.context.close();
+  
+  updateProcessorParams(params: Partial<ProcessorParams>): void {
+    this.currentParams = { ...this.currentParams, ...params };
+    
+    // Update delay compensation if look-ahead changed
+    if (params.lookAheadSamples !== undefined && this.delayA) {
+      this.delayA.delayTime.value = params.lookAheadSamples / (this.audioContext?.sampleRate || 48000);
+    }
+    
+    // Send parameter updates to worklet processors
+    if (this.workletSupported) {
+      if (this.msEQ && (params.midGains || params.sideGains || params.midFreqs || params.sideFreqs)) {
+        this.msEQ.port.postMessage({
+          type: 'updateParams',
+          midGains: this.currentParams.midGains,
+          sideGains: this.currentParams.sideGains,
+          midFreqs: this.currentParams.midFreqs,
+          sideFreqs: this.currentParams.sideFreqs,
+          midQs: this.currentParams.midQs,
+          sideQs: this.currentParams.sideQs,
+        });
+      }
+      
+      if (this.denoise && (params.denoiseAmount !== undefined || params.noiseGateThreshold !== undefined)) {
+        this.denoise.port.postMessage({
+          type: 'updateParams',
+          amount: this.currentParams.denoiseAmount,
+          threshold: this.currentParams.noiseGateThreshold,
+        });
+      }
+      
+      if (this.limiter && (params.threshold !== undefined || params.ceiling !== undefined || 
+          params.attack !== undefined || params.release !== undefined)) {
+        this.limiter.port.postMessage({
+          type: 'updateParams',
+          threshold: this.currentParams.threshold,
+          ceiling: this.currentParams.ceiling,
+          attack: this.currentParams.attack,
+          release: this.currentParams.release,
+        });
+      }
     }
   }
+  
+  onUpdate(callback: (deltaTime: number) => void): void {
+    this.updateCallback = callback;
+  }
+  
+  getWorkletStatus(): { supported: boolean; badge?: string } {
+    return {
+      supported: this.workletSupported,
+      badge: this.workletSupported ? undefined : 'worklet off'
+    };
+  }
+  
+  destroy(): void {
+    this.stop();
+    
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+    
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+  }
+}
+
+// Global audio engine instance
+export let audioEngine: AudioEngine | null = null;
+
+export async function initializeAudioEngine(config?: Partial<AudioEngineConfig>): Promise<AudioEngine> {
+  if (audioEngine) {
+    audioEngine.destroy();
+  }
+  
+  const fullConfig = {
+    bufferSize: 4096,
+    sampleRate: 48000,
+    lookAheadMs: 5.0,
+    ...config
+  };
+  
+  audioEngine = new AudioEngine(fullConfig);
+  await audioEngine.initialize();
+  
+  return audioEngine;
+}
+
+export function getAudioEngine(): AudioEngine | null {
+  return audioEngine;
 }

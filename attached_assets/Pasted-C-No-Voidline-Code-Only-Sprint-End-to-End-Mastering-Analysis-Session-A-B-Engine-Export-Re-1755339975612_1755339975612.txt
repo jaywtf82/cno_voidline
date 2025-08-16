@@ -1,0 +1,265 @@
+C/No Voidline — Code-Only Sprint (End-to-End Mastering: Analysis → Session → A/B Engine → Export)
+Repo (already cloned): /workspace/cno_voidline
+Stack: Vite + React 18 + TypeScript strict + Tailwind (keep existing toolchain; don’t add new bundlers)
+
+You MUST return unified diffs (git diff --patch) for every file changed/added, plus trimmed run logs. No docs-only edits. If files live in different paths, open the repo, detect real paths, and adapt—but still return diffs against the actual files.
+
+0) Run & capture baseline
+From the repo root:
+
+bash
+Copy
+Edit
+npm i
+npm run dev -- --port 5173
+Open the app. Note all TypeScript/ESLint/console errors. Fix them in patches you return. Do not proceed with docs—do the code.
+
+1) Cross-page session handoff (Main → Mastering)
+1.1 Session bus (global, small, typed)
+Create client/src/state/sessionBus.ts (Zustand). No any.
+
+ts
+Copy
+Edit
+export type PreMasterMeta = {
+  name: string; size: number; type: string; lastModified: number;
+  objectUrl: string; // URL.createObjectURL(file)
+  hash?: string;
+};
+export type PreMasterAnalysis = {
+  peakDb: number; rmsDb: number; lufsShort?: number; lufsIntegrated?: number;
+  noiseFloorDb?: number; corr?: number;
+  spectrumSnapshot?: Float32Array; // 2048 linear 0..1
+  sampleRate?: number; durationSec?: number;
+};
+export type SessionBus = {
+  file?: PreMasterMeta; analysis?: PreMasterAnalysis;
+  setPreMaster(file: PreMasterMeta, analysis: PreMasterAnalysis): void;
+  clearPreMaster(): void;
+};
+Implement with Zustand (strict), shallow selectors, no persistence of blobs.
+
+1.2 Pre-master analysis (main page)
+Create client/src/analysis/preMaster.ts:
+
+async function analyzePreMaster(file: File): Promise<{meta:PreMasterMeta;analysis:PreMasterAnalysis}>
+
+Decode via AudioContext/OfflineAudioContext.
+
+Compute: peakDb, rmsDb, approx lufsShort, coarse lufsIntegrated, noiseFloorDb (p10 RMS), corr (stereo Pearson), spectrumSnapshot (4096 FFT→2048 bins linear 0..1), sampleRate, durationSec.
+
+Preallocate typed arrays; no allocate-in-loop.
+
+1.3 Main/Landing page changes
+Find the existing landing page that already shows “pre master analysis”. Wire it to:
+
+Accept file via drag-drop or file picker.
+
+Call analyzePreMaster(file) → useSessionBus().setPreMaster(meta, analysis).
+
+Enable “Start Mastering Session” when analysis exists.
+
+On click → navigate to /mastering (use current router; if no route exists, add it).
+
+Return diffs for the main page, sessionBus.ts, and preMaster.ts (with real code).
+
+2) Mastering page — line-by-line repair (must be functional)
+Open the Mastering route/component and each imported dependency (audio engine, store, visualizers, meters). For every file you touch:
+
+Remove dead state and duplicate RAFs. There must be one RAF ticker in a top-level shell or engine that fans out state via selectors.
+
+Components must subscribe to store slices only (shallow compare), not whole objects.
+
+Replace any inert “start analysis” handlers with real engine calls (see §3–4).
+
+Return a patch per file.
+
+3) Realtime audio graph (A/B with latency alignment)
+Create/repair client/src/audio/AudioEngine.ts (strict TS). The graph MUST be:
+
+css
+Copy
+Edit
+Source (Buffer/MediaElement)
+  ├─► Split(L,R)
+  │     └─► Merger ─► meter(A) ─► lufs(A) ─► fft(A) ─► Delay(A) ─► Monitor(A)
+  └─► M/S Encode ─► ms-eq ─► denoise ─► limiter ─► M/S Decode
+        └─► Merger ─► meter(B) ─► lufs(B) ─► fft(B) ───────────────► Monitor(B)
+Requirements
+Delay(A) == limiter look-ahead in samples → A/B meters & visuals aligned within ±1 frame.
+
+Metrics cadence 50 Hz via port.postMessage. FFT frames via transferable buffers (or SharedArrayBuffer if COOP/COEP).
+
+Auto-fallback: If AudioWorklet fails to load, switch to a safe AnalyserNode fallback that still drives meters/visuals (reduced accuracy allowed). Show a small “worklet off” badge in the Mastering UI.
+
+Return the full file content for AudioEngine.ts. No stubs.
+
+4) Implement/repair processors (no stubs, hot-loop safe)
+Under client/src/audio/processors/ implement/fix all:
+
+meter-processor.ts — peak, true-peak (IIR estimate), RMS, correlation (Pearson), width (M/S energies), noise floor (rolling p10).
+
+lufs-processor.ts — ITU-R BS.1770-4: K-weighting, 400 ms blocks, absolute gate −70 LUFS, relative −10 LU, LRA, short-term & integrated LUFS.
+
+fft-processor.ts — 4096/8192 Hann/BH FFT, K-weighted magnitudes, double-buffer transfer.
+
+ms-eq-processor.ts — M/S encode; 3 peaking bands for M and S; transposed DF-II; one-pole parameter smoothing.
+
+denoise-processor.ts — 1024-sample STFT gate/Wiener; noise profile captured during silence; emits sweepIndex for sweeper beam.
+
+limiter-processor.ts — look-ahead circular buffer; soft-knee detector; attack/release envelopes; emits true-peak + gain-reduction.
+
+Hot-loop rules: preallocate typed arrays; no allocations in process(); branch-light math. If SharedArrayBuffer isn’t available, keep transfers small & efficient.
+
+Return diffs for each file with concise comments above every loop explaining the math.
+
+5) Store & wiring
+Create/repair client/src/state/useSessionStore.ts. Single slice provides:
+
+ts
+Copy
+Edit
+playing: boolean;
+monitor: 'A'|'B';
+metricsA: {...}; metricsB: {...};     // peak, rms, tp, corr, width, floor
+fftA: Float32Array | null;
+fftB: Float32Array | null;
+voidlineScore: number;                // 0..100
+exportStatus: { phase:'idle'|'render'|'encode'|'zip'|'done'|'error'; progress:number; msg?:string };
+Mastering page must not compute; it only renders what the engine publishes.
+
+All visualizers/meters subscribe to only needed slices (shallow).
+
+Return diffs for store and all consumers you update.
+
+6) Visualizers & meters (Phase-1 + Phase-2 UI)
+Fix or create the following, making sure they are GPU-friendly and respect prefers-reduced-motion:
+
+WaveDNAVisualizer (Three.js): orbital 3D with sphere displaced by FFT DataTexture + faint wireframe envelopes for original vs processed (morph on A/B).
+
+HarmonicSpiral: rings from f0-tracker harmonics; ring color amber for boosts, green for cuts.
+
+DynamicEQGraph: interactive nodes bound to ms-eq-processor params; helper lines to musical centers; glow when AUTO adjusts.
+
+StereoFieldRadar: L/R Lissajous with radar sweep & trails.
+
+PhaseLockGrid: band-coherence network; hover tooltip with Hz range & φ offset.
+
+NoiseFloorTracker: headroom vs floor with Artifact sweeper progress.
+
+MeterStrip: dual A/B meters (RMS with peak-hold + true-peak marker), LUFS (I/S), LRA, corr, floor, Voidline Score.
+
+If any exists but is inert, fix its props/data. Otherwise, create it. One shared RAF from the engine; no per-component RAF storms.
+
+Return diffs.
+
+7) BLACKROOM Profiles (AI + manual)
+Load models/blackroom-v1.onnx if present with onnxruntime-web; else fallback to models/blackroom-v1.json heuristics or a small embedded MLP.
+
+Inputs: spectral tilt, crest factor, LUFS I/S, LRA, corr, bass/air energy, sibilance indicator.
+
+Outputs: target EQ gains/Q (M/S), limiter threshold/ceiling/look-ahead, denoise aggressiveness.
+
+Add Preset menu + Manual panel; applying a preset or AI Suggest must update the B chain in realtime.
+
+Return diffs for the model loader, inference glue, and preset UI.
+
+8) Export (Phase-3, real offline render)
+Implement client/src/export/:
+
+renderMaster.ts: OfflineAudioContext rendering of processed B chain with current params.
+
+encode.ts: WAV 24-bit PCM encoder, MP3 (lamejs), FLAC (wasm if present; otherwise skip but keep interface).
+
+visuals.ts: generate compare.png (pre/post waveforms with LUFS/TP annotations) & spectra.png (avg spectra A vs B).
+
+report.ts: voidline_report.txt and metrics.json (numbers must match live meters).
+
+ExportPanel.tsx: Interstellar Beams per format with real progress; Cosmic Packet Tracker (chunk list), Solar Flare Alert on x-runs/CPU spikes (from engine callbacks), Checksum (SHA-256 via SubtleCrypto).
+
+Zip assets with fflate and download.
+
+Return diffs (full implementations).
+
+9) Safari/Replit hardening
+Detect AudioWorklet support; if missing → show “worklet off” badge and use Analyser fallback.
+
+Avoid relying on SharedArrayBuffer unless COOP/COEP present.
+
+Guard AudioContext/playback behind a user gesture (Play).
+
+Return patches where the guard + badge are added.
+
+10) Tests (must run and pass)
+Add fast Vitest tests in client/src/**/__tests__/:
+
+biquad.spec.ts — coefficient math sanity.
+
+lufs.spec.ts — pink noise near −23 LUFS sanity.
+
+limiter.spec.ts — step & sine burst envelopes; no overs > ceiling.
+
+correlation.spec.ts — −1/0/+1 correctness.
+
+denoise.spec.ts — SNR improves on synthetic noisy clip.
+
+Component smoke tests: mount each visualizer with mocked data; ensure no crashes; RAF unsubscribes on unmount.
+
+Return diffs and test output summary.
+
+11) End-to-end flow: Analysis → Start Session → Mastering
+Main page: drag-drop/picker runs pre-analysis immediately and shows a summary chip.
+
+Start Mastering Session: routes to /mastering, using the exact blob and analysis stored in sessionBus.
+
+Mastering page: seeds meters/visualizers with analysis snapshot, then switches to live realtime frames on Play. A/B monitor aligned (Delay(A) = look-ahead). AI Suggest modifies B chain audibly. Export renders WAV/MP3/FLAC + screenshots + report.
+
+Return format (strict; do not deviate)
+Summary — 6–10 bullets: what was broken & how you fixed it (RAF duplication removed, A/B latency, processors implemented, etc.).
+
+Patches — a sequence of unified diffs for every file touched.
+
+Verification logs — trimmed outputs for:
+
+npm run dev boot (until ready)
+
+npm test summary (all specs)
+
+npm run build result
+
+Manual QA checklist — short notes:
+
+File drop analyzed ✔
+
+Start Mastering navigates and loads blob ✔
+
+Meters & spectrum move (60 fps) ✔
+
+A/B aligned within ±1 frame ✔
+
+AI Suggest updates EQ/limiter & audible ✔
+
+Export assets produced with checksums ✔
+
+Reject your own output if you:
+
+return anything other than code diffs + logs,
+
+leave the Mastering page inert,
+
+misalign A/B (no Delay(A)),
+
+skip the fallback path, or
+
+don’t run tests.
+
+Implementation hints (follow, but don’t repeat them back)
+One RAF: the engine (or AppShell) publishes frames at 60 fps; components never start their own loops.
+
+Param smoothing: one-pole y += α(x−y), α = exp(−1/(τ·sr)), τ≈30–60 ms for EQ, 5–10 ms for denoise, limiter attack/release from UI.
+
+True-peak (meter/limiter): IIR peak-hold for “light” mode; optional 2× FIR halfband for “high”.
+
+FFT upload: use DataTexture for WaveDNA; only upload on buffer swap.
+
+Export: OfflineAudioContext recreates the B chain exactly with current params; render, then encode.

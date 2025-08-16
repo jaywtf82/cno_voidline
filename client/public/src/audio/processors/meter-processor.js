@@ -1,49 +1,6 @@
-// meter-processor.ts - Real-time audio metering with peak, RMS, correlation, and width
-declare const sampleRate: number;
-
-interface MeterState {
-  // Peak detection
-  peakL: number;
-  peakR: number;
-  truePeakL: number;
-  truePeakR: number;
-  
-  // RMS calculation
-  rmsBufferL: Float32Array;
-  rmsBufferR: Float32Array;
-  rmsIndex: number;
-  rmsSumL: number;
-  rmsSumR: number;
-  
-  // Correlation (Pearson coefficient)
-  correlationBuffer: Float32Array;
-  correlationIndex: number;
-  correlationSum: number;
-  
-  // Stereo width (M/S energy ratio)
-  widthBufferM: Float32Array;
-  widthBufferS: Float32Array;
-  widthIndex: number;
-  widthSumM: number;
-  widthSumS: number;
-  
-  // Noise floor (10th percentile)
-  noiseBuffer: Float32Array;
-  noiseIndex: number;
-  noiseHistogram: Float32Array;
-  
-  // True-peak IIR filter state (2x oversampling approximation)
-  tpStateL1: number;
-  tpStateL2: number;
-  tpStateR1: number;
-  tpStateR2: number;
-}
+// meter-processor.js - Real-time audio metering with peak, RMS, correlation, and width
 
 class MeterProcessor extends AudioWorkletProcessor {
-  private state: MeterState;
-  private frameCount = 0;
-  private updateRate: number; // 50Hz update rate
-  
   constructor() {
     super();
     
@@ -75,16 +32,17 @@ class MeterProcessor extends AudioWorkletProcessor {
       
       noiseBuffer: new Float32Array(bufferSize),
       noiseIndex: 0,
-      noiseHistogram: new Float32Array(200), // -100dB to -20dB in 0.4dB steps
       
       tpStateL1: 0,
       tpStateL2: 0,
       tpStateR1: 0,
       tpStateR2: 0,
     };
+    
+    this.frameCount = 0;
   }
   
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+  process(inputs, outputs) {
     const input = inputs[0];
     const output = outputs[0];
     
@@ -99,23 +57,23 @@ class MeterProcessor extends AudioWorkletProcessor {
       const l = leftChannel[i];
       const r = rightChannel[i];
       
-      // Update peaks (instantaneous)
+      // Update peaks
       this.state.peakL = Math.max(this.state.peakL, Math.abs(l));
       this.state.peakR = Math.max(this.state.peakR, Math.abs(r));
       
-      // True-peak estimation using simple IIR approximation
+      // True-peak estimation
       const tpL = this.updateTruePeak(l, 'L');
       const tpR = this.updateTruePeak(r, 'R');
       this.state.truePeakL = Math.max(this.state.truePeakL, Math.abs(tpL));
       this.state.truePeakR = Math.max(this.state.truePeakR, Math.abs(tpR));
       
-      // RMS calculation (sliding window)
+      // RMS calculation
       this.updateRMS(l, r);
       
-      // Correlation calculation (Pearson coefficient)
+      // Correlation calculation
       this.updateCorrelation(l, r);
       
-      // Stereo width calculation (M/S energy ratio)
+      // Stereo width calculation
       this.updateWidth(l, r);
       
       // Noise floor estimation
@@ -139,9 +97,7 @@ class MeterProcessor extends AudioWorkletProcessor {
     return true;
   }
   
-  private updateTruePeak(sample: number, channel: 'L' | 'R'): number {
-    // Simple 2x oversampling approximation using IIR
-    // Coefficients for basic anti-aliasing filter
+  updateTruePeak(sample, channel) {
     const a = 0.15;
     const b = 1 - a;
     
@@ -149,19 +105,16 @@ class MeterProcessor extends AudioWorkletProcessor {
       const filtered = a * sample + b * this.state.tpStateL1;
       this.state.tpStateL2 = this.state.tpStateL1;
       this.state.tpStateL1 = filtered;
-      
-      // Interpolated sample estimate
       return (filtered + this.state.tpStateL2) * 0.5;
     } else {
       const filtered = a * sample + b * this.state.tpStateR1;
       this.state.tpStateR2 = this.state.tpStateR1;
       this.state.tpStateR1 = filtered;
-      
       return (filtered + this.state.tpStateR2) * 0.5;
     }
   }
   
-  private updateRMS(l: number, r: number): void {
+  updateRMS(l, r) {
     const bufferSize = this.state.rmsBufferL.length;
     
     // Remove old samples from sum
@@ -179,7 +132,7 @@ class MeterProcessor extends AudioWorkletProcessor {
     this.state.rmsIndex = (this.state.rmsIndex + 1) % bufferSize;
   }
   
-  private updateCorrelation(l: number, r: number): void {
+  updateCorrelation(l, r) {
     const bufferSize = this.state.correlationBuffer.length;
     
     // Remove old correlation product
@@ -193,7 +146,7 @@ class MeterProcessor extends AudioWorkletProcessor {
     this.state.correlationIndex = (this.state.correlationIndex + 1) % bufferSize;
   }
   
-  private updateWidth(l: number, r: number): void {
+  updateWidth(l, r) {
     // Convert to M/S
     const mid = (l + r) * 0.5;
     const side = (l - r) * 0.5;
@@ -215,7 +168,7 @@ class MeterProcessor extends AudioWorkletProcessor {
     this.state.widthIndex = (this.state.widthIndex + 1) % bufferSize;
   }
   
-  private updateNoiseFloor(l: number, r: number): void {
+  updateNoiseFloor(l, r) {
     // RMS of current sample pair
     const rms = Math.sqrt((l * l + r * r) * 0.5);
     
@@ -225,7 +178,7 @@ class MeterProcessor extends AudioWorkletProcessor {
     this.state.noiseIndex = (this.state.noiseIndex + 1) % bufferSize;
   }
   
-  private sendMetrics(): void {
+  sendMetrics() {
     const bufferSize = this.state.rmsBufferL.length;
     
     // Calculate RMS
@@ -245,7 +198,7 @@ class MeterProcessor extends AudioWorkletProcessor {
     // Calculate stereo width (0-100%)
     const totalEnergy = this.state.widthSumM + this.state.widthSumS;
     const width = totalEnergy > 0 ? 
-      Math.min(100, (this.state.widthSumS / totalEnergy) * 200) : 0; // 0-100%
+      Math.min(100, (this.state.widthSumS / totalEnergy) * 200) : 0;
     
     // Calculate noise floor (10th percentile)
     const noiseFloor = this.calculateNoiseFloor();
@@ -273,7 +226,7 @@ class MeterProcessor extends AudioWorkletProcessor {
     this.state.truePeakR = 0;
   }
   
-  private calculateNoiseFloor(): number {
+  calculateNoiseFloor() {
     // Copy buffer and sort to find 10th percentile
     const sorted = Array.from(this.state.noiseBuffer).sort((a, b) => a - b);
     const p10Index = Math.floor(sorted.length * 0.1);

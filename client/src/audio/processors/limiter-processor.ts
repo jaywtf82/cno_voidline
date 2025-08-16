@@ -1,245 +1,208 @@
-/**
- * limiter-processor.ts - Look-ahead true-peak limiter with gain reduction metering
- * Implements soft knee, attack/release envelopes, and true-peak detection
- */
+// limiter-processor.ts - Look-ahead limiter with true-peak detection
+declare const sampleRate: number;
 
-interface LimiterParams {
-  threshold: number; // dB
-  ceiling: number;   // dBTP
-  attack: number;    // ms
-  release: number;   // ms
-  lookahead: number; // ms
+interface LimiterState {
+  // Look-ahead delay line
+  delayBufferL: Float32Array;
+  delayBufferR: Float32Array;
+  delayIndex: number;
+  
+  // Gain reduction envelope
+  envelope: Float32Array;
+  envelopeIndex: number;
+  
+  // Peak detection history
+  peakHistory: Float32Array;
+  peakIndex: number;
+  currentPeak: number;
+  
+  // True-peak oversampling (simple approximation)
+  oversampleStateL: { x1: number; x2: number };
+  oversampleStateR: { x1: number; x2: number };
+  
+  // Envelope follower
+  gainReduction: number;
+  releaseCoeff: number;
+  attackCoeff: number;
 }
 
 class LimiterProcessor extends AudioWorkletProcessor {
-  private sampleRate = 48000;
+  private state: LimiterState;
+  private lookAheadSamples: number;
+  private frameCount = 0;
   
   // Parameters
-  private params: LimiterParams = {
-    threshold: -1,
-    ceiling: -0.1,
-    attack: 1,
-    release: 100,
-    lookahead: 5
+  private params = {
+    threshold: -6,    // dB
+    ceiling: -1,      // dB  
+    attack: 5,        // ms
+    release: 50,      // ms
   };
   
-  // Delay buffer for lookahead
-  private delayBuffer: Float32Array[] = [];
-  private delayBufferSize = 0;
-  private delayWriteIndex = 0;
-  
-  // Gain reduction
-  private currentGR = 0; // Current gain reduction in dB
-  private targetGR = 0;  // Target gain reduction in dB
-  private grSmoothing = 0; // GR smoothing coefficient
-  
-  // Attack/Release coefficients  
-  private attackCoeff = 0;
-  private releaseCoeff = 0;
-  
-  // True peak detection (2x oversampling)
-  private oversampleBuffer: Float32Array = new Float32Array(256);
-  private truePeakHold: number[] = [0, 0]; // L, R
-  private truePeakDecay = 0.9999; // ~6dB/sec decay
-  
-  // Metrics reporting
-  private frameCount = 0;
-  private reportInterval = 50; // 50Hz
-
-  static get parameterDescriptors() {
-    return [];
-  }
-
-  constructor() {
+  constructor(options?: AudioWorkletNodeOptions) {
     super();
-    this.sampleRate = sampleRate;
-    this.updateParameters();
-    this.port.onmessage = this.handleMessage.bind(this);
-  }
-
-  private handleMessage(event: MessageEvent) {
-    const { type, params } = event.data;
     
-    switch (type) {
-      case 'updateParams':
-        this.params = { ...this.params, ...params };
-        this.updateParameters();
-        break;
-      case 'reset':
-        this.resetLimiter();
-        break;
-    }
-  }
-
-  private updateParameters(): void {
-    // Calculate delay buffer size
-    const lookaheadSamples = Math.ceil((this.params.lookahead / 1000) * this.sampleRate);
-    this.delayBufferSize = Math.max(128, lookaheadSamples); // Minimum 128 samples
+    this.lookAheadSamples = options?.processorOptions?.lookAheadSamples || 
+                           Math.floor(sampleRate * 0.005); // 5ms default
     
-    // Resize delay buffers if needed
-    if (!this.delayBuffer[0] || this.delayBuffer[0].length !== this.delayBufferSize) {
-      this.delayBuffer[0] = new Float32Array(this.delayBufferSize);
-      this.delayBuffer[1] = new Float32Array(this.delayBufferSize);
-      this.delayWriteIndex = 0;
-    }
+    this.initializeState();
     
-    // Calculate attack/release coefficients
-    this.attackCoeff = Math.exp(-1 / (this.params.attack * this.sampleRate / 1000));
-    this.releaseCoeff = Math.exp(-1 / (this.params.release * this.sampleRate / 1000));
-    
-    // GR smoothing (faster than release for smooth metering)
-    this.grSmoothing = Math.exp(-1 / (Math.min(this.params.release, 50) * this.sampleRate / 1000));
-  }
-
-  private resetLimiter(): void {
-    this.delayBuffer[0]?.fill(0);
-    this.delayBuffer[1]?.fill(0);
-    this.delayWriteIndex = 0;
-    this.currentGR = 0;
-    this.targetGR = 0;
-    this.truePeakHold = [0, 0];
-  }
-
-  private calculateTruePeak(sample: number): number {
-    // Simplified 2x oversampling for true peak detection
-    // In production, use proper anti-aliasing filter
-    
-    // Linear interpolation for 2x oversampling
-    const oversample1 = sample;
-    const oversample2 = sample * 0.5; // Simplified - should use proper upsampling
-    
-    return Math.max(Math.abs(oversample1), Math.abs(oversample2));
-  }
-
-  private updateTruePeak(leftSample: number, rightSample: number): void {
-    const truePeakL = this.calculateTruePeak(leftSample);
-    const truePeakR = this.calculateTruePeak(rightSample);
-    
-    // Peak hold with decay
-    this.truePeakHold[0] = Math.max(this.truePeakHold[0] * this.truePeakDecay, truePeakL);
-    this.truePeakHold[1] = Math.max(this.truePeakHold[1] * this.truePeakDecay, truePeakR);
-  }
-
-  private calculateGainReduction(peakLevel: number): number {
-    // Convert peak level to dB
-    const peakDb = 20 * Math.log10(Math.abs(peakLevel) + 1e-10);
-    
-    // Calculate overshoot above threshold
-    const overshoot = Math.max(0, peakDb - this.params.threshold);
-    
-    if (overshoot <= 0) return 0;
-    
-    // Soft knee compression (simplified)
-    const kneeWidth = 2; // dB
-    let gainReduction: number;
-    
-    if (overshoot < kneeWidth) {
-      // Soft knee region
-      const ratio = overshoot / kneeWidth;
-      gainReduction = overshoot * ratio * 0.5;
-    } else {
-      // Hard limiting region
-      gainReduction = overshoot;
-    }
-    
-    // Ensure we don't exceed ceiling
-    const outputLevel = peakDb - gainReduction;
-    if (outputLevel > this.params.ceiling) {
-      gainReduction += (outputLevel - this.params.ceiling);
-    }
-    
-    return gainReduction;
-  }
-
-  private processFrame(leftChannel: Float32Array, rightChannel: Float32Array): void {
-    const frameSize = leftChannel.length;
-    
-    for (let i = 0; i < frameSize; i++) {
-      const left = leftChannel[i];
-      const right = rightChannel[i];
-      
-      // Store in delay buffer
-      this.delayBuffer[0][this.delayWriteIndex] = left;
-      this.delayBuffer[1][this.delayWriteIndex] = right;
-      
-      // Calculate read index (lookahead delay)
-      const readIndex = (this.delayWriteIndex - this.delayBufferSize + 1 + this.delayBufferSize) % this.delayBufferSize;
-      
-      // Get delayed samples
-      const delayedLeft = this.delayBuffer[0][readIndex];
-      const delayedRight = this.delayBuffer[1][readIndex];
-      
-      // Update true peak detection
-      this.updateTruePeak(left, right);
-      
-      // Find peak in current frame for gain reduction calculation
-      const currentPeak = Math.max(Math.abs(left), Math.abs(right));
-      
-      // Calculate required gain reduction
-      this.targetGR = this.calculateGainReduction(currentPeak);
-      
-      // Apply attack/release to gain reduction
-      if (this.targetGR > this.currentGR) {
-        // Attack (faster response to increases)
-        this.currentGR = this.targetGR + (this.currentGR - this.targetGR) * this.attackCoeff;
-      } else {
-        // Release (slower response to decreases)  
-        this.currentGR = this.targetGR + (this.currentGR - this.targetGR) * this.releaseCoeff;
+    // Message handler
+    this.port.onmessage = (event) => {
+      const { type, ...params } = event.data;
+      if (type === 'updateParams') {
+        this.updateParameters(params);
       }
-      
-      // Convert gain reduction to linear multiplier
-      const gainMultiplier = Math.pow(10, -this.currentGR / 20);
-      
-      // Apply gain reduction to delayed samples
-      leftChannel[i] = delayedLeft * gainMultiplier;
-      rightChannel[i] = delayedRight * gainMultiplier;
-      
-      // Advance delay buffer write index
-      this.delayWriteIndex = (this.delayWriteIndex + 1) % this.delayBufferSize;
-    }
+    };
   }
-
-  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
+  
+  private initializeState(): void {
+    // Ensure minimum look-ahead
+    this.lookAheadSamples = Math.max(64, this.lookAheadSamples);
+    
+    this.state = {
+      delayBufferL: new Float32Array(this.lookAheadSamples),
+      delayBufferR: new Float32Array(this.lookAheadSamples),
+      delayIndex: 0,
+      
+      envelope: new Float32Array(this.lookAheadSamples),
+      envelopeIndex: 0,
+      
+      peakHistory: new Float32Array(this.lookAheadSamples),
+      peakIndex: 0,
+      currentPeak: 0,
+      
+      oversampleStateL: { x1: 0, x2: 0 },
+      oversampleStateR: { x1: 0, x2: 0 },
+      
+      gainReduction: 1,
+      releaseCoeff: 0,
+      attackCoeff: 0,
+    };
+    
+    this.updateEnvelopeCoefficients();
+  }
+  
+  private updateParameters(newParams: any): void {
+    Object.assign(this.params, newParams);
+    this.updateEnvelopeCoefficients();
+  }
+  
+  private updateEnvelopeCoefficients(): void {
+    // Calculate attack and release coefficients
+    const attackTime = Math.max(0.1, this.params.attack) / 1000; // Convert to seconds
+    const releaseTime = Math.max(1, this.params.release) / 1000;
+    
+    this.state.attackCoeff = Math.exp(-1 / (attackTime * sampleRate));
+    this.state.releaseCoeff = Math.exp(-1 / (releaseTime * sampleRate));
+  }
+  
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const input = inputs[0];
     const output = outputs[0];
     
-    if (!input || input.length === 0 || !output || output.length === 0) return true;
-    
-    const leftChannel = input[0];
-    const rightChannel = input.length > 1 ? input[1] : leftChannel;
-    const outputLeft = output[0];
-    const outputRight = output.length > 1 ? output[1] : output[0];
-    
-    if (!leftChannel || !outputLeft) return true;
-    
-    // Copy input to output for processing
-    outputLeft.set(leftChannel);
-    if (outputRight && outputRight !== outputLeft && rightChannel) {
-      outputRight.set(rightChannel);
+    if (!input || input.length < 2 || !output || output.length < 2) {
+      return true;
     }
     
-    // Process limiting
-    this.processFrame(outputLeft, outputRight && outputRight !== outputLeft ? outputRight : outputLeft);
+    const leftChannel = input[0];
+    const rightChannel = input[1];
+    const outLeft = output[0];
+    const outRight = output[1];
+    const blockSize = leftChannel.length;
     
-    // Report metrics
-    this.frameCount++;
-    if (this.frameCount % this.reportInterval === 0) {
-      const truePeakDb = Math.max(
-        20 * Math.log10(this.truePeakHold[0] + 1e-10),
-        20 * Math.log10(this.truePeakHold[1] + 1e-10)
-      );
+    // Process each sample
+    for (let i = 0; i < blockSize; i++) {
+      const inL = leftChannel[i];
+      const inR = rightChannel[i];
+      
+      // Store input in delay buffer
+      this.state.delayBufferL[this.state.delayIndex] = inL;
+      this.state.delayBufferR[this.state.delayIndex] = inR;
+      
+      // Compute true-peak estimation for current sample
+      const truePeakL = this.computeTruePeak(inL, this.state.oversampleStateL);
+      const truePeakR = this.computeTruePeak(inR, this.state.oversampleStateR);
+      const truePeak = Math.max(Math.abs(truePeakL), Math.abs(truePeakR));
+      
+      // Update peak history
+      this.state.peakHistory[this.state.peakIndex] = truePeak;
+      
+      // Find maximum peak in look-ahead window
+      let maxPeak = 0;
+      for (let j = 0; j < this.lookAheadSamples; j++) {
+        maxPeak = Math.max(maxPeak, this.state.peakHistory[j]);
+      }
+      
+      // Calculate required gain reduction
+      const thresholdLinear = Math.pow(10, this.params.threshold / 20);
+      const ceilingLinear = Math.pow(10, this.params.ceiling / 20);
+      
+      let targetGain = 1;
+      if (maxPeak > thresholdLinear) {
+        // Calculate gain to keep peak at ceiling
+        targetGain = ceilingLinear / maxPeak;
+        targetGain = Math.max(0.1, Math.min(1, targetGain)); // Limit to -20dB max reduction
+      }
+      
+      // Smooth gain changes with envelope follower
+      const coeff = targetGain < this.state.gainReduction ? 
+                   this.state.attackCoeff : this.state.releaseCoeff;
+      
+      this.state.gainReduction = 
+        coeff * this.state.gainReduction + (1 - coeff) * targetGain;
+      
+      // Store gain in envelope buffer
+      this.state.envelope[this.state.envelopeIndex] = this.state.gainReduction;
+      
+      // Apply delayed gain to delayed audio
+      const delayedL = this.state.delayBufferL[this.state.delayIndex];
+      const delayedR = this.state.delayBufferR[this.state.delayIndex];
+      const gain = this.state.envelope[this.state.envelopeIndex];
+      
+      outLeft[i] = delayedL * gain;
+      outRight[i] = delayedR * gain;
+      
+      // Advance circular buffer indices
+      this.state.delayIndex = (this.state.delayIndex + 1) % this.lookAheadSamples;
+      this.state.envelopeIndex = (this.state.envelopeIndex + 1) % this.lookAheadSamples;
+      this.state.peakIndex = (this.state.peakIndex + 1) % this.lookAheadSamples;
+    }
+    
+    this.frameCount += blockSize;
+    
+    // Send metrics periodically
+    if (this.frameCount % 256 === 0) {
+      const gainReductionDb = 20 * Math.log10(this.state.gainReduction);
+      const truePeakDb = 20 * Math.log10(this.state.currentPeak);
       
       this.port.postMessage({
-        type: 'limiter-metrics',
-        gainReduction: this.currentGR,
+        gainReduction: gainReductionDb,
         truePeak: truePeakDb,
-        threshold: this.params.threshold,
-        ceiling: this.params.ceiling,
-        timestamp: currentTime
       });
     }
     
     return true;
+  }
+  
+  private computeTruePeak(sample: number, state: { x1: number; x2: number }): number {
+    // Simple true-peak approximation using linear interpolation
+    // This approximates 2x oversampling for true-peak detection
+    
+    // IIR filter coefficients for anti-aliasing
+    const a = 0.15;
+    const b = 1 - a;
+    
+    // Filter the input
+    const filtered = a * sample + b * state.x1;
+    state.x2 = state.x1;
+    state.x1 = filtered;
+    
+    // Estimate interpolated peak between samples
+    const interpolated = (filtered + state.x2) * 0.5;
+    
+    // Return maximum of current sample and interpolated value
+    return Math.abs(interpolated) > Math.abs(sample) ? interpolated : sample;
   }
 }
 
