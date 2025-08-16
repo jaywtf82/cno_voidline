@@ -135,7 +135,7 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
           {/* Left side - Command */}
           <div className="flex items-center space-x-2">
             <span 
-              className="font-mono"
+              className="font-mono font-semibold"
               style={{ 
                 color: '#3FB950',
                 fontSize: 'var(--nav-font-size)'
