@@ -1,4 +1,6 @@
 import React, { useRef, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useSessionStore } from '@/state/useSessionStore';
 
 interface StereoCorrelationMeterProps {
   correlationA: number;
@@ -8,14 +10,16 @@ interface StereoCorrelationMeterProps {
   monitor: 'A' | 'B';
 }
 
-export function StereoCorrelationMeter({ 
-  correlationA, 
-  correlationB, 
-  widthA, 
-  widthB, 
-  monitor 
+export function StereoCorrelationMeter({
+  correlationA,
+  correlationB,
+  widthA,
+  widthB,
+  monitor
 }: StereoCorrelationMeterProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const phase2Source = useSessionStore(s => s.phase2Source);
+  const isProcessed = phase2Source === 'post';
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -71,7 +75,7 @@ export function StereoCorrelationMeter({
       const x = centerX + Math.cos(angle) * (radius * 0.6);
       const y = centerY + Math.sin(angle) * (radius * 0.6);
       
-      ctx.fillStyle = '#064e3b';
+      ctx.fillStyle = isProcessed ? '#7c2d12' : '#064e3b';
       ctx.beginPath();
       ctx.arc(x, y, 4, 0, 2 * Math.PI);
       ctx.fill();
@@ -87,6 +91,7 @@ export function StereoCorrelationMeter({
       let color = '#10b981'; // Green (good)
       if (currentCorr < 0.2) color = '#ef4444'; // Red (bad)
       else if (currentCorr < 0.5) color = '#f59e0b'; // Yellow (warning)
+      if (isProcessed) color = '#fb923c';
       
       ctx.fillStyle = color;
       ctx.beginPath();
@@ -100,7 +105,7 @@ export function StereoCorrelationMeter({
     ctx.arc(centerX, centerY, 2, 0, 2 * Math.PI);
     ctx.fill();
 
-  }, [correlationA, correlationB, monitor]);
+  }, [correlationA, correlationB, monitor, isProcessed]);
 
   const currentWidth = monitor === 'A' ? widthA : widthB;
   const otherWidth = monitor === 'A' ? widthB : widthA;
@@ -120,7 +125,10 @@ export function StereoCorrelationMeter({
       
       {/* Correlation meter */}
       <div>
-        <div className="text-xs font-mono text-green-300 mb-2">PHASE CORRELATION</div>
+        <div className="text-xs font-mono text-green-300 mb-2 flex justify-between">
+          <span>PHASE CORRELATION</span>
+          {isProcessed && <Badge className="bg-orange-600 text-white">PROCESSED</Badge>}
+        </div>
         <canvas
           ref={canvasRef}
           width={120}
@@ -131,7 +139,7 @@ export function StereoCorrelationMeter({
 
       {/* Numerical values */}
       <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="space-y-1">
+        <div className={`space-y-1 ${isProcessed ? 'opacity-50' : ''}`}>
           <div className="text-blue-400">Channel A</div>
           <div className="font-mono text-green-400">
             {correlationA.toFixed(3)}
@@ -140,7 +148,7 @@ export function StereoCorrelationMeter({
             Width: {widthA.toFixed(0)}%
           </div>
         </div>
-        <div className="space-y-1">
+        <div className={`space-y-1 ${isProcessed ? '' : 'opacity-50'}`}>
           <div className="text-orange-400">Channel B</div>
           <div className="font-mono text-green-400">
             {correlationB.toFixed(3)}
@@ -153,8 +161,9 @@ export function StereoCorrelationMeter({
 
       {/* Current monitor status */}
       <div className="pt-2 border-t border-green-800">
-        <div className="text-xs font-mono text-green-300 mb-1">
+        <div className="text-xs font-mono text-green-300 mb-1 flex items-center">
           MONITOR {monitor}
+          {isProcessed && <Badge className="ml-2 bg-orange-600 text-white">PROCESSED</Badge>}
         </div>
         <div className="bg-gray-800 p-2 rounded text-xs">
           <div className="flex justify-between items-center">

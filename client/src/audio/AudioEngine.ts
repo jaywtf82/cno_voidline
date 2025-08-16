@@ -507,12 +507,12 @@ export class AudioEngine {
   async prepareProcessedPreview(params: ProcessorParams): Promise<{ snapshot: { metrics: AudioMetrics; fft: Float32Array } }> {
     this.updateProcessorParams(params);
     const state = useSessionStore.getState();
-    return {
-      snapshot: {
-        metrics: state.metricsB,
-        fft: state.fftB ? new Float32Array(state.fftB) : new Float32Array(),
-      },
+    const snapshot = {
+      metrics: state.metricsB,
+      fft: state.fftB ? new Float32Array(state.fftB) : new Float32Array(),
     };
+    useSessionStore.getState().activateProcessedPreview(snapshot);
+    return { snapshot };
   }
   
   onUpdate(callback: (deltaTime: number) => void): void {
