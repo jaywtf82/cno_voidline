@@ -114,13 +114,21 @@ export default function MasteringProcess() {
     { freq: processorParams.midFreqs[0], gain: processorParams.midGains[0], q: processorParams.midQs[0], label: 'LOW' },
     { freq: processorParams.midFreqs[1], gain: processorParams.midGains[1], q: processorParams.midQs[1], label: 'MID' },
     { freq: processorParams.midFreqs[2], gain: processorParams.midGains[2], q: processorParams.midQs[2], label: 'HIGH' },
-  ], [processorParams.midFreqs, processorParams.midGains, processorParams.midQs]);
+  ], [
+    processorParams.midFreqs[0], processorParams.midFreqs[1], processorParams.midFreqs[2],
+    processorParams.midGains[0], processorParams.midGains[1], processorParams.midGains[2],
+    processorParams.midQs[0], processorParams.midQs[1], processorParams.midQs[2]
+  ]);
 
   const sideBands: EQBand[] = useMemo(() => [
     { freq: processorParams.sideFreqs[0], gain: processorParams.sideGains[0], q: processorParams.sideQs[0], label: 'LOW' },
     { freq: processorParams.sideFreqs[1], gain: processorParams.sideGains[1], q: processorParams.sideQs[1], label: 'MID' },
     { freq: processorParams.sideFreqs[2], gain: processorParams.sideGains[2], q: processorParams.sideQs[2], label: 'HIGH' },
-  ], [processorParams.sideFreqs, processorParams.sideGains, processorParams.sideQs]);
+  ], [
+    processorParams.sideFreqs[0], processorParams.sideFreqs[1], processorParams.sideFreqs[2],
+    processorParams.sideGains[0], processorParams.sideGains[1], processorParams.sideGains[2],
+    processorParams.sideQs[0], processorParams.sideQs[1], processorParams.sideQs[2]
+  ]);
 
   // Initialize audio engine on mount
   useEffect(() => {
@@ -215,31 +223,13 @@ export default function MasteringProcess() {
 
         case 'Escape':
           event.preventDefault();
-          setProcessorParams({
-            midGains: [0, 0, 0],
-            sideGains: [0, 0, 0],
-            midFreqs: [200, 1000, 5000],
-            sideFreqs: [200, 1000, 5000],
-            midQs: [1, 1, 1],
-            sideQs: [1, 1, 1],
-            denoiseAmount: 0,
-            noiseGateThreshold: -60,
-            threshold: -6,
-            ceiling: -1,
-            lookAheadSamples: 240,
-            attack: 5,
-            release: 50,
-          });
+          handleResetParameters();
           break;
 
         case 'Enter':
           if (event.ctrlKey || event.metaKey) {
             event.preventDefault();
-            // Inline export logic to avoid circular dependencies
-            if (file && isInitialized && exportStatus.phase !== 'render' && exportStatus.phase !== 'encode') {
-              resetExportStatus();
-              updateExportStatus({ phase: 'render', progress: 0, message: 'Preparing export...' });
-            }
+            handleExport();
           }
           break;
       }
@@ -247,7 +237,7 @@ export default function MasteringProcess() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isInitialized, playing]); // Removed circular dependencies
+  }, [isInitialized, playing, handleResetParameters, handleExport]);
 
   // Playback controls
   const handlePlayPause = useCallback(async () => {
