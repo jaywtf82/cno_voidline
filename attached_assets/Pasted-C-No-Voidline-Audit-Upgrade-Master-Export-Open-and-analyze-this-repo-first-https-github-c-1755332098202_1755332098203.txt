@@ -1,0 +1,368 @@
+C/No Voidline (Audit → Upgrade → Master → Export)
+Open and analyze this repo first: https://github.com/jaywtf82/cno_voidline
+If the stack isn’t already Vite + React 18 + TypeScript strict + Tailwind + Three.js, migrate it.
+
+Prime Objectives
+Deliver a real-time mastering web app that meets the spec below.
+
+Implement A/B chain (Original vs Processed) with independent meters and latency-aligned visuals.
+
+Add Phase 1 visual deconstruction suite, Phase 2 mastering with BLACKROOM AI + manual, and Phase 3 export with assets (WAV/MP3/FLAC) + waveform screenshots + metrics report.
+
+All processors run in AudioWorklets; UI hits 60 FPS; zero allocations in hot loops.
+
+Produce complete docs: AUDIT.md, DEEP_DIVE.md (line-by-line), UX_NOTES.md, and a rewritten README.md.
+
+0) Tooling, Quality, and Dependencies
+Install/upgrade deps
+
+bash
+Copy
+Edit
+npm i react react-dom three zustand class-variance-authority tailwind-merge onnxruntime-web
+npm i lamejs flac-encoder fflate
+npm i -D vite typescript @types/react @types/react-dom vite-plugin-svgr \
+      eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin \
+      tailwindcss postcss autoprefixer vitest jsdom @testing-library/react @testing-library/user-event
+TypeScript: "strict": true, "noUncheckedIndexedAccess": true, "target": "ES2022", "useDefineForClassFields": true.
+
+Vite config: enable svgr, build.sourcemap=true, assetsInlineLimit=0, modern build.
+
+ESLint: TS + React rules; npm run check runs tsc --noEmit && eslint ..
+
+Tailwind: tokens for themes default | terminal | glass. Add utilities for scanlines, glow, backdrop blur.
+
+Accessibility & Perf: respect prefers-reduced-motion; focus rings; keyboard map; ensure RAF orchestration (one ticker).
+
+1) File Map (create/replace exactly)
+bash
+Copy
+Edit
+/src
+  /audio
+    AudioEngine.ts                # context, graph, transport, A/B, latency sync
+    WorkletLoader.ts              # addModule utilities
+    processors/
+      meter-processor.ts          # peak/true-peak/rms/corr/width/noiseFloor @50Hz
+      lufs-processor.ts           # ITU-R BS.1770-4, short-term & integrated, LRA
+      fft-processor.ts            # 4K/8K windowed FFT, K-weighted, transferable
+      ms-eq-processor.ts          # M/S encode/decode + 3-band param-EQ (biquads)
+      limiter-processor.ts        # look-ahead true-peak limiter (+GR meter)
+      denoise-processor.ts        # spectral gate/subtraction for Artifact Cleanup
+      f0-tracker-processor.ts     # YIN/autocorr for harmonic detection
+  /dsp
+    biquad.ts kweight.ts window.ts util.ts stats.ts
+  /models
+    blackroom-v1.json             # rule-based preset heuristics (fallback)
+    blackroom-v1.onnx             # optional compact model for profile inference
+  /state
+    types.ts                      # strong types for metrics, fft, session
+    useSessionStore.ts            # zustand store, shallow selectors, persistence
+  /ui
+    AppShell.tsx
+    Theme.ts                      # theme tokens, class helpers
+    Card.tsx                      # Default/Terminal/Glass skins
+    Toolbar.tsx                   # transport, A/B, band iso, theme, presets
+    MeterStrip.tsx                # VoidlineMeter (per-branch)
+    ExportPanel.tsx               # Transmission Phase (beams, packets, checksum)
+  /visualizers
+    WaveDNAVisualizer.tsx         # Orbital sphere + DNA helices + wireframe overlay
+    HarmonicSpiral.tsx            # concentric spiral from detected harmonics
+    DynamicEQGraph.tsx            # interactive EQ nodes + helper lines
+    StereoFieldRadar.tsx          # polar goniometer with radar sweep & trails
+    PhaseLockGrid.tsx             # band-wise phase network
+    NoiseFloorTracker.tsx         # headroom/floor plot + sweeper beams
+  App.tsx
+  main.tsx
+/docs
+  AUDIT.md DEEP_DIVE.md UX_NOTES.md
+index.html tailwind.config.js postcss.config.js vite.config.ts README.md
+2) Audio Graph & A/B Mastering
+2.1 Graph (must be exact)
+css
+Copy
+Edit
+Source (BufferSource/MediaElement)
+  ├─► Split(L,R)
+  │     └─► Merger ─► meter(A) ─► lufs(A) ─► fft(A) ─► Delay(A) ─► Dest  # ORIGINAL (latency-compensated)
+  └─► M/S Encode ─► ms-eq ─► denoise ─► limiter ─► M/S Decode
+        └─► Merger ─► meter(B) ─► lufs(B) ─► fft(B) ──────────────► Dest  # PROCESSED
+Delay(A) equals lookAheadSamples / sampleRate from limiter so meters & visuals are aligned between A & B.
+
+A/B monitor crossfades with 5 ms ramps (no zipper noise).
+
+All processors exchange metrics via port.postMessage at 50 Hz.
+
+FFT frames use transferables (or SharedArrayBuffer).
+
+2.2 Worklets (algorithms—no stubs)
+ms-eq-processor.ts
+
+Encode M/S: M=(L+R)/√2, S=(L−R)/√2.
+
+Three peaking filters per M and S: low(80–250 Hz), mid(250–2 kHz), high(2–12 kHz); GAINS in dB, Q controls.
+
+Transposed Direct Form II biquads (double precision accumulators), one-pole param smoothing.
+
+denoise-processor.ts (Artifact Cleanup)
+
+Short-time spectral gate: 1024-sample Hann windows, over-lap add 50%.
+
+Noise profile from detected silence (RMS < −60 dBFS) with exponential averaging.
+
+Gain mask G = max(ε, 1 − α·N/M); optional Wiener (S^2/(S^2+N^2)).
+
+Send “sweeper” progress to UI.
+
+limiter-processor.ts
+
+Look-ahead circular buffer (delay = ceil(attack*sr/1000) + margin).
+
+True-peak estimate: light mode = IIR peak-hold; high mode = 2× halfband FIR then max.
+
+Soft knee, attack/release envelopes (exponential). Emits gr (gain reduction) and truePeak. Ceiling in dBTP.
+
+meter-processor.ts
+
+Peak, RMS, true-peak, correlation (Pearson), M/S width, noise floor (p10 of rolling RMS).
+
+lufs-processor.ts
+
+ITU-R BS.1770-4 K-weighting; 400 ms blocks; absolute gate −70 LUFS; relative −10 LU; integrated & LRA.
+
+f0-tracker-processor.ts
+
+YIN or autocorrelation to detect fundamental; report harmonics (multiples under Nyquist) for spiral.
+
+fft-processor.ts
+
+4096/8192 windowed FFT (Hann or Blackman-Harris); magnitudes K-weighted; double-buffered.
+
+Hot-loop rules: preallocate typed arrays, use branchless math, avoid allocations; no Math.random in process().
+
+3) Phase 1 — Deep Signal Deconstruction (UI + data flow)
+Faint Wireframe Overlays
+
+In WaveDNAVisualizer, draw (a) raw mono waveform envelope (thin wireframe), and (b) “optimized blueprint” envelope derived from the processed chain’s RMS/peak envelopes. A/B toggle morphs between paths with spring easing.
+
+Subtle blueprint labels (Hz/kHz grid), scanline overlay in Terminal skin.
+
+Harmonic Spiral Visualizer
+
+HarmonicSpiral.tsx renders concentric log-radius spirals; each ring = harmonic order; ring radius scales with amplitude from f0-tracker-processor.
+
+Color: amber for boosted bands, green for cuts (live from EQ node state).
+
+Hover a ring → tooltip: frequency, suggested Q, delta dB.
+
+Dynamic EQ Nodes
+
+Interactive Biquad graph (DynamicEQGraph.tsx) showing current M/S filters. Nodes glow when AUTO adjusts them; helper lines snap to musical centers (E, F#, A). Drag updates AudioParams with smoothed ramps.
+
+Artifact Cleanup Waves
+
+NoiseFloorTracker shows sweep beams; UI hook to denoise-processor “profile capture” and gate strength. The sweeper animation aligns to the spectral frame index (functional animation only).
+
+4) Phase 2 — BLACKROOM Profiles (AI + manual)
+Model-aware spaces: load blackroom-v1.onnx (if supported) via onnxruntime-web. Input features: spectral tilt, crest factor, DR, LUFS I, LRA, correlation, bass/air energy, sibilance indicator. Output: target gains/Q for M/S bands, limiter threshold/ceiling, denoise aggressiveness.
+
+Fallback: apply heuristic JSON (blackroom-v1.json) mapping metrics to params (no ML).
+
+Presets:
+
+CLUB_MASTER (−10 LUFS, aggressive), VINYL_WARM (−16 LUFS, gentle), STREAMING_LOUD (−14 LUFS, true-peak −1dBTP), RADIO_READY (−23 LUFS, EBU).
+
+Manual mastering: every param tweakable; A/B comparison with exact latency compensation.
+
+Display Voidline Score (0–100) combining: target LUFS compliance, headroom safety, correlation (≥0.2), and spectral translation balance.
+
+Transmission Phase Displays (ExportPanel):
+
+Interstellar Data Beams: each format (WAV, MP3, FLAC) as a beam converging into an export portal; progress bound to actual encoder progress.
+
+Cosmic Packet Tracker: scrolling packet IDs with per-format progress bars; “satellite hop” icon moves each chunk.
+
+Solar Flare Alert: animated marker; when CPU spikes or buffer underruns occur, flicker grid (functional signal).
+
+Checksum & Integrity Scan: rolling code rain while hashing; green tick or red glitch on completion.
+
+5) Phase 3 — Export (must actually master and save files)
+Offline render: OfflineAudioContext replicates the processed B chain with current params.
+
+Encode:
+
+WAV (PCM 16/24), MP3 (lamejs), FLAC (flac-encoder).
+
+Compute SHA-256 checksums; zip assets with fflate.
+
+Artifacts generated:
+
+track_mastered.wav/.mp3/.flac
+
+voidline_report.txt (see contents below)
+
+compare.png (stacked pre/post waveforms + LUFS/TP annotations)
+
+spectra.png (avg spectrums A vs B)
+
+metrics.json (all final numbers and chain params)
+
+Report template (voidline_report.txt):
+
+php-template
+Copy
+Edit
+Title: <filename>
+Profile: <preset or manual>
+Integrated LUFS: <pre> → <post>
+True Peak (dBTP): <pre> → <post>
+Headroom: <post>
+LRA: <pre> → <post>
+Correlation: <pre> → <post>
+EQ (M/S) dB @ Hz [Q]: ...
+Denoise: <mode, alpha>
+Limiter: threshold/ceiling/GRmax, lookahead
+Checksum: <sha256>
+Generated: <ISO timestamp>
+6) UI Composition & Themes
+AppShell Grid:
+
+Top: WaveDNAVisualizer (orbital + wireframe) & HarmonicSpiral.
+
+Middle: DynamicEQGraph & StereoFieldRadar.
+
+Bottom: PhaseLockGrid, NoiseFloorTracker, MeterStrip (dual).
+
+Right side (collapsible): ExportPanel.
+
+Skins
+
+Default: subtle border, muted grid.
+
+Terminal: high-contrast borders, scanlines, neon accent.
+
+Glass: translucent panels, backdrop blur, inner glow.
+
+Interaction
+
+Orbit (drag), zoom (wheel / pinch), band isolation (⌥ + drag region), A/B (A/B), theme (T), play/pause (space).
+
+Every motion must encode data state (no decorative-only movement).
+
+7) Key Implementation Snippets (generate real code)
+Offline render & export (must be fully implemented)
+
+ts
+Copy
+Edit
+// In AudioEngine.ts
+export async function renderMaster(params: MasterParams): Promise<RenderedAssets> {
+  // 1) Build OfflineAudioContext with identical nodes/params as B chain
+  const dur = getCurrentDurationSec();
+  const sr  = ctx.sampleRate;
+  const off = new OfflineAudioContext(2, Math.ceil(dur*sr), sr);
+
+  // ...recreate: source(buffer), ms-encode -> ms-eq -> denoise -> limiter -> ms-decode -> destination
+
+  const start = performance.now();
+  await off.startRendering();
+  const buffer = await off.startRendering(); // ensure single render
+
+  // 2) Encode formats
+  const wav  = encodeWav(buffer, 24);         // no placeholders
+  const mp3  = await encodeMp3(buffer);       // lamejs streaming
+  const flac = await encodeFlac(buffer);      // flac-encoder wasm
+
+  // 3) Generate visuals
+  const comparePng  = await renderWaveformComparisonPng(originalBuffer, buffer);
+  const spectraPng  = await renderAverageSpectraPng(originalBuffer, buffer);
+
+  // 4) Metrics & report
+  const metrics = finalizeMetrics(buffer, params.targets);
+  const report  = buildTextReport(metrics, params);
+  const checksum = await sha256(wav);
+
+  return { wav, mp3, flac, comparePng, spectraPng, report, metrics, checksum, renderMs: performance.now()-start };
+}
+EQ node structure (no placeholders)
+
+ts
+Copy
+Edit
+type EqBand = { type:'peaking'; target:'M'|'S'; f:number; q:number; gain:number };
+export type EqState = { bands: EqBand[]; auto: boolean };
+Limiter envelope
+
+ts
+Copy
+Edit
+// attack/release (samples)
+const atkA = Math.exp(-1/(attackMs*sr/1000));   // coef in [0..1)
+const relA = Math.exp(-1/(releaseMs*sr/1000));
+Ghostwriter must produce actual implementations for: encodeWav, encodeMp3, encodeFlac, renderWaveformComparisonPng, renderAverageSpectraPng, and hashing (e.g., SubtleCrypto).
+
+8) Documentation to write now
+/docs/AUDIT.md
+
+Bullet list of what the current repo has (pages, components, audio code), what’s obsolete, and risks.
+
+/docs/DEEP_DIVE.md (line-by-line)
+
+For each processor (ms-eq-processor.ts, limiter-processor.ts, denoise-processor.ts, lufs-processor.ts, meter-processor.ts, fft-processor.ts) and AudioEngine.ts:
+
+Document every field, buffer, loop, and math step.
+
+Explain latency math and A/B alignment.
+
+Include CPU budgets and reasons for each micro-optimization.
+
+/docs/UX_NOTES.md
+
+Interaction map, keyboard controls, motion principles, accessibility.
+
+README.md (rewrite)
+
+Hero GIFs (WaveDNA, Spiral, Radar, Export beams).
+
+Features grid (Phase 1..3), quickstart, architecture diagram, model notes, safety note (ceiling), and benchmarking.
+
+9) Tests (Vitest)
+biquad.spec.ts — peaking filter frequency response vs reference coefficients.
+
+limiter.spec.ts — envelope response to steps & sine bursts; ensure no overs > ceiling.
+
+lufs.spec.ts — sanity vs synthetic fixtures (pink noise at −23 LUFS ≈ 0 LU target).
+
+denoise.spec.ts — SNR improvement on noisy test clip.
+
+correlation.spec.ts — −1/0/+1 cases.
+
+React smoke tests for visualizers (mount without audio → no crash).
+
+npm run test must pass locally in Replit.
+
+10) Acceptance Criteria (must be true)
+Drag-drop audio → app plays; Phase-1 visualizers react at 60 FPS on a mid-range laptop.
+
+A/B chain toggles with perfect meter alignment (compensated delay).
+
+BLACKROOM preset inference adjusts EQ/limiter/denoise; manual edits reflected instantly.
+
+Export produces WAV/MP3/FLAC plus compare.png, spectra.png, voidline_report.txt, and metrics.json; a ZIP can be downloaded.
+
+npm run build and npm run check are clean; Lighthouse a11y ≥ 95; reduced-motion respected.
+
+Start now
+Audit the repo and write /docs/AUDIT.md.
+
+Apply stack upgrade; create files per map.
+
+Implement worklets & AudioEngine with zero-allocation hot paths.
+
+Build visuals and UI skins; hook presets & AI model.
+
+Implement Offline render + encoders + export visuals.
+
+Write docs and tests; update README; run checks and ship.
+
+Commit message:

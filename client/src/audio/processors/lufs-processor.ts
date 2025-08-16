@@ -1,44 +1,46 @@
 /**
- * lufs-processor.js - ITU-R BS.1770-4 LUFS measurement
+ * lufs-processor.ts - ITU-R BS.1770-4 LUFS measurement
  * Implements K-weighting, gating, and LRA calculation
  */
 
 class LUFSProcessor extends AudioWorkletProcessor {
-  constructor() {
-    super();
-    
-    this.sampleRate = 48000;
-    this.kWeightFilter = this.initializeKWeighting();
-    
-    // Gating
-    this.absoluteGate = -70; // LUFS
-    this.relativeGate = -10; // LU below relative threshold
-    
-    // Buffers
-    this.momentaryBuffer = []; // 400ms blocks
-    this.shortTermBuffer = []; // 3s blocks  
-    this.integratedBuffer = []; // All blocks for integration
-    
-    // Current values
-    this.lufsI = -70; // Integrated
-    this.lufsS = -70; // Short-term
-    this.lufsM = -70; // Momentary
-    this.lra = 0; // Loudness Range
-    this.dbtp = -70; // True peak
-    
-    this.blockSize = 0.4 * this.sampleRate; // 400ms
-    this.currentBlock = [];
-    this.blockSampleCount = 0;
-    this.frameCount = 0;
-
-    this.port.onmessage = this.handleMessage.bind(this);
-  }
+  private sampleRate = 48000;
+  private kWeightFilter: any;
+  
+  // Gating
+  private absoluteGate = -70; // LUFS
+  private relativeGate = -10; // LU below relative threshold
+  
+  // Buffers
+  private momentaryBuffer: number[] = []; // 400ms blocks
+  private shortTermBuffer: number[] = []; // 3s blocks  
+  private integratedBuffer: number[] = []; // All blocks for integration
+  
+  // Current values
+  private lufsI = -70; // Integrated
+  private lufsS = -70; // Short-term
+  private lufsM = -70; // Momentary
+  private lra = 0; // Loudness Range
+  private dbtp = -70; // True peak
+  
+  private blockSize = 0.4 * 48000; // 400ms at 48kHz
+  private currentBlock: Float32Array[] = [];
+  private blockSampleCount = 0;
+  private frameCount = 0;
 
   static get parameterDescriptors() {
     return [];
   }
 
-  handleMessage(event) {
+  constructor() {
+    super();
+    this.sampleRate = sampleRate;
+    this.blockSize = 0.4 * this.sampleRate;
+    this.initializeKWeighting();
+    this.port.onmessage = this.handleMessage.bind(this);
+  }
+
+  private handleMessage(event: MessageEvent) {
     const { type } = event.data;
     
     switch (type) {
@@ -48,7 +50,7 @@ class LUFSProcessor extends AudioWorkletProcessor {
     }
   }
 
-  resetMeasurement() {
+  private resetMeasurement(): void {
     this.momentaryBuffer.length = 0;
     this.shortTermBuffer.length = 0;
     this.integratedBuffer.length = 0;
@@ -58,9 +60,13 @@ class LUFSProcessor extends AudioWorkletProcessor {
     this.lra = 0;
   }
 
-  initializeKWeighting() {
+  private initializeKWeighting(): void {
     // K-weighting filter coefficients for 48kHz
-    return {
+    // Pre-filter (high-pass ~38Hz)
+    // RLB filter (shelf ~1.5kHz, +4dB)
+    
+    this.kWeightFilter = {
+      // Simplified biquad coefficients
       preFilter: {
         b0: 1.53512485958697,
         b1: -2.69169618940638, 
@@ -80,7 +86,7 @@ class LUFSProcessor extends AudioWorkletProcessor {
     };
   }
 
-  applyKWeighting(samples) {
+  private applyKWeighting(samples: Float32Array, channel: 'L' | 'R'): Float32Array {
     const output = new Float32Array(samples.length);
     const pre = this.kWeightFilter.preFilter;
     const rlb = this.kWeightFilter.rlbFilter;
@@ -104,7 +110,7 @@ class LUFSProcessor extends AudioWorkletProcessor {
     return output;
   }
 
-  calculateMeanSquare(left, right) {
+  private calculateMeanSquare(left: Float32Array, right: Float32Array): number {
     // ITU-R BS.1770-4 equation
     let sum = 0;
     const length = Math.min(left.length, right.length);
@@ -116,15 +122,15 @@ class LUFSProcessor extends AudioWorkletProcessor {
     return sum / (2 * length); // Average of L and R channels
   }
 
-  meanSquareToLUFS(meanSquare) {
+  private meanSquareToLUFS(meanSquare: number): number {
     // ITU-R BS.1770-4: -0.691 + 10 * log10(meanSquare)
     return -0.691 + 10 * Math.log10(meanSquare + 1e-10);
   }
 
-  processBlock(left, right) {
+  private processBlock(left: Float32Array, right: Float32Array): void {
     // Apply K-weighting
-    const leftWeighted = this.applyKWeighting(left);
-    const rightWeighted = this.applyKWeighting(right);
+    const leftWeighted = this.applyKWeighting(left, 'L');
+    const rightWeighted = this.applyKWeighting(right, 'R');
     
     // Calculate mean square
     const meanSquare = this.calculateMeanSquare(leftWeighted, rightWeighted);
@@ -155,7 +161,7 @@ class LUFSProcessor extends AudioWorkletProcessor {
     this.calculateIntegratedLoudness();
   }
 
-  calculateIntegratedLoudness() {
+  private calculateIntegratedLoudness(): void {
     if (this.integratedBuffer.length === 0) return;
     
     // First pass: absolute gating (-70 LUFS)
@@ -189,7 +195,7 @@ class LUFSProcessor extends AudioWorkletProcessor {
     this.calculateLRA(relativeGatedBlocks);
   }
 
-  calculateLRA(gatedBlocks) {
+  private calculateLRA(gatedBlocks: number[]): void {
     if (gatedBlocks.length < 2) {
       this.lra = 0;
       return;
@@ -205,7 +211,7 @@ class LUFSProcessor extends AudioWorkletProcessor {
     this.lra = p95 - p10;
   }
 
-  process(inputs, outputs, parameters) {
+  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>): boolean {
     const input = inputs[0];
     const output = outputs[0];
     
