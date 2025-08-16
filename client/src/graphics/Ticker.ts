@@ -1,5 +1,5 @@
 // Single global RAF loop for all animations
-export type TickerCallback = (deltaTime: number) => void;
+export type TickerCallback = (deltaTime: number, isLagging?: boolean) => void;
 
 class TickerManager {
   private callbacks = new Set<TickerCallback>();
@@ -17,10 +17,13 @@ class TickerManager {
     const maxFps = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 30 : 60;
     const minInterval = 1000 / maxFps;
     
+    // Adaptive resolution: reduce quality when frame time > 24ms
+    const isLagging = deltaTime > 24;
+    
     if (deltaTime >= minInterval) {
       this.callbacks.forEach(callback => {
         try {
-          callback(deltaTime);
+          callback(deltaTime, isLagging);
         } catch (error) {
           console.error('Ticker callback error:', error);
         }

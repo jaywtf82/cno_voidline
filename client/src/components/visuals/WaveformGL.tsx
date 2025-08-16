@@ -186,3 +186,105 @@ function hexToRgb(hex: string): [number, number, number] {
     parseInt(result[3], 16)
   ] : [0, 0, 0];
 }
+import React, { useRef, useEffect } from 'react';
+import { Ticker } from '@/graphics/Ticker';
+import { usePhase2Source, usePhase2Time } from '@/state/useSessionStore';
+
+export function WaveformGL() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const glRef = useRef<WebGL2RenderingContext | null>(null);
+  const phase2Source = usePhase2Source();
+  const timeData = usePhase2Time();
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const gl = canvas.getContext('webgl2');
+    if (!gl) return;
+
+    glRef.current = gl;
+
+    // Set up WebGL
+    gl.clearColor(0, 0, 0, 1);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    const handleResize = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    };
+
+    const ro = new ResizeObserver(handleResize);
+    ro.observe(canvas);
+    handleResize();
+
+    return () => {
+      ro.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = Ticker.subscribe((deltaTime, isLagging) => {
+      const gl = glRef.current;
+      const canvas = canvasRef.current;
+      if (!gl || !canvas) return;
+
+      // Clear
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      // Draw waveform using immediate mode (simplified)
+      if (timeData) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          const width = canvas.width;
+          const height = canvas.height;
+          const centerY = height / 2;
+          
+          // Emphasize B channel when in post mode
+          if (phase2Source === 'post') {
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.8)'; // Cyan for processed
+            ctx.lineWidth = 3;
+          } else {
+            ctx.strokeStyle = 'rgba(255, 165, 0, 0.6)'; // Orange for pre
+            ctx.lineWidth = 2;
+          }
+          
+          ctx.beginPath();
+          for (let i = 0; i < timeData.length; i++) {
+            const x = (i / timeData.length) * width;
+            const y = centerY + (timeData[i] * centerY * 0.8);
+            
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+          ctx.stroke();
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [timeData, phase2Source]);
+
+  return (
+    <div className="relative">
+      <canvas
+        ref={canvasRef}
+        className="w-full h-64 border border-gray-700 rounded bg-black/20"
+      />
+      {phase2Source === 'post' && (
+        <div className="absolute top-2 right-2 px-2 py-1 bg-cyan-600/80 text-white text-xs rounded">
+          Building preview...
+        </div>
+      )}
+    </div>
+  );
+}

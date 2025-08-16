@@ -333,3 +333,102 @@ export function Phase1DeepSignal() {
     </div>
   );
 }
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSessionStore } from '@/state/useSessionStore';
+
+export default function Phase1DeepSignal() {
+  const metricsA = useSessionStore(state => state.metricsA);
+
+  return (
+    <div className="grid grid-cols-4 gap-4">
+      <Card className="border-gray-700 bg-black/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-400">Peak dB</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-mono text-orange-400">
+            {metricsA.peakDb.toFixed(1)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-gray-700 bg-black/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-400">True Peak dB</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-mono text-orange-400">
+            {metricsA.truePeakDb.toFixed(1)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-gray-700 bg-black/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-400">RMS dB</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-mono text-orange-400">
+            {metricsA.rmsDb.toFixed(1)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-gray-700 bg-black/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-400">LUFS-I</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-mono text-orange-400">
+            {metricsA.lufsI.toFixed(1)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-gray-700 bg-black/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-400">LUFS-S</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-mono text-orange-400">
+            {metricsA.lufsS.toFixed(1)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-gray-700 bg-black/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-400">LRA</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-mono text-orange-400">
+            {metricsA.lra.toFixed(1)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-gray-700 bg-black/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-400">Correlation</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-mono text-orange-400">
+            {metricsA.corr.toFixed(2)}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-gray-700 bg-black/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-400">Width %</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-mono text-orange-400">
+            {metricsA.widthPct.toFixed(0)}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

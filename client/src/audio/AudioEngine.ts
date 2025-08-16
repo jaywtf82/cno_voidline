@@ -319,3 +319,194 @@ export function getAudioEngine(): AudioEngine | null {
 }
 
 // ProcessorParams is imported from types/audio.ts
+import { EngineParams, FramePayload, Metrics } from '@/types/audio';
+
+export interface ProcessedSnapshot {
+  metrics: Metrics;
+  fft: Float32Array;
+}
+
+export class AudioEngine {
+  private context?: AudioContext;
+  private sourceNode?: AudioBufferSourceNode;
+  private isPlaying = false;
+  private frameCallbacks = new Set<(frame: FramePayload) => void>();
+  private intervalId?: number;
+  private currentParams: EngineParams = {
+    msEq: { m: { low: 0, mid: 0, high: 0 }, s: { low: 0, mid: 0, high: 0 } },
+    denoise: { amount: 0 },
+    limiter: { threshold: -1, ceiling: -0.1, lookaheadMs: 5, knee: 2 },
+  };
+
+  private dummyMetrics: Metrics = {
+    peakDb: -12.5,
+    truePeakDb: -11.8,
+    rmsDb: -18.3,
+    lufsI: -23.1,
+    lufsS: -22.8,
+    lra: 4.2,
+    corr: 0.85,
+    widthPct: 65,
+    noiseFloorDb: -60.2,
+    headroomDb: 11.8,
+  };
+
+  async loadFromObjectUrl(url: string): Promise<void> {
+    this.context = new AudioContext();
+    
+    try {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await this.context.decodeAudioData(arrayBuffer);
+      
+      this.sourceNode = this.context.createBufferSource();
+      this.sourceNode.buffer = audioBuffer;
+      this.sourceNode.loop = true;
+      this.sourceNode.connect(this.context.destination);
+      
+      // Start frame emission at 50Hz
+      this.startFrameEmission();
+      
+    } catch (error) {
+      console.error('Failed to load audio:', error);
+    }
+  }
+
+  play(): void {
+    if (this.context && this.sourceNode && !this.isPlaying) {
+      if (this.context.state === 'suspended') {
+        this.context.resume();
+      }
+      this.sourceNode.start();
+      this.isPlaying = true;
+    }
+  }
+
+  pause(): void {
+    if (this.context && this.isPlaying) {
+      this.context.suspend();
+      this.isPlaying = false;
+    }
+  }
+
+  setParams(params: Partial<EngineParams>): void {
+    this.currentParams = { ...this.currentParams, ...params };
+  }
+
+  async prepareProcessedPreview(params: EngineParams): Promise<{ snapshot: ProcessedSnapshot }> {
+    // Simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const processedMetrics: Metrics = {
+      ...this.dummyMetrics,
+      peakDb: Math.max(-0.1, this.dummyMetrics.peakDb + 2),
+      lufsI: Math.min(-16, this.dummyMetrics.lufsI + 4),
+      rmsDb: this.dummyMetrics.rmsDb + 3,
+    };
+
+    const fft = new Float32Array(2048);
+    for (let i = 0; i < fft.length; i++) {
+      fft[i] = Math.random() * 0.5 + 0.3; // Processed spectrum
+    }
+
+    return {
+      snapshot: {
+        metrics: processedMetrics,
+        fft,
+      },
+    };
+  }
+
+  onFrame(callback: (frame: FramePayload) => void): () => void {
+    this.frameCallbacks.add(callback);
+    return () => this.frameCallbacks.delete(callback);
+  }
+
+  private startFrameEmission(): void {
+    this.intervalId = window.setInterval(() => {
+      if (this.isPlaying) {
+        this.emitFrames();
+      }
+    }, 20); // 50Hz
+  }
+
+  private emitFrames(): void {
+    // Emit pre frame
+    const preFFT = new Float32Array(2048);
+    const preTime = new Float32Array(512);
+    
+    for (let i = 0; i < preFFT.length; i++) {
+      preFFT[i] = Math.random() * 0.4 + 0.1;
+    }
+    
+    for (let i = 0; i < preTime.length; i++) {
+      preTime[i] = (Math.random() - 0.5) * 0.8;
+    }
+
+    const preFrame: FramePayload = {
+      src: 'pre',
+      metrics: { ...this.dummyMetrics },
+      fft: preFFT,
+      time: preTime,
+    };
+
+    // Emit post frame with processed characteristics
+    const postFFT = new Float32Array(2048);
+    const postTime = new Float32Array(512);
+    
+    for (let i = 0; i < postFFT.length; i++) {
+      postFFT[i] = Math.random() * 0.6 + 0.2;
+    }
+    
+    for (let i = 0; i < postTime.length; i++) {
+      postTime[i] = (Math.random() - 0.5) * 0.9;
+    }
+
+    const postMetrics: Metrics = {
+      ...this.dummyMetrics,
+      peakDb: -3.2,
+      lufsI: -18.5,
+      rmsDb: -14.8,
+    };
+
+    const postFrame: FramePayload = {
+      src: 'post',
+      metrics: postMetrics,
+      fft: postFFT,
+      time: postTime,
+    };
+
+    this.frameCallbacks.forEach(callback => {
+      callback(preFrame);
+      callback(postFrame);
+    });
+  }
+
+  destroy(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+    if (this.context) {
+      this.context.close();
+    }
+    this.frameCallbacks.clear();
+  }
+}
+
+// Fallback engine for when AudioWorklet is not available
+export class FallbackEngine extends AudioEngine {
+  // Inherits all functionality, just shows "worklet off" badge
+}
+
+let audioEngine: AudioEngine | null = null;
+
+export function initializeAudioEngine(): AudioEngine {
+  if (!audioEngine) {
+    audioEngine = new AudioEngine();
+  }
+  return audioEngine;
+}
+
+export function getAudioEngine(): AudioEngine | null {
+  return audioEngine;
+}

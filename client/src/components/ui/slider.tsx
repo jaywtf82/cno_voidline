@@ -1,23 +1,22 @@
+
 import * as React from "react"
 import * as SliderPrimitive from "@radix-ui/react-slider"
-
 import { cn } from "@/lib/utils"
 
 const Slider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root>
 >(({ className, value, onValueChange, onValueCommit, ...props }, ref) => {
-  // Memoize value array to prevent infinite loops
-  const memoizedValue = React.useMemo(() => value || [0], [value]);
+  const lastValueRef = React.useRef<number[]>([]);
   
-  // Use ref for equality checking to prevent heavy updates
-  const lastValueRef = React.useRef(memoizedValue);
-  
+  const memoizedValue = React.useMemo(() => {
+    return value ? [value[0]] : undefined;
+  }, [value]);
+
   const handleValueChange = React.useCallback((newValue: number[]) => {
-    // Only call onChange if value actually changed
-    if (JSON.stringify(newValue) !== JSON.stringify(lastValueRef.current)) {
+    if (onValueChange && !areArraysEqual(lastValueRef.current, newValue)) {
       lastValueRef.current = newValue;
-      onValueChange?.(newValue);
+      onValueChange(newValue);
     }
   }, [onValueChange]);
 
@@ -41,5 +40,9 @@ const Slider = React.forwardRef<
   )
 })
 Slider.displayName = SliderPrimitive.Root.displayName
+
+function areArraysEqual(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((val, i) => val === b[i]);
+}
 
 export { Slider }

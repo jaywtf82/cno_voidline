@@ -34,19 +34,3 @@ export type FramePayload = {
   fft: Float32Array;
   time?: Float32Array;
 };
-
-export interface ProcessorParams {
-  midGains: [number, number, number];
-  sideGains: [number, number, number];
-  midFreqs: [number, number, number];
-  sideFreqs: [number, number, number];
-  midQs: [number, number, number];
-  sideQs: [number, number, number];
-  denoiseAmount: number;
-  noiseGateThreshold: number;
-  threshold: number;
-  ceiling: number;
-  lookAheadSamples: number;
-  attack: number;
-  release: number;
-}

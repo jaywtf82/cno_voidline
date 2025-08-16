@@ -185,3 +185,102 @@ export function TransmissionPanel({
     </NeonCard>
   );
 }
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { useSessionStore } from '@/state/useSessionStore';
+import { Download, RefreshCw, FileText } from 'lucide-react';
+
+export default function TransmissionPanel() {
+  const exportStatus = useSessionStore(state => state.exportStatus);
+  const resetExportStatus = useSessionStore(state => state.resetExportStatus);
+
+  const handleExportSession = () => {
+    // TODO: Implement actual export logic
+    console.log('Exporting session...');
+  };
+
+  const getStatusBadge = () => {
+    switch (exportStatus.phase) {
+      case 'render':
+        return <Badge className="bg-blue-600">Rendering</Badge>;
+      case 'encode':
+        return <Badge className="bg-purple-600">Encoding</Badge>;
+      case 'zip':
+        return <Badge className="bg-green-600">Packaging</Badge>;
+      case 'done':
+        return <Badge className="bg-green-600">Complete</Badge>;
+      case 'error':
+        return <Badge className="bg-red-600">Error</Badge>;
+      default:
+        return <Badge variant="outline">Ready</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-green-500/30 bg-green-950/20">
+        <CardHeader>
+          <CardTitle className="text-green-400 flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Export Formats
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-3 border border-green-500/30 rounded">
+              <div className="text-sm font-semibold text-green-400">WAV</div>
+              <div className="text-xs text-gray-400">24-bit</div>
+            </div>
+            <div className="text-center p-3 border border-green-500/30 rounded">
+              <div className="text-sm font-semibold text-green-400">MP3</div>
+              <div className="text-xs text-gray-400">320kbps</div>
+            </div>
+            <div className="text-center p-3 border border-green-500/30 rounded">
+              <div className="text-sm font-semibold text-green-400">FLAC</div>
+              <div className="text-xs text-gray-400">Lossless</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {exportStatus.phase !== 'idle' && (
+        <Card className="border-gray-700 bg-black/30">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              Export Progress
+              {getStatusBadge()}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Progress value={exportStatus.progress} className="mb-2" />
+            {exportStatus.message && (
+              <p className="text-sm text-gray-400">{exportStatus.message}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="flex gap-4 justify-center">
+        <Button
+          variant="outline"
+          onClick={resetExportStatus}
+          className="border-gray-600 text-gray-400"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Reset All
+        </Button>
+        
+        <Button
+          onClick={handleExportSession}
+          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white px-8"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Export Session
+        </Button>
+      </div>
+    </div>
+  );
+}

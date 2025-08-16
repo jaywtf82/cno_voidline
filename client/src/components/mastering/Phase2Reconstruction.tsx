@@ -224,3 +224,63 @@ export default function Phase2Reconstruction({ sessionId }: Phase2Reconstruction
     </div>
   );
 }
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { MasteringMeters } from '@/components/audio/MasteringMeters';
+import { StereoCorrelationMeter } from '@/components/audio/StereoCorrelationMeter';
+import { VoidlineScore } from '@/components/audio/VoidlineScore';
+import { WaveformGL } from '@/components/visuals/WaveformGL';
+import { usePhase2Source } from '@/state/useSessionStore';
+
+export default function Phase2Reconstruction() {
+  const [activeTab, setActiveTab] = useState('waveform');
+  const phase2Source = usePhase2Source();
+
+  const getMonitorBadge = () => {
+    if (phase2Source === 'post') {
+      return <Badge className="bg-cyan-600 text-white">MONITOR: PROCESSED</Badge>;
+    }
+    return <Badge variant="outline" className="border-orange-400 text-orange-400">MONITOR: A</Badge>;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <h3 className="text-lg font-semibold text-white">Visual Analysis</h3>
+        {getMonitorBadge()}
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="waveform">Waveform</TabsTrigger>
+          <TabsTrigger value="spectrum">Spectrum 2D</TabsTrigger>
+          <TabsTrigger value="orbital">Spectrum 3D</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="waveform" className="space-y-4">
+          <WaveformGL />
+        </TabsContent>
+
+        <TabsContent value="spectrum" className="space-y-4">
+          <div className="h-64 bg-black/30 rounded border border-gray-700 flex items-center justify-center">
+            <span className="text-gray-500">Spectrum 2D (Coming Soon)</span>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="orbital" className="space-y-4">
+          <div className="h-64 bg-black/30 rounded border border-gray-700 flex items-center justify-center">
+            <span className="text-gray-500">Orbital 3D (Coming Soon)</span>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Meters Row */}
+      <div className="grid grid-cols-3 gap-4">
+        <MasteringMeters />
+        <StereoCorrelationMeter />
+        <VoidlineScore />
+      </div>
+    </div>
+  );
+}

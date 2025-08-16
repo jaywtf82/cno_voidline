@@ -292,3 +292,137 @@ function applyMacros(params: EngineParams, macros: MacroState): EngineParams {
     },
   };
 }
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
+import { getAudioEngine } from '@/audio/AudioEngine';
+import { useSessionStore } from '@/state/useSessionStore';
+import { Zap, Settings, Brain } from 'lucide-react';
+
+const PRESETS = [
+  'CLUB_MASTER',
+  'VINYL_WARM', 
+  'STREAMING_LOUD',
+  'RADIO_READY',
+  'AI_SUGGEST',
+  'BERLIN_CONCRETE',
+  'SUB_ABYSS',
+  'DOME_SHIFT'
+];
+
+export default function BlackroomPanel() {
+  const [selectedPreset, setSelectedPreset] = useState('AI_SUGGEST');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [macros, setMacros] = useState({
+    harmonicBoost: 50,
+    subweight: 30,
+    transientPunch: 40,
+    airlift: 60,
+    spatialFlux: 35,
+  });
+
+  const activateProcessedPreview = useSessionStore(state => state.activateProcessedPreview);
+
+  const handleProcessMastering = async () => {
+    setIsProcessing(true);
+    
+    try {
+      const engine = getAudioEngine();
+      if (!engine) return;
+
+      const params = {
+        msEq: { m: { low: 0, mid: 0, high: 0 }, s: { low: 0, mid: 0, high: 0 } },
+        denoise: { amount: 0.3 },
+        limiter: { threshold: -1, ceiling: -0.1, lookaheadMs: 5, knee: 2 },
+        macros,
+      };
+
+      const result = await engine.prepareProcessedPreview(params);
+      activateProcessedPreview(result.snapshot);
+      
+    } catch (error) {
+      console.error('Processing failed:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleMacroChange = (macro: string, value: number[]) => {
+    setMacros(prev => ({ ...prev, [macro]: value[0] }));
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* AI Presets */}
+      <Card className="border-cyan-500/30 bg-cyan-950/20">
+        <CardHeader>
+          <CardTitle className="text-cyan-400 flex items-center gap-2">
+            <Brain className="w-5 h-5" />
+            AI Presets
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-2">
+            {PRESETS.map(preset => (
+              <Button
+                key={preset}
+                variant={selectedPreset === preset ? "default" : "outline"}
+                size="sm"
+                className={selectedPreset === preset ? "bg-cyan-600 text-white" : "border-cyan-500/30 text-cyan-400"}
+                onClick={() => setSelectedPreset(preset)}
+              >
+                {preset}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Manual Controls */}
+      <Card className="border-orange-500/30 bg-orange-950/20">
+        <CardHeader>
+          <CardTitle className="text-orange-400 flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Manual Macros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6">
+            {Object.entries(macros).map(([key, value]) => (
+              <div key={key} className="space-y-2">
+                <div className="flex justify-between">
+                  <label className="text-sm text-orange-300 capitalize">
+                    {key.replace(/([A-Z])/g, ' $1').trim()}
+                  </label>
+                  <span className="text-sm text-orange-400">{value}%</span>
+                </div>
+                <Slider
+                  value={[value]}
+                  onValueChange={(val) => handleMacroChange(key, val)}
+                  max={100}
+                  step={1}
+                  className="text-orange-400"
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Process Button */}
+      <div className="flex justify-center">
+        <Button
+          onClick={handleProcessMastering}
+          disabled={isProcessing}
+          size="lg"
+          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white px-8 py-3"
+        >
+          <Zap className="w-5 h-5 mr-2" />
+          {isProcessing ? 'Processing...' : 'Process Mastering'}
+        </Button>
+      </div>
+    </div>
+  );
+}

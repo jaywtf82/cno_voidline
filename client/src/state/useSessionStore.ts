@@ -1,30 +1,19 @@
+
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Metrics, FramePayload } from '@/types/audio';
-
-export interface AudioMetrics {
-  peak: number;
-  rms: number;
-  truePeak: number;
-  correlation: number;
-  width: number;
-  noiseFloor: number;
-  lufsIntegrated: number;
-  lufsShort: number;
-  lufsRange: number;
-}
-
-export interface ExportStatus {
-  phase: 'idle' | 'render' | 'encode' | 'zip' | 'done' | 'error';
-  progress: number;
-  message?: string;
-}
 
 export type Phase2Source = 'pre' | 'post';
 
 export interface ProcessedSnapshot {
   metrics: Metrics;
   fft: Float32Array;
+}
+
+export interface ExportStatus {
+  phase: 'idle' | 'render' | 'encode' | 'zip' | 'done' | 'error';
+  progress: number;
+  message?: string;
 }
 
 export interface SessionState {
@@ -53,7 +42,6 @@ export interface SessionActions {
   setVoidlineScore(score: number): void;
   updateExportStatus(status: Partial<ExportStatus>): void;
   resetExportStatus(): void;
-  updateProcessorParams?(params: any): void;
   setPhase2Source(src: Phase2Source): void;
   activateProcessedPreview(snap: ProcessedSnapshot): void;
   pushFrameFromEngine(f: FramePayload): void;
@@ -94,7 +82,6 @@ export const useSessionStore = create<SessionStore>()(
     lastProcessedSnapshot: undefined,
     
     setPlaying: (playing: boolean) => set({ playing }),
-    
     setMonitor: (monitor: 'A' | 'B') => set({ monitor }),
     
     updateMetricsA: (metrics: Partial<Metrics>) =>
@@ -108,13 +95,11 @@ export const useSessionStore = create<SessionStore>()(
       })),
       
     updateFFTA: (fft: Float32Array) => {
-      // Copy to avoid reference issues
       const fftCopy = new Float32Array(fft);
       set({ fftA: fftCopy });
     },
     
     updateFFTB: (fft: Float32Array) => {
-      // Copy to avoid reference issues
       const fftCopy = new Float32Array(fft);
       set({ fftB: fftCopy });
     },
@@ -135,17 +120,13 @@ export const useSessionStore = create<SessionStore>()(
         },
       }),
 
-    updateProcessorParams: (params: any) => {
-      // Optional method for storing processor parameters
-      // Can be expanded later if needed
-    },
-
     setPhase2Source: (src: Phase2Source) => set({ phase2Source: src }),
 
     activateProcessedPreview: (snap: ProcessedSnapshot) =>
       set({
         lastProcessedSnapshot: snap,
         processedReady: true,
+        phase2Source: 'post',
       }),
 
     pushFrameFromEngine: (f: FramePayload) => {
@@ -179,31 +160,5 @@ export const usePhase2Time = () => {
   return phase2Source === 'pre' ? timeA : timeB;
 };
 export const useProcessedSnapshot = () => useSessionStore(s => s.lastProcessedSnapshot);
-
-// Optimized selectors - use direct selectors instead to prevent getSnapshot issues
-export const useSessionMetrics = () => {
-  const metricsA = useSessionStore(s => s.metricsA);
-  const metricsB = useSessionStore(s => s.metricsB);
-  const voidlineScore = useSessionStore(s => s.voidlineScore);
-  return { metricsA, metricsB, voidlineScore };
-};
-
-export const useSessionFFT = () => {
-  const fftA = useSessionStore(s => s.fftA);
-  const fftB = useSessionStore(s => s.fftB);
-  return { fftA, fftB };
-};
-
-export const useSessionPlayback = () => {
-  const playing = useSessionStore(s => s.playing);
-  const monitor = useSessionStore(s => s.monitor);
-  return { playing, monitor };
-};
-
-export const useExportStatus = () => useSessionStore(
-  (state) => state.exportStatus
-);
-
-
 
 export { initialMetrics };
