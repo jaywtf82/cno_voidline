@@ -46,7 +46,7 @@ import { PremasterAnalysis } from '@/components/analysis/PremasterAnalysis';
 import { FloatingSystemToast } from '@/components/system/FloatingSystemToast';
 
 // Enhanced analyzeAudioFile function with proper error handling
-async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: number; stage: string; metrics?: any }) => void) {
+async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: number; stage: string; metrics: any }) => void) {
   console.log(`Analyzing ${file.name}...`);
 
   try {
@@ -144,7 +144,7 @@ async function analyzeAudioFile(file: File, onProgress?: (progress: { progress: 
     }
   } catch (error) {
     console.error('Analysis completely failed:', error);
-    onProgress?.({ progress: 0, stage: `Error: ${error.message}` });
+    onProgress?.({ progress: 0, stage: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`, metrics: {} });
     throw error; // Re-throw to be handled by the calling function
   }
 }
@@ -175,7 +175,7 @@ export default function Landing() {
   // File analysis state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [analysisProgressState, setAnalysisProgressState] = useState({ progress: 0, stage: '', metrics: {} });
+  const [analysisProgressState, setAnalysisProgressState] = useState({ progress: 0, stage: '', metrics: {} as any });
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [audioAnalysis, setAudioAnalysis] = useState<any>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -242,7 +242,7 @@ export default function Landing() {
 
   const handleFileSelect = async (file: File) => {
     setIsProcessing(true);
-    setAnalysisProgressState({ progress: 0, stage: 'Initializing...', metrics: {} });
+    setAnalysisProgressState({ progress: 0, stage: 'Initializing...', metrics: {} as any });
     setAnalysisComplete(false);
     setAudioAnalysis(null);
 
@@ -283,7 +283,7 @@ export default function Landing() {
 
         console.log('Mastering session created:', sessionId);
       } catch (error) {
-        console.warn('Failed to create mastering session:', error);
+        console.warn('Failed to create mastering session:', error instanceof Error ? error.message : error);
       }
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -304,7 +304,7 @@ export default function Landing() {
         correlation: 0.85
       };
 
-      setAnalysisProgressState({ progress: 100, stage: 'Analysis failed, using fallback.', metrics: fallbackAnalysis });
+      setAnalysisProgressState({ progress: 100, stage: 'Analysis failed, using fallback.', metrics: fallbackAnalysis as any });
       setAudioAnalysis(fallbackAnalysis);
       setAnalysisComplete(true);
 

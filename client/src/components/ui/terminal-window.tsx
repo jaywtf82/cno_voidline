@@ -111,60 +111,59 @@ const TerminalWindow = React.forwardRef<HTMLDivElement, TerminalWindowProps>(
       <div
         ref={ref}
         className={cn(
-          "rounded-lg overflow-hidden border",
-          variant === "init" ? "border-[#1C1F22]" : "border-primary/30",
+          "rounded-lg overflow-hidden",
+          // Match header glass frame styling
+          variant === "init" 
+            ? "bg-[rgb(var(--surface-rgb)/.22)] backdrop-blur-[10px] border border-[rgba(63,185,80,.20)] shadow-[0_8px_24px_rgba(0,0,0,.25)]"
+            : "border border-primary/30",
+          // Dynamic width matching header
+          "w-[var(--header-max)] mx-auto",
           className
         )}
+        style={{
+          // Ensure proper responsive width like header
+          width: 'var(--header-max)',
+          margin: '0 auto'
+        }}
         {...props}
       >
-        {/* Terminal Header */}
+        {/* Terminal Header - Match AppHeader styling */}
         <div
           className={cn(
-            "flex items-center justify-between px-4 py-3",
+            "flex items-center justify-between",
+            // Match header inner padding and height
+            "px-[var(--spacing-sm)] py-[var(--spacing-xs)] min-h-[var(--header-h)]",
             variant === "init" ? "bg-[#12151A]" : "bg-black/50"
           )}
         >
           {/* Left side - Command */}
           <div className="flex items-center space-x-2">
             <span 
-              className="font-mono text-sm"
-              style={{ color: '#3FB950' }}
+              className="font-mono"
+              style={{ 
+                color: '#3FB950',
+                fontSize: 'var(--nav-font-size)'
+              }}
               aria-label={`Terminal command: ${command}`}
             >
               {command}
             </span>
           </div>
 
-          {/* Right side - Traffic Lights */}
-          <div className="flex items-center space-x-2" aria-hidden="true">
-            <div 
-              className="w-3 h-3 rounded-full shadow-sm"
-              style={{ 
-                backgroundColor: '#FF5F56',
-                boxShadow: '0 0 6px rgba(255, 95, 86, 0.4)' 
-              }}
-            />
-            <div 
-              className="w-3 h-3 rounded-full shadow-sm"
-              style={{ 
-                backgroundColor: '#FFBD2E',
-                boxShadow: '0 0 6px rgba(255, 189, 46, 0.4)' 
-              }}
-            />
-            <div 
-              className="w-3 h-3 rounded-full shadow-sm"
-              style={{ 
-                backgroundColor: '#00FF41',
-                boxShadow: '0 0 8px rgba(0, 255, 65, 0.6)' 
-              }}
-            />
+          {/* Right side - Traffic Lights - Match header styling */}
+          <div className="header-lights" data-role="traffic-lights" aria-hidden="true">
+            <span className="dot red" />
+            <span className="dot yellow" />
+            <span className="dot green" />
           </div>
         </div>
 
         {/* Terminal Body with Drag & Drop */}
         <div
           className={cn(
-            "p-8 transition-all duration-300",
+            // Dynamic responsive padding
+            "transition-all duration-300",
+            "p-[var(--spacing-lg)]",
             variant === "init" ? "bg-[#0B0F12]" : "bg-background/80",
             onFileSelect && "cursor-pointer",
             isDragOver && onFileSelect && "bg-accent-primary/10 scale-[1.02]",
