@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { shallow } from 'zustand/shallow';
 
 export interface AudioMetrics {
   peak: number;
@@ -121,33 +120,29 @@ export const useSessionStore = create<SessionStore>()(
   }))
 );
 
-// Shallow selectors for performance with zustand's shallow comparison
+// Shallow selectors for performance
 export const useSessionMetrics = () => useSessionStore(
   (state) => ({
     metricsA: state.metricsA,
     metricsB: state.metricsB,
     voidlineScore: state.voidlineScore,
-  }),
-  shallow
+  })
 );
 
 export const useSessionFFT = () => useSessionStore(
   (state) => ({
     fftA: state.fftA,
     fftB: state.fftB,
-  }),
-  shallow
+  })
 );
 
 export const useSessionPlayback = () => useSessionStore(
   (state) => ({
     playing: state.playing,
     monitor: state.monitor,
-  }),
-  shallow
+  })
 );
 
 export const useExportStatus = () => useSessionStore(
-  (state) => state.exportStatus,
-  shallow
+  (state) => state.exportStatus
 );

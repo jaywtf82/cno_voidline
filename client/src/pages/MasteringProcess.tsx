@@ -247,7 +247,7 @@ export default function MasteringProcess() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isInitialized, playing, file, exportStatus.phase, resetExportStatus, updateExportStatus]); // Fixed dependencies
+  }, [isInitialized, playing]); // Removed circular dependencies
 
   // Playback controls
   const handlePlayPause = useCallback(async () => {
@@ -281,17 +281,25 @@ export default function MasteringProcess() {
 
   // Parameter updates - Memoized to prevent re-render loops
   const handleMidGainChange = useCallback((bandIndex: number, gain: number) => {
-    setProcessorParams(prev => ({
-      ...prev,
-      midGains: prev.midGains.map((g, i) => i === bandIndex ? gain : g) as [number, number, number]
-    }));
+    setProcessorParams(prev => {
+      const newMidGains = [...prev.midGains] as [number, number, number];
+      newMidGains[bandIndex] = gain;
+      return {
+        ...prev,
+        midGains: newMidGains
+      };
+    });
   }, []);
 
   const handleSideGainChange = useCallback((bandIndex: number, gain: number) => {
-    setProcessorParams(prev => ({
-      ...prev,
-      sideGains: prev.sideGains.map((g, i) => i === bandIndex ? gain : g) as [number, number, number]
-    }));
+    setProcessorParams(prev => {
+      const newSideGains = [...prev.sideGains] as [number, number, number];
+      newSideGains[bandIndex] = gain;
+      return {
+        ...prev,
+        sideGains: newSideGains
+      };
+    });
   }, []);
 
   const handleDenoiseAmountChange = useCallback((amount: number) => {
@@ -523,12 +531,13 @@ export default function MasteringProcess() {
                   <div>
                     <div className="text-xs font-mono mb-2 text-green-300">MID CHANNEL</div>
                     {midBands.map((band, i) => (
-                      <div key={`mid-${i}`} className="mb-3">
+                      <div key={`mid-${i}-${band.freq}`} className="mb-3">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-mono">{band.label}</span>
                           <span className="text-xs">{band.gain > 0 ? '+' : ''}{band.gain.toFixed(1)}dB</span>
                         </div>
                         <Slider
+                          key={`mid-slider-${i}-${band.freq}`}
                           value={[band.gain]}
                           onValueChange={([value]) => handleMidGainChange(i, value)}
                           min={-12}
@@ -544,12 +553,13 @@ export default function MasteringProcess() {
                   <div>
                     <div className="text-xs font-mono mb-2 text-green-300">SIDE CHANNEL</div>
                     {sideBands.map((band, i) => (
-                      <div key={`side-${i}`} className="mb-3">
+                      <div key={`side-${i}-${band.freq}`} className="mb-3">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs font-mono">{band.label}</span>
                           <span className="text-xs">{band.gain > 0 ? '+' : ''}{band.gain.toFixed(1)}dB</span>
                         </div>
                         <Slider
+                          key={`side-slider-${i}-${band.freq}`}
                           value={[band.gain]}
                           onValueChange={([value]) => handleSideGainChange(i, value)}
                           min={-12}
@@ -582,6 +592,7 @@ export default function MasteringProcess() {
                     <span className="text-xs">{processorParams.denoiseAmount}%</span>
                   </div>
                   <Slider
+                    key="denoise-slider"
                     value={[processorParams.denoiseAmount]}
                     onValueChange={([value]) => handleDenoiseAmountChange(value)}
                     min={0}
@@ -605,6 +616,7 @@ export default function MasteringProcess() {
                     <span className="text-xs">{processorParams.threshold.toFixed(1)}dB</span>
                   </div>
                   <Slider
+                    key="threshold-slider"
                     value={[processorParams.threshold]}
                     onValueChange={([value]) => handleLimiterThresholdChange(value)}
                     min={-20}
@@ -620,6 +632,7 @@ export default function MasteringProcess() {
                     <span className="text-xs">{processorParams.ceiling.toFixed(1)}dB</span>
                   </div>
                   <Slider
+                    key="ceiling-slider"
                     value={[processorParams.ceiling]}
                     onValueChange={([value]) => handleLimiterCeilingChange(value)}
                     min={-3}
