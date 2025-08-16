@@ -11,7 +11,8 @@
     "db:push": "drizzle-kit push",
     "setup": "bash ./scripts/setup.sh",
     "quick-start": "bash ./scripts/quick-start.sh",
-    "deploy": "bash ./scripts/deploy.sh"
+    "deploy": "bash ./scripts/deploy.sh",
+    "test": "vitest --run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
