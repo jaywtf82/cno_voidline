@@ -122,6 +122,13 @@ export default function MasteringProcess() {
     { freq: processorParams.sideFreqs[2], gain: processorParams.sideGains[2], q: processorParams.sideQs[2], label: 'HIGH' },
   ], [processorParams.sideFreqs, processorParams.sideGains, processorParams.sideQs]);
 
+  // Memoized slider values to keep stable references
+  const midGainValues = useMemo(() => processorParams.midGains.map(g => [g] as [number]), [processorParams.midGains]);
+  const sideGainValues = useMemo(() => processorParams.sideGains.map(g => [g] as [number]), [processorParams.sideGains]);
+  const denoiseValue = useMemo(() => [processorParams.denoiseAmount] as [number], [processorParams.denoiseAmount]);
+  const thresholdValue = useMemo(() => [processorParams.threshold] as [number], [processorParams.threshold]);
+  const ceilingValue = useMemo(() => [processorParams.ceiling] as [number], [processorParams.ceiling]);
+
   // Initialize audio engine on mount
   useEffect(() => {
     const initAudio = async () => {
@@ -538,7 +545,7 @@ export default function MasteringProcess() {
                         </div>
                         <Slider
                           key={`mid-slider-${i}-${band.freq}`}
-                          value={[band.gain]}
+                          value={midGainValues[i]}
                           onValueChange={([value]) => handleMidGainChange(i, value)}
                           min={-12}
                           max={12}
@@ -560,7 +567,7 @@ export default function MasteringProcess() {
                         </div>
                         <Slider
                           key={`side-slider-${i}-${band.freq}`}
-                          value={[band.gain]}
+                          value={sideGainValues[i]}
                           onValueChange={([value]) => handleSideGainChange(i, value)}
                           min={-12}
                           max={12}
@@ -593,7 +600,7 @@ export default function MasteringProcess() {
                   </div>
                   <Slider
                     key="denoise-slider"
-                    value={[processorParams.denoiseAmount]}
+                    value={denoiseValue}
                     onValueChange={([value]) => handleDenoiseAmountChange(value)}
                     min={0}
                     max={100}
@@ -617,7 +624,7 @@ export default function MasteringProcess() {
                   </div>
                   <Slider
                     key="threshold-slider"
-                    value={[processorParams.threshold]}
+                    value={thresholdValue}
                     onValueChange={([value]) => handleLimiterThresholdChange(value)}
                     min={-20}
                     max={0}
@@ -633,7 +640,7 @@ export default function MasteringProcess() {
                   </div>
                   <Slider
                     key="ceiling-slider"
-                    value={[processorParams.ceiling]}
+                    value={ceilingValue}
                     onValueChange={([value]) => handleLimiterCeilingChange(value)}
                     min={-3}
                     max={0}
