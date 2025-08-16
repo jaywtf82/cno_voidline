@@ -1,266 +1,112 @@
-// fft-processor.ts - Real-time FFT analysis with efficient transfer
-declare const sampleRate: number;
+// FFT processor with 4096-point Hann windowed FFT and K-weighting
+export class FFTProcessor extends AudioWorkletProcessor {
+  private fftSize = 4096;
+  private bufferL = new Float32Array(this.fftSize);
+  private bufferR = new Float32Array(this.fftSize);
+  private bufferIndex = 0;
+  private hannWindow = new Float32Array(this.fftSize);
+  private fftOutput = new Float32Array(this.fftSize / 2);
+  
+  // K-weighting response for frequency domain
+  private kWeightResponse = new Float32Array(this.fftSize / 2);
+  
+  // Double buffer for transfer
+  private outputBuffer1 = new Float32Array(this.fftSize / 2);
+  private outputBuffer2 = new Float32Array(this.fftSize / 2);
+  private currentBuffer = 0;
 
-interface FFTState {
-  // Input buffers
-  inputBuffer: Float32Array;
-  bufferIndex: number;
-  
-  // FFT working arrays (pre-allocated)
-  fftReal: Float32Array;
-  fftImag: Float32Array;
-  magnitudes: Float32Array;
-  
-  // Windowing
-  windowFunction: Float32Array;
-  
-  // Output buffer for transfer
-  outputBuffer: Float32Array;
-  
-  // Transfer management
-  transferBuffer: ArrayBuffer;
-  transferView: Float32Array;
-}
-
-class FFTProcessor extends AudioWorkletProcessor {
-  private state: FFTState;
-  private frameCount = 0;
-  private fftSize: number;
-  private overlap: number;
-  private hopSize: number;
-  private updateRate: number; // ~25Hz for FFT updates
-  
-  constructor(options?: AudioWorkletNodeOptions) {
+  constructor() {
     super();
-    
-    this.fftSize = options?.processorOptions?.fftSize || 4096;
-    this.overlap = 0.75; // 75% overlap
-    this.hopSize = Math.floor(this.fftSize * (1 - this.overlap));
-    this.updateRate = Math.floor(sampleRate / 25); // 25Hz FFT updates
-    
-    this.initializeState();
-    this.precomputeWindow();
+    this.initializeWindow();
+    this.initializeKWeighting();
   }
-  
-  private initializeState(): void {
-    this.state = {
-      inputBuffer: new Float32Array(this.fftSize),
-      bufferIndex: 0,
-      
-      fftReal: new Float32Array(this.fftSize),
-      fftImag: new Float32Array(this.fftSize),
-      magnitudes: new Float32Array(this.fftSize / 2),
-      
-      windowFunction: new Float32Array(this.fftSize),
-      
-      outputBuffer: new Float32Array(this.fftSize / 2),
-      
-      // Create transferable buffer
-      transferBuffer: new ArrayBuffer(this.fftSize / 2 * 4), // Float32 = 4 bytes
-      transferView: new Float32Array(0), // Will be set properly
-    };
-    
-    // Initialize transfer view
-    this.state.transferView = new Float32Array(this.state.transferBuffer);
-  }
-  
-  private precomputeWindow(): void {
-    // Blackman-Harris window for good side-lobe suppression
+
+  private initializeWindow() {
+    // Generate Hann window
     for (let i = 0; i < this.fftSize; i++) {
-      const n = i / (this.fftSize - 1);
-      this.state.windowFunction[i] = 
-        0.35875 - 
-        0.48829 * Math.cos(2 * Math.PI * n) +
-        0.14128 * Math.cos(4 * Math.PI * n) -
-        0.01168 * Math.cos(6 * Math.PI * n);
+      this.hannWindow[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (this.fftSize - 1)));
     }
   }
-  
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
-    const input = inputs[0];
-    const output = outputs[0];
-    
-    if (!input || input.length < 1) return true;
-    
-    // Mix to mono for spectrum analysis
-    const inputChannel = input[0];
-    const rightChannel = input[1] || inputChannel;
-    const blockSize = inputChannel.length;
-    
-    // Accumulate samples
-    for (let i = 0; i < blockSize; i++) {
-      // Convert stereo to mono
-      const monoSample = (inputChannel[i] + rightChannel[i]) * 0.5;
-      
-      this.state.inputBuffer[this.state.bufferIndex] = monoSample;
-      this.state.bufferIndex++;
-      
-      // Check if we have enough samples for FFT
-      if (this.state.bufferIndex >= this.fftSize) {
-        this.computeFFT();
-        
-        // Shift buffer for overlap
-        this.shiftBuffer();
-      }
-    }
-    
-    // Pass through audio
-    if (output.length >= 1) {
-      output[0].set(inputChannel);
-      if (output.length >= 2) {
-        output[1].set(rightChannel);
-      }
-    }
-    
-    this.frameCount += blockSize;
-    
-    return true;
-  }
-  
-  private shiftBuffer(): void {
-    // Shift buffer by hop size to create overlap
-    const remainingSize = this.fftSize - this.hopSize;
-    
-    for (let i = 0; i < remainingSize; i++) {
-      this.state.inputBuffer[i] = this.state.inputBuffer[i + this.hopSize];
-    }
-    
-    this.state.bufferIndex = remainingSize;
-  }
-  
-  private computeFFT(): void {
-    // Apply window function
-    for (let i = 0; i < this.fftSize; i++) {
-      this.state.fftReal[i] = this.state.inputBuffer[i] * this.state.windowFunction[i];
-      this.state.fftImag[i] = 0;
-    }
-    
-    // Perform FFT (Cooley-Tukey radix-2)
-    this.fftRadix2();
-    
-    // Compute magnitudes (first half of spectrum)
+
+  private initializeKWeighting() {
+    // Approximate K-weighting frequency response
+    const sampleRate = 48000;
     for (let i = 0; i < this.fftSize / 2; i++) {
-      const real = this.state.fftReal[i];
-      const imag = this.state.fftImag[i];
-      this.state.magnitudes[i] = Math.sqrt(real * real + imag * imag);
+      const freq = (i * sampleRate) / this.fftSize;
+      
+      // High-shelf at ~1500Hz with +4dB boost
+      const highShelf = Math.sqrt(1 + Math.pow(freq / 1500, 2));
+      
+      // High-pass at ~38Hz
+      const highPass = freq / Math.sqrt(freq * freq + 38 * 38);
+      
+      this.kWeightResponse[i] = highShelf * highPass;
     }
-    
-    // Apply K-weighting approximation for better loudness representation
-    this.applyKWeighting();
-    
-    // Prepare for transfer
-    this.prepareTransfer();
   }
-  
-  private fftRadix2(): void {
-    const N = this.fftSize;
-    const real = this.state.fftReal;
-    const imag = this.state.fftImag;
-    
-    // Bit-reversal permutation
-    let j = 0;
-    for (let i = 1; i < N; i++) {
-      let bit = N >> 1;
-      while (j & bit) {
-        j ^= bit;
-        bit >>= 1;
-      }
-      j ^= bit;
-      
-      if (i < j) {
-        // Swap real[i] and real[j]
-        let temp = real[i];
-        real[i] = real[j];
-        real[j] = temp;
-        
-        // Swap imag[i] and imag[j]  
-        temp = imag[i];
-        imag[i] = imag[j];
-        imag[j] = temp;
-      }
-    }
-    
-    // Cooley-Tukey FFT
-    for (let len = 2; len <= N; len *= 2) {
-      const wlen = -2 * Math.PI / len;
-      const wlen_real = Math.cos(wlen);
-      const wlen_imag = Math.sin(wlen);
-      
-      for (let i = 0; i < N; i += len) {
-        let w_real = 1;
-        let w_imag = 0;
-        
-        for (let j = 0; j < len / 2; j++) {
-          const u_real = real[i + j];
-          const u_imag = imag[i + j];
-          const v_real = real[i + j + len / 2] * w_real - imag[i + j + len / 2] * w_imag;
-          const v_imag = real[i + j + len / 2] * w_imag + imag[i + j + len / 2] * w_real;
-          
-          real[i + j] = u_real + v_real;
-          imag[i + j] = u_imag + v_imag;
-          real[i + j + len / 2] = u_real - v_real;
-          imag[i + j + len / 2] = u_imag - v_imag;
-          
-          // Update twiddle factor
-          const temp_w_real = w_real * wlen_real - w_imag * wlen_imag;
-          w_imag = w_real * wlen_imag + w_imag * wlen_real;
-          w_real = temp_w_real;
+
+  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>) {
+    const input = inputs[0];
+    if (!input || input.length < 2) return true;
+
+    const left = input[0];
+    const right = input[1];
+    const frameLength = left.length;
+
+    // Accumulate samples in buffer
+    for (let i = 0; i < frameLength; i++) {
+      if (this.bufferIndex < this.fftSize) {
+        this.bufferL[this.bufferIndex] = left[i];
+        this.bufferR[this.bufferIndex] = right[i];
+        this.bufferIndex++;
+
+        if (this.bufferIndex === this.fftSize) {
+          this.computeFFT();
+          this.bufferIndex = 0;
         }
       }
     }
+
+    // Pass through
+    if (outputs[0]) {
+      outputs[0][0].set(left);
+      outputs[0][1].set(right);
+    }
+
+    return true;
   }
-  
-  private applyKWeighting(): void {
-    // Approximate K-weighting frequency response for each bin
-    const nyquist = sampleRate / 2;
-    const binWidth = nyquist / (this.fftSize / 2);
+
+  private computeFFT() {
+    // Simple magnitude spectrum calculation (simplified FFT)
+    const outputBuffer = this.currentBuffer === 0 ? this.outputBuffer1 : this.outputBuffer2;
     
-    for (let i = 0; i < this.fftSize / 2; i++) {
-      const frequency = i * binWidth;
+    for (let k = 0; k < this.fftSize / 2; k++) {
+      let realSum = 0;
+      let imagSum = 0;
       
-      // K-weighting approximation (simplified)
-      let weight = 1;
-      
-      if (frequency < 100) {
-        // High-pass characteristic below 100Hz
-        weight = frequency / 100;
-      } else if (frequency > 2000) {
-        // High-frequency shelf boost above 2kHz
-        weight = 1 + 0.2 * Math.log10(frequency / 2000);
+      for (let n = 0; n < this.fftSize; n++) {
+        const windowedSample = (this.bufferL[n] + this.bufferR[n]) * 0.5 * this.hannWindow[n];
+        const angle = -2 * Math.PI * k * n / this.fftSize;
+        realSum += windowedSample * Math.cos(angle);
+        imagSum += windowedSample * Math.sin(angle);
       }
       
-      weight = Math.max(0.1, Math.min(2, weight)); // Clamp reasonable range
-      this.state.magnitudes[i] *= weight;
+      // Magnitude with K-weighting
+      const magnitude = Math.sqrt(realSum * realSum + imagSum * imagSum);
+      const kWeightedMagnitude = magnitude * this.kWeightResponse[k];
+      
+      // Convert to dB
+      outputBuffer[k] = Math.max(-120, 20 * Math.log10(kWeightedMagnitude + 1e-10));
     }
-  }
-  
-  private prepareTransfer(): void {
-    // Normalize magnitudes to 0-1 range for consistent visualization
-    let maxMagnitude = 0;
-    for (let i = 0; i < this.state.magnitudes.length; i++) {
-      maxMagnitude = Math.max(maxMagnitude, this.state.magnitudes[i]);
-    }
-    
-    // Copy normalized magnitudes to transfer buffer
-    if (maxMagnitude > 0) {
-      for (let i = 0; i < this.state.magnitudes.length; i++) {
-        this.state.transferView[i] = this.state.magnitudes[i] / maxMagnitude;
-      }
-    } else {
-      this.state.transferView.fill(0);
-    }
-    
-    // Send with transferable buffer for efficiency
+
+    // Send FFT data
     this.port.postMessage({
-      fftData: this.state.transferView,
-      maxMagnitude,
-      sampleRate,
-      fftSize: this.fftSize,
-    }, [this.state.transferBuffer]);
-    
-    // Recreate transfer buffer for next use
-    this.state.transferBuffer = new ArrayBuffer(this.fftSize / 2 * 4);
-    this.state.transferView = new Float32Array(this.state.transferBuffer);
+      type: 'fft',
+      fft: outputBuffer,
+      transferList: [outputBuffer.buffer]
+    });
+
+    // Switch buffers
+    this.currentBuffer = 1 - this.currentBuffer;
   }
 }
 

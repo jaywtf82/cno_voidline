@@ -1,320 +1,194 @@
-// lufs-processor.ts - ITU-R BS.1770-4 compliant LUFS measurement
-declare const sampleRate: number;
-
-interface LufsState {
-  // K-weighting filter state (cascaded biquads)
-  // High-pass stage (K1)
-  hp_z1_l: number;
-  hp_z1_r: number;
-  hp_z2_l: number;
-  hp_z2_r: number;
-  
-  // High-frequency shelf (K2)  
-  hf_z1_l: number;
-  hf_z1_r: number;
-  hf_z2_l: number;
-  hf_z2_r: number;
-  
-  // 400ms block buffer for integrated measurement
-  blockBuffer: Float32Array;
-  blockIndex: number;
-  blockFull: boolean;
-  
-  // Loudness blocks for gating
-  loudnessBlocks: Float32Array;
-  blockWriteIndex: number;
-  numBlocks: number;
-  
-  // Short-term measurement (3 seconds = 7.5 blocks of 400ms)
-  shortTermBlocks: Float32Array;
-  shortTermIndex: number;
-  shortTermFull: boolean;
-  
-  // LRA calculation (sliding window of blocks)
-  lraBlocks: Float32Array;
-  lraIndex: number;
-  lraFull: boolean;
-}
-
-class LufsProcessor extends AudioWorkletProcessor {
-  private state: LufsState;
-  private frameCount = 0;
-  private updateRate: number; // 50Hz
-  private blockSize: number; // 400ms in samples
-  private samplesInBlock = 0;
-  
-  // K-weighting coefficients (pre-computed for efficiency)
-  private readonly kWeightingCoeffs = {
-    // High-pass (K1) - f_c ≈ 38 Hz
-    hp: {
-      b0: 1.53512485958697,
-      b1: -2.69169618940638,
-      b2: 1.19839281085285,
-      a1: -1.69065929318241,
-      a2: 0.73248077421585,
-    },
-    // High-frequency shelf (K2) - f_c ≈ 1681 Hz, +4dB
-    hf: {
-      b0: 1.0,
-      b1: -2.0,
-      b2: 1.0,
-      a1: -1.99004745483398,
-      a2: 0.99007225036621,
-    }
+// LUFS processor implementing ITU-R BS.1770-4
+export class LufsProcessor extends AudioWorkletProcessor {
+  // K-weighting filter coefficients (pre-filter + RLB filter)
+  private kWeightStage1 = {
+    // High-shelf at ~1500Hz
+    b: new Float32Array([1.53512485958697, -2.69169618940638, 1.19839281085285]),
+    a: new Float32Array([1.0, -1.69065929318241, 0.73248077421585]),
+    xL: new Float32Array(3),
+    xR: new Float32Array(3),
+    yL: new Float32Array(3),
+    yR: new Float32Array(3)
   };
-  
+
+  private kWeightStage2 = {
+    // High-pass at ~38Hz
+    b: new Float32Array([1.0, -2.0, 1.0]),
+    a: new Float32Array([1.0, -1.99004745483398, 0.99007225036621]),
+    xL: new Float32Array(3),
+    xR: new Float32Array(3),
+    yL: new Float32Array(3),
+    yR: new Float32Array(3)
+  };
+
+  // Momentary loudness (400ms blocks)
+  private momentarySize = Math.floor(0.4 * 48000); // 400ms at 48kHz
+  private momentaryBuffer = new Float32Array(this.momentarySize);
+  private momentaryIndex = 0;
+  private momentarySum = 0;
+
+  // Short-term loudness (3s blocks)
+  private shortTermSize = Math.floor(3.0 * 48000); // 3s at 48kHz
+  private shortTermBuffer = new Float32Array(this.shortTermSize);
+  private shortTermIndex = 0;
+  private shortTermSum = 0;
+
+  // Integrated loudness (with gating)
+  private integratedBlocks: number[] = [];
+  private blockDuration = 0.4; // 400ms blocks
+  private blockSamples = this.momentarySize;
+
+  // LRA calculation
+  private lraBlocks: number[] = [];
+
   constructor() {
     super();
-    
-    this.updateRate = Math.floor(sampleRate / 50);
-    this.blockSize = Math.floor(sampleRate * 0.4); // 400ms
-    
-    const maxBlocks = Math.floor(sampleRate * 30 / this.blockSize); // 30 seconds max
-    const shortTermBlocks = Math.ceil(3.0 / 0.4); // 3 seconds / 400ms
-    const lraBlocks = Math.floor(sampleRate * 10 / this.blockSize); // 10 seconds for LRA
-    
-    this.state = {
-      hp_z1_l: 0, hp_z1_r: 0,
-      hp_z2_l: 0, hp_z2_r: 0,
-      hf_z1_l: 0, hf_z1_r: 0,
-      hf_z2_l: 0, hf_z2_r: 0,
-      
-      blockBuffer: new Float32Array(this.blockSize),
-      blockIndex: 0,
-      blockFull: false,
-      
-      loudnessBlocks: new Float32Array(maxBlocks),
-      blockWriteIndex: 0,
-      numBlocks: 0,
-      
-      shortTermBlocks: new Float32Array(shortTermBlocks),
-      shortTermIndex: 0,
-      shortTermFull: false,
-      
-      lraBlocks: new Float32Array(lraBlocks),
-      lraIndex: 0,
-      lraFull: false,
-    };
   }
-  
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+
+  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>) {
     const input = inputs[0];
-    const output = outputs[0];
-    
     if (!input || input.length < 2) return true;
-    
-    const leftChannel = input[0];
-    const rightChannel = input[1];
-    const blockSize = leftChannel.length;
-    
-    // Process each sample with K-weighting and accumulate
-    for (let i = 0; i < blockSize; i++) {
-      const l = leftChannel[i];
-      const r = rightChannel[i];
-      
+
+    const left = input[0];
+    const right = input[1];
+    const frameLength = left.length;
+
+    for (let i = 0; i < frameLength; i++) {
       // Apply K-weighting filters
-      const lWeighted = this.applyKWeighting(l, 'L');
-      const rWeighted = this.applyKWeighting(r, 'R');
-      
-      // Mean square for this sample pair
-      const meanSquare = (lWeighted * lWeighted + rWeighted * rWeighted) * 0.5;
-      
-      // Accumulate in 400ms block
-      this.state.blockBuffer[this.state.blockIndex] = meanSquare;
-      this.state.blockIndex++;
-      
-      // Check if 400ms block is complete
-      if (this.state.blockIndex >= this.blockSize) {
-        this.processBlock();
-        this.state.blockIndex = 0;
-      }
+      const kLeft = this.applyKWeighting(left[i], 'L');
+      const kRight = this.applyKWeighting(right[i], 'R');
+
+      // Mean square (power)
+      const meanSquare = (kLeft * kLeft + kRight * kRight) / 2.0;
+
+      // Update momentary loudness
+      this.updateMomentary(meanSquare);
+
+      // Update short-term loudness
+      this.updateShortTerm(meanSquare);
     }
-    
-    // Pass through audio
-    if (output.length >= 2) {
-      output[0].set(leftChannel);
-      output[1].set(rightChannel);
+
+    // Send LUFS measurements periodically
+    if (Math.random() < 0.02) {
+      this.sendLufs();
     }
-    
-    this.frameCount += blockSize;
-    
-    // Send metrics at 50Hz  
-    if (this.frameCount >= this.updateRate) {
-      this.sendMetrics();
-      this.frameCount = 0;
+
+    // Pass through
+    if (outputs[0]) {
+      outputs[0][0].set(left);
+      outputs[0][1].set(right);
     }
-    
+
     return true;
   }
-  
+
   private applyKWeighting(sample: number, channel: 'L' | 'R'): number {
-    const { hp, hf } = this.kWeightingCoeffs;
-    
-    // Get channel-specific filter states
-    const isLeft = channel === 'L';
-    let hp_z1 = isLeft ? this.state.hp_z1_l : this.state.hp_z1_r;
-    let hp_z2 = isLeft ? this.state.hp_z2_l : this.state.hp_z2_r;
-    let hf_z1 = isLeft ? this.state.hf_z1_l : this.state.hf_z1_r;
-    let hf_z2 = isLeft ? this.state.hf_z2_l : this.state.hf_z2_r;
-    
-    // High-pass filter (K1)
-    const hp_out = hp.b0 * sample + hp.b1 * hp_z1 + hp.b2 * hp_z2;
-    hp_z2 = hp_z1;
-    hp_z1 = sample - hp.a1 * hp_z1 - hp.a2 * hp_z2;
-    
-    // High-frequency shelf (K2)
-    const hf_out = hf.b0 * hp_out + hf.b1 * hf_z1 + hf.b2 * hf_z2;
-    hf_z2 = hf_z1;
-    hf_z1 = hp_out - hf.a1 * hf_z1 - hf.a2 * hf_z2;
-    
-    // Update states
-    if (isLeft) {
-      this.state.hp_z1_l = hp_z1;
-      this.state.hp_z2_l = hp_z2;
-      this.state.hf_z1_l = hf_z1;
-      this.state.hf_z2_l = hf_z2;
-    } else {
-      this.state.hp_z1_r = hp_z1;
-      this.state.hp_z2_r = hp_z2;
-      this.state.hf_z1_r = hf_z1;
-      this.state.hf_z2_r = hf_z2;
-    }
-    
-    return hf_out;
+    const stage1 = channel === 'L' ? this.kWeightStage1 : this.kWeightStage1;
+    const stage2 = channel === 'L' ? this.kWeightStage2 : this.kWeightStage2;
+    const x1 = channel === 'L' ? stage1.xL : stage1.xR;
+    const y1 = channel === 'L' ? stage1.yL : stage1.yR;
+    const x2 = channel === 'L' ? stage2.xL : stage2.xR;
+    const y2 = channel === 'L' ? stage2.yL : stage2.yR;
+
+    // Stage 1: High-shelf
+    x1[2] = x1[1];
+    x1[1] = x1[0];
+    x1[0] = sample;
+
+    y1[2] = y1[1];
+    y1[1] = y1[0];
+    y1[0] = (stage1.b[0] * x1[0] + stage1.b[1] * x1[1] + stage1.b[2] * x1[2]
+           - stage1.a[1] * y1[1] - stage1.a[2] * y1[2]);
+
+    // Stage 2: High-pass
+    x2[2] = x2[1];
+    x2[1] = x2[0];
+    x2[0] = y1[0];
+
+    y2[2] = y2[1];
+    y2[1] = y2[0];
+    y2[0] = (stage2.b[0] * x2[0] + stage2.b[1] * x2[1] + stage2.b[2] * x2[2]
+           - stage2.a[1] * y2[1] - stage2.a[2] * y2[2]);
+
+    return y2[0];
   }
-  
-  private processBlock(): void {
-    // Calculate mean square for this 400ms block
-    let blockSum = 0;
-    for (let i = 0; i < this.blockSize; i++) {
-      blockSum += this.state.blockBuffer[i];
-    }
-    
-    const blockMeanSquare = blockSum / this.blockSize;
-    
-    // Convert to loudness units (-0.691 is the ITU-R constant)
-    const blockLoudness = blockMeanSquare > 0 ? 
-      -0.691 + 10 * Math.log10(blockMeanSquare) : -70;
-    
-    // Store block for integrated measurement (if above absolute gate)
-    if (blockLoudness > -70) {  // Absolute gate at -70 LUFS
-      if (this.state.numBlocks < this.state.loudnessBlocks.length) {
-        this.state.loudnessBlocks[this.state.blockWriteIndex] = blockLoudness;
-        this.state.blockWriteIndex = (this.state.blockWriteIndex + 1) % this.state.loudnessBlocks.length;
-        this.state.numBlocks++;
-      } else {
-        // Overwrite oldest block
-        this.state.loudnessBlocks[this.state.blockWriteIndex] = blockLoudness;
-        this.state.blockWriteIndex = (this.state.blockWriteIndex + 1) % this.state.loudnessBlocks.length;
+
+  private updateMomentary(meanSquare: number) {
+    this.momentarySum -= this.momentaryBuffer[this.momentaryIndex];
+    this.momentaryBuffer[this.momentaryIndex] = meanSquare;
+    this.momentarySum += meanSquare;
+    this.momentaryIndex = (this.momentaryIndex + 1) % this.momentarySize;
+  }
+
+  private updateShortTerm(meanSquare: number) {
+    this.shortTermSum -= this.shortTermBuffer[this.shortTermIndex];
+    this.shortTermBuffer[this.shortTermIndex] = meanSquare;
+    this.shortTermSum += meanSquare;
+    this.shortTermIndex = (this.shortTermIndex + 1) % this.shortTermSize;
+  }
+
+  private sendLufs() {
+    // Momentary loudness (400ms)
+    const momentaryMean = this.momentarySum / this.momentarySize;
+    const lufsM = momentaryMean > 0 ? -0.691 + 10 * Math.log10(momentaryMean) : -70;
+
+    // Short-term loudness (3s)
+    const shortTermMean = this.shortTermSum / this.shortTermSize;
+    const lufsS = shortTermMean > 0 ? -0.691 + 10 * Math.log10(shortTermMean) : -70;
+
+    // Update integrated loudness blocks
+    if (momentaryMean > 0) {
+      this.integratedBlocks.push(momentaryMean);
+      this.lraBlocks.push(lufsS);
+
+      // Keep only recent blocks (10 minutes max)
+      const maxBlocks = Math.floor(10 * 60 / this.blockDuration);
+      if (this.integratedBlocks.length > maxBlocks) {
+        this.integratedBlocks.shift();
+        this.lraBlocks.shift();
       }
     }
+
+    // Calculate integrated loudness with gating
+    let lufsI = -70;
+    let lra = 0;
     
-    // Store for short-term measurement (3 seconds = ~7.5 blocks)
-    this.state.shortTermBlocks[this.state.shortTermIndex] = blockLoudness;
-    this.state.shortTermIndex = (this.state.shortTermIndex + 1) % this.state.shortTermBlocks.length;
-    if (this.state.shortTermIndex === 0) {
-      this.state.shortTermFull = true;
+    if (this.integratedBlocks.length > 0) {
+      // Absolute gate at -70 LUFS
+      const absoluteGatedBlocks = this.integratedBlocks.filter(block => {
+        const blockLufs = -0.691 + 10 * Math.log10(block);
+        return blockLufs > -70;
+      });
+
+      if (absoluteGatedBlocks.length > 0) {
+        // Calculate mean
+        const mean = absoluteGatedBlocks.reduce((sum, block) => sum + block, 0) / absoluteGatedBlocks.length;
+        const relativeGate = mean * Math.pow(10, -10/10); // -10 LU relative gate
+
+        // Relative gate
+        const relativeGatedBlocks = absoluteGatedBlocks.filter(block => block >= relativeGate);
+
+        if (relativeGatedBlocks.length > 0) {
+          const finalMean = relativeGatedBlocks.reduce((sum, block) => sum + block, 0) / relativeGatedBlocks.length;
+          lufsI = -0.691 + 10 * Math.log10(finalMean);
+        }
+      }
+
+      // LRA calculation (10th to 95th percentile of short-term values)
+      if (this.lraBlocks.length > 10) {
+        const sortedLRA = [...this.lraBlocks].sort((a, b) => a - b);
+        const p10 = sortedLRA[Math.floor(sortedLRA.length * 0.1)];
+        const p95 = sortedLRA[Math.floor(sortedLRA.length * 0.95)];
+        lra = Math.max(0, p95 - p10);
+      }
     }
-    
-    // Store for LRA calculation
-    this.state.lraBlocks[this.state.lraIndex] = blockLoudness;
-    this.state.lraIndex = (this.state.lraIndex + 1) % this.state.lraBlocks.length;
-    if (this.state.lraIndex === 0) {
-      this.state.lraFull = true;
-    }
-  }
-  
-  private sendMetrics(): void {
-    const lufsIntegrated = this.calculateIntegratedLoudness();
-    const lufsShort = this.calculateShortTermLoudness();
-    const lufsRange = this.calculateLRA();
-    
+
     this.port.postMessage({
-      lufsIntegrated,
-      lufsShort,
-      lufsRange,
+      type: 'lufs',
+      lufsI: Math.max(-70, Math.min(0, lufsI)),
+      lufsS: Math.max(-70, Math.min(0, lufsS)),
+      lra: Math.max(0, Math.min(50, lra))
     });
-  }
-  
-  private calculateIntegratedLoudness(): number {
-    if (this.state.numBlocks === 0) return -70;
-    
-    // Get valid blocks (above absolute gate)
-    const validBlocks: number[] = [];
-    const count = Math.min(this.state.numBlocks, this.state.loudnessBlocks.length);
-    
-    for (let i = 0; i < count; i++) {
-      const loudness = this.state.loudnessBlocks[i];
-      if (loudness > -70) {
-        validBlocks.push(loudness);
-      }
-    }
-    
-    if (validBlocks.length === 0) return -70;
-    
-    // Calculate relative gate (-10 LU below mean)
-    const meanLoudness = validBlocks.reduce((sum, l) => sum + Math.pow(10, l / 10), 0) / validBlocks.length;
-    const meanLoudnessDb = 10 * Math.log10(meanLoudness);
-    const relativeGate = meanLoudnessDb - 10; // -10 LU below mean
-    
-    // Apply relative gate and calculate final integrated loudness
-    const gatedBlocks = validBlocks.filter(l => l >= relativeGate);
-    
-    if (gatedBlocks.length === 0) return -70;
-    
-    const finalMean = gatedBlocks.reduce((sum, l) => sum + Math.pow(10, l / 10), 0) / gatedBlocks.length;
-    return -0.691 + 10 * Math.log10(finalMean);
-  }
-  
-  private calculateShortTermLoudness(): number {
-    if (!this.state.shortTermFull && this.state.shortTermIndex < 3) return -70;
-    
-    // Use available blocks (up to 3 seconds worth)
-    const blocksToUse = this.state.shortTermFull ? 
-      this.state.shortTermBlocks.length : this.state.shortTermIndex;
-    
-    let sum = 0;
-    let count = 0;
-    
-    for (let i = 0; i < blocksToUse; i++) {
-      const loudness = this.state.shortTermBlocks[i];
-      if (loudness > -70) {  // Above absolute gate
-        sum += Math.pow(10, loudness / 10);
-        count++;
-      }
-    }
-    
-    return count > 0 ? -0.691 + 10 * Math.log10(sum / count) : -70;
-  }
-  
-  private calculateLRA(): number {
-    if (!this.state.lraFull && this.state.lraIndex < 5) return 0;
-    
-    // Collect valid blocks for LRA calculation
-    const validBlocks: number[] = [];
-    const blocksToUse = this.state.lraFull ? 
-      this.state.lraBlocks.length : this.state.lraIndex;
-    
-    for (let i = 0; i < blocksToUse; i++) {
-      const loudness = this.state.lraBlocks[i];
-      if (loudness > -70) {
-        validBlocks.push(loudness);
-      }
-    }
-    
-    if (validBlocks.length < 2) return 0;
-    
-    // Sort for percentile calculation
-    validBlocks.sort((a, b) => a - b);
-    
-    // Calculate 10th and 95th percentiles
-    const p10Index = Math.floor(validBlocks.length * 0.10);
-    const p95Index = Math.floor(validBlocks.length * 0.95);
-    
-    const p10 = validBlocks[p10Index];
-    const p95 = validBlocks[Math.min(p95Index, validBlocks.length - 1)];
-    
-    return Math.max(0, p95 - p10); // LRA in LU
   }
 }
 

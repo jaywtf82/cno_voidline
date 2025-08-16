@@ -52,6 +52,7 @@
     "@types/memoizee": "^0.4.12",
     "@typescript-eslint/eslint-plugin": "^8.39.1",
     "@typescript-eslint/parser": "^8.39.1",
+    "browser-id3-writer": "^6.3.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

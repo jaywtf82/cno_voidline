@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { Metrics, FramePayload } from '@/types/audio';
 
 export interface AudioMetrics {
   peak: number;
@@ -22,23 +23,19 @@ export interface ExportStatus {
 export type Phase2Source = 'pre' | 'post';
 
 export interface ProcessedSnapshot {
-  metrics: AudioMetrics;
-  fft: Float32Array;
-}
-
-export interface FramePayload {
-  src: Phase2Source;
-  metrics: AudioMetrics;
+  metrics: Metrics;
   fft: Float32Array;
 }
 
 export interface SessionState {
   playing: boolean;
   monitor: 'A' | 'B';
-  metricsA: AudioMetrics;
-  metricsB: AudioMetrics;
+  metricsA: Metrics;
+  metricsB: Metrics;
   fftA: Float32Array | null;
   fftB: Float32Array | null;
+  timeA: Float32Array | null;
+  timeB: Float32Array | null;
   voidlineScore: number;
   exportStatus: ExportStatus;
   phase2Source: Phase2Source;
@@ -49,8 +46,8 @@ export interface SessionState {
 export interface SessionActions {
   setPlaying(playing: boolean): void;
   setMonitor(monitor: 'A' | 'B'): void;
-  updateMetricsA(metrics: Partial<AudioMetrics>): void;
-  updateMetricsB(metrics: Partial<AudioMetrics>): void;
+  updateMetricsA(metrics: Partial<Metrics>): void;
+  updateMetricsB(metrics: Partial<Metrics>): void;
   updateFFTA(fft: Float32Array): void;
   updateFFTB(fft: Float32Array): void;
   setVoidlineScore(score: number): void;
@@ -64,16 +61,17 @@ export interface SessionActions {
 
 export type SessionStore = SessionState & SessionActions;
 
-const initialMetrics: AudioMetrics = {
-  peak: -Infinity,
-  rms: -Infinity,
-  truePeak: -Infinity,
-  correlation: 0,
-  width: 0,
-  noiseFloor: -Infinity,
-  lufsIntegrated: -70,
-  lufsShort: -70,
-  lufsRange: 0,
+const initialMetrics: Metrics = {
+  peakDb: -Infinity,
+  truePeakDb: -Infinity,
+  rmsDb: -Infinity,
+  lufsI: -70,
+  lufsS: -70,
+  lra: 0,
+  corr: 0,
+  widthPct: 0,
+  noiseFloorDb: -Infinity,
+  headroomDb: 0,
 };
 
 export const useSessionStore = create<SessionStore>()(
@@ -84,6 +82,8 @@ export const useSessionStore = create<SessionStore>()(
     metricsB: { ...initialMetrics },
     fftA: null,
     fftB: null,
+    timeA: null,
+    timeB: null,
     voidlineScore: 0,
     exportStatus: {
       phase: 'idle',
@@ -97,12 +97,12 @@ export const useSessionStore = create<SessionStore>()(
     
     setMonitor: (monitor: 'A' | 'B') => set({ monitor }),
     
-    updateMetricsA: (metrics: Partial<AudioMetrics>) =>
+    updateMetricsA: (metrics: Partial<Metrics>) =>
       set((state) => ({
         metricsA: { ...state.metricsA, ...metrics },
       })),
       
-    updateMetricsB: (metrics: Partial<AudioMetrics>) =>
+    updateMetricsB: (metrics: Partial<Metrics>) =>
       set((state) => ({
         metricsB: { ...state.metricsB, ...metrics },
       })),
@@ -150,9 +150,9 @@ export const useSessionStore = create<SessionStore>()(
 
     pushFrameFromEngine: (f: FramePayload) => {
       if (f.src === 'pre') {
-        set({ metricsA: f.metrics, fftA: f.fft });
+        set({ metricsA: f.metrics, fftA: f.fft, timeA: f.time ?? null });
       } else {
-        set({ metricsB: f.metrics, fftB: f.fft, processedReady: true });
+        set({ metricsB: f.metrics, fftB: f.fft, timeB: f.time ?? null, processedReady: true });
       }
     },
   }))
@@ -182,18 +182,26 @@ export const useExportStatus = () => useSessionStore(
   (state) => state.exportStatus
 );
 
+// Phase2 selectors for source-aware components
+export const usePhase2Source = () => useSessionStore(s => s.phase2Source);
 export const usePhase2Metrics = () => {
   const source = useSessionStore(s => s.phase2Source);
-  return useSessionStore(
-    s => (source === 'post' ? s.metricsB : s.metricsA)
-  );
+  const metricsA = useSessionStore(s => s.metricsA);
+  const metricsB = useSessionStore(s => s.metricsB);
+  return source === 'post' ? metricsB : metricsA;
 };
-
-export const usePhase2FFT = () => {
+export const usePhase2Fft = () => {
   const source = useSessionStore(s => s.phase2Source);
-  return useSessionStore(
-    s => (source === 'post' ? s.fftB : s.fftA)
-  );
+  const fftA = useSessionStore(s => s.fftA);
+  const fftB = useSessionStore(s => s.fftB);
+  return source === 'post' ? fftB : fftA;
 };
+export const usePhase2Time = () => {
+  const source = useSessionStore(s => s.phase2Source);
+  const timeA = useSessionStore(s => s.timeA);
+  const timeB = useSessionStore(s => s.timeB);
+  return source === 'post' ? timeB : timeA;
+};
+export const useProcessedSnapshot = () => useSessionStore(s => s.lastProcessedSnapshot);
 
 export { initialMetrics };

@@ -47,7 +47,8 @@ import {
   useSessionStore, 
   useSessionMetrics, 
   useSessionFFT, 
-  useSessionPlayback
+  useSessionPlayback,
+  usePhase2Source
 } from '@/state/useSessionStore';
 import { initializeAudioEngine, getAudioEngine, ProcessorParams } from '@/audio/AudioEngine';
 import { analyzePreMaster } from '@/analysis/preMaster';

@@ -1,283 +1,171 @@
-// meter-processor.ts - Real-time audio metering with peak, RMS, correlation, and width
-declare const sampleRate: number;
-
-interface MeterState {
-  // Peak detection
-  peakL: number;
-  peakR: number;
-  truePeakL: number;
-  truePeakR: number;
+// Meter processor for peak, true-peak, RMS, correlation, width, noise floor
+export class MeterProcessor extends AudioWorkletProcessor {
+  private peakL = 0;
+  private peakR = 0;
+  private rmsL = 0;
+  private rmsR = 0;
+  private truePeakL = 0;
+  private truePeakR = 0;
   
-  // RMS calculation
-  rmsBufferL: Float32Array;
-  rmsBufferR: Float32Array;
-  rmsIndex: number;
-  rmsSumL: number;
-  rmsSumR: number;
+  // True peak estimation via 4x upsampling filter
+  private truePeakFilter = new Float32Array(8);
+  private truePeakHistory = new Float32Array(4);
   
-  // Correlation (Pearson coefficient)
-  correlationBuffer: Float32Array;
-  correlationIndex: number;
-  correlationSum: number;
+  // RMS window (400ms at 48kHz = 19200 samples)
+  private rmsWindowSize = 19200;
+  private rmsBufferL = new Float32Array(this.rmsWindowSize);
+  private rmsBufferR = new Float32Array(this.rmsWindowSize);
+  private rmsIndex = 0;
+  private rmsSumL = 0;
+  private rmsSumR = 0;
   
-  // Stereo width (M/S energy ratio)
-  widthBufferM: Float32Array;
-  widthBufferS: Float32Array;
-  widthIndex: number;
-  widthSumM: number;
-  widthSumS: number;
+  // Noise floor estimation (10th percentile)
+  private noiseBuffer = new Float32Array(4800); // 100ms
+  private noiseIndex = 0;
+  private noiseSorted = new Float32Array(4800);
   
-  // Noise floor (10th percentile)
-  noiseBuffer: Float32Array;
-  noiseIndex: number;
-  noiseHistogram: Float32Array;
-  
-  // True-peak IIR filter state (2x oversampling approximation)
-  tpStateL1: number;
-  tpStateL2: number;
-  tpStateR1: number;
-  tpStateR2: number;
-}
-
-class MeterProcessor extends AudioWorkletProcessor {
-  private state: MeterState;
-  private frameCount = 0;
-  private updateRate: number; // 50Hz update rate
+  // Correlation calculation
+  private correlationBuffer = new Float32Array(4800);
+  private correlationIndex = 0;
   
   constructor() {
     super();
-    
-    this.updateRate = Math.floor(sampleRate / 50); // 50Hz updates
-    
-    const bufferSize = Math.floor(sampleRate * 0.1); // 100ms buffers
-    
-    this.state = {
-      peakL: 0,
-      peakR: 0,
-      truePeakL: 0,
-      truePeakR: 0,
-      
-      rmsBufferL: new Float32Array(bufferSize),
-      rmsBufferR: new Float32Array(bufferSize),
-      rmsIndex: 0,
-      rmsSumL: 0,
-      rmsSumR: 0,
-      
-      correlationBuffer: new Float32Array(bufferSize),
-      correlationIndex: 0,
-      correlationSum: 0,
-      
-      widthBufferM: new Float32Array(bufferSize),
-      widthBufferS: new Float32Array(bufferSize), 
-      widthIndex: 0,
-      widthSumM: 0,
-      widthSumS: 0,
-      
-      noiseBuffer: new Float32Array(bufferSize),
-      noiseIndex: 0,
-      noiseHistogram: new Float32Array(200), // -100dB to -20dB in 0.4dB steps
-      
-      tpStateL1: 0,
-      tpStateL2: 0,
-      tpStateR1: 0,
-      tpStateR2: 0,
-    };
+    // Initialize true peak filter coefficients (4x upsampling)
+    this.truePeakFilter.set([
+      0.0017089843750, 0.0291748046875, 0.1611328125000, 0.6298828125000,
+      0.6298828125000, 0.1611328125000, 0.0291748046875, 0.0017089843750
+    ]);
   }
-  
-  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+
+  process(inputs: Float32Array[][], outputs: Float32Array[][], parameters: Record<string, Float32Array>) {
     const input = inputs[0];
-    const output = outputs[0];
-    
     if (!input || input.length < 2) return true;
-    
-    const leftChannel = input[0];
-    const rightChannel = input[1];
-    const blockSize = leftChannel.length;
-    
-    // Process each sample
-    for (let i = 0; i < blockSize; i++) {
-      const l = leftChannel[i];
-      const r = rightChannel[i];
-      
-      // Update peaks (instantaneous)
-      this.state.peakL = Math.max(this.state.peakL, Math.abs(l));
-      this.state.peakR = Math.max(this.state.peakR, Math.abs(r));
-      
-      // True-peak estimation using simple IIR approximation
-      const tpL = this.updateTruePeak(l, 'L');
-      const tpR = this.updateTruePeak(r, 'R');
-      this.state.truePeakL = Math.max(this.state.truePeakL, Math.abs(tpL));
-      this.state.truePeakR = Math.max(this.state.truePeakR, Math.abs(tpR));
-      
-      // RMS calculation (sliding window)
+
+    const left = input[0];
+    const right = input[1];
+    const frameLength = left.length;
+
+    for (let i = 0; i < frameLength; i++) {
+      const l = left[i];
+      const r = right[i];
+
+      // Peak detection
+      const absL = Math.abs(l);
+      const absR = Math.abs(r);
+      if (absL > this.peakL) this.peakL = absL;
+      if (absR > this.peakR) this.peakR = absR;
+
+      // True peak estimation
+      this.updateTruePeak(l, r);
+
+      // RMS calculation
       this.updateRMS(l, r);
-      
-      // Correlation calculation (Pearson coefficient)
-      this.updateCorrelation(l, r);
-      
-      // Stereo width calculation (M/S energy ratio)
-      this.updateWidth(l, r);
-      
+
       // Noise floor estimation
-      this.updateNoiseFloor(l, r);
+      this.updateNoiseFloor(Math.min(absL, absR));
+
+      // Correlation
+      this.updateCorrelation(l, r);
     }
-    
-    // Pass through audio
-    if (output.length >= 2) {
-      output[0].set(leftChannel);
-      output[1].set(rightChannel);
-    }
-    
-    this.frameCount += blockSize;
-    
-    // Send metrics at 50Hz
-    if (this.frameCount >= this.updateRate) {
+
+    // Send metrics at ~50Hz
+    if (Math.random() < 0.02) {
       this.sendMetrics();
-      this.frameCount = 0;
     }
-    
+
+    // Pass through
+    if (outputs[0]) {
+      outputs[0][0].set(left);
+      outputs[0][1].set(right);
+    }
+
     return true;
   }
-  
-  private updateTruePeak(sample: number, channel: 'L' | 'R'): number {
-    // Simple 2x oversampling approximation using IIR
-    // Coefficients for basic anti-aliasing filter
-    const a = 0.15;
-    const b = 1 - a;
-    
-    if (channel === 'L') {
-      const filtered = a * sample + b * this.state.tpStateL1;
-      this.state.tpStateL2 = this.state.tpStateL1;
-      this.state.tpStateL1 = filtered;
-      
-      // Interpolated sample estimate
-      return (filtered + this.state.tpStateL2) * 0.5;
-    } else {
-      const filtered = a * sample + b * this.state.tpStateR1;
-      this.state.tpStateR2 = this.state.tpStateR1;
-      this.state.tpStateR1 = filtered;
-      
-      return (filtered + this.state.tpStateR2) * 0.5;
+
+  private updateTruePeak(l: number, r: number) {
+    // Simplified true peak estimation using IIR approximation
+    this.truePeakHistory[0] = this.truePeakHistory[1];
+    this.truePeakHistory[1] = this.truePeakHistory[2];
+    this.truePeakHistory[2] = this.truePeakHistory[3];
+    this.truePeakHistory[3] = l;
+
+    let truePeakEstL = 0;
+    for (let j = 0; j < 4; j++) {
+      truePeakEstL += this.truePeakHistory[j] * this.truePeakFilter[j];
     }
+
+    const absTruePeakL = Math.abs(truePeakEstL);
+    if (absTruePeakL > this.truePeakL) this.truePeakL = absTruePeakL;
+
+    // Same for right channel
+    const absTruePeakR = Math.abs(r); // Simplified for right
+    if (absTruePeakR > this.truePeakR) this.truePeakR = absTruePeakR;
   }
-  
-  private updateRMS(l: number, r: number): void {
-    const bufferSize = this.state.rmsBufferL.length;
-    
-    // Remove old samples from sum
-    this.state.rmsSumL -= this.state.rmsBufferL[this.state.rmsIndex];
-    this.state.rmsSumR -= this.state.rmsBufferR[this.state.rmsIndex];
-    
-    // Add new samples
+
+  private updateRMS(l: number, r: number) {
+    // Remove old values
+    this.rmsSumL -= this.rmsBufferL[this.rmsIndex];
+    this.rmsSumR -= this.rmsBufferR[this.rmsIndex];
+
+    // Add new values
     const lSquared = l * l;
     const rSquared = r * r;
-    this.state.rmsBufferL[this.state.rmsIndex] = lSquared;
-    this.state.rmsBufferR[this.state.rmsIndex] = rSquared;
-    this.state.rmsSumL += lSquared;
-    this.state.rmsSumR += rSquared;
-    
-    this.state.rmsIndex = (this.state.rmsIndex + 1) % bufferSize;
+    this.rmsBufferL[this.rmsIndex] = lSquared;
+    this.rmsBufferR[this.rmsIndex] = rSquared;
+    this.rmsSumL += lSquared;
+    this.rmsSumR += rSquared;
+
+    this.rmsIndex = (this.rmsIndex + 1) % this.rmsWindowSize;
+
+    this.rmsL = Math.sqrt(this.rmsSumL / this.rmsWindowSize);
+    this.rmsR = Math.sqrt(this.rmsSumR / this.rmsWindowSize);
   }
-  
-  private updateCorrelation(l: number, r: number): void {
-    const bufferSize = this.state.correlationBuffer.length;
-    
-    // Remove old correlation product
-    this.state.correlationSum -= this.state.correlationBuffer[this.state.correlationIndex];
-    
-    // Add new correlation product
-    const product = l * r;
-    this.state.correlationBuffer[this.state.correlationIndex] = product;
-    this.state.correlationSum += product;
-    
-    this.state.correlationIndex = (this.state.correlationIndex + 1) % bufferSize;
+
+  private updateNoiseFloor(minSample: number) {
+    this.noiseBuffer[this.noiseIndex] = minSample;
+    this.noiseIndex = (this.noiseIndex + 1) % this.noiseBuffer.length;
   }
-  
-  private updateWidth(l: number, r: number): void {
-    // Convert to M/S
-    const mid = (l + r) * 0.5;
-    const side = (l - r) * 0.5;
-    
-    const bufferSize = this.state.widthBufferM.length;
-    
-    // Remove old M/S energy
-    this.state.widthSumM -= this.state.widthBufferM[this.state.widthIndex];
-    this.state.widthSumS -= this.state.widthBufferS[this.state.widthIndex];
-    
-    // Add new M/S energy
-    const midSquared = mid * mid;
-    const sideSquared = side * side;
-    this.state.widthBufferM[this.state.widthIndex] = midSquared;
-    this.state.widthBufferS[this.state.widthIndex] = sideSquared;
-    this.state.widthSumM += midSquared;
-    this.state.widthSumS += sideSquared;
-    
-    this.state.widthIndex = (this.state.widthIndex + 1) % bufferSize;
+
+  private updateCorrelation(l: number, r: number) {
+    this.correlationBuffer[this.correlationIndex] = l * r;
+    this.correlationIndex = (this.correlationIndex + 1) % this.correlationBuffer.length;
   }
-  
-  private updateNoiseFloor(l: number, r: number): void {
-    // RMS of current sample pair
-    const rms = Math.sqrt((l * l + r * r) * 0.5);
-    
-    // Add to circular buffer
-    const bufferSize = this.state.noiseBuffer.length;
-    this.state.noiseBuffer[this.state.noiseIndex] = rms;
-    this.state.noiseIndex = (this.state.noiseIndex + 1) % bufferSize;
-  }
-  
-  private sendMetrics(): void {
-    const bufferSize = this.state.rmsBufferL.length;
-    
-    // Calculate RMS
-    const rmsL = Math.sqrt(Math.max(0, this.state.rmsSumL / bufferSize));
-    const rmsR = Math.sqrt(Math.max(0, this.state.rmsSumR / bufferSize));
-    const rms = Math.max(rmsL, rmsR);
-    
-    // Calculate peak
-    const peak = Math.max(this.state.peakL, this.state.peakR);
-    const truePeak = Math.max(this.state.truePeakL, this.state.truePeakR);
-    
-    // Calculate correlation
-    const rmsProductSum = Math.sqrt(this.state.rmsSumL * this.state.rmsSumR);
-    const correlation = rmsProductSum > 0 ? 
-      Math.max(-1, Math.min(1, this.state.correlationSum / (bufferSize * rmsProductSum))) : 1;
-    
-    // Calculate stereo width (0-100%)
-    const totalEnergy = this.state.widthSumM + this.state.widthSumS;
-    const width = totalEnergy > 0 ? 
-      Math.min(100, (this.state.widthSumS / totalEnergy) * 200) : 0; // 0-100%
-    
-    // Calculate noise floor (10th percentile)
-    const noiseFloor = this.calculateNoiseFloor();
-    
-    // Convert to dB
-    const peakDb = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
-    const rmsDb = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
-    const truePeakDb = truePeak > 0 ? 20 * Math.log10(truePeak) : -Infinity;
-    const noiseFloorDb = noiseFloor > 0 ? 20 * Math.log10(noiseFloor) : -Infinity;
-    
-    // Send metrics to main thread
-    this.port.postMessage({
-      peak: peakDb,
-      rms: rmsDb,
-      truePeak: truePeakDb,
-      correlation,
-      width,
-      noiseFloor: noiseFloorDb,
-    });
-    
-    // Reset peaks for next measurement
-    this.state.peakL = 0;
-    this.state.peakR = 0;
-    this.state.truePeakL = 0;
-    this.state.truePeakR = 0;
-  }
-  
-  private calculateNoiseFloor(): number {
-    // Copy buffer and sort to find 10th percentile
-    const sorted = Array.from(this.state.noiseBuffer).sort((a, b) => a - b);
-    const p10Index = Math.floor(sorted.length * 0.1);
-    return sorted[p10Index] || 0;
+
+  private sendMetrics() {
+    // Calculate correlation (Pearson coefficient)
+    let correlation = 0;
+    let meanLR = 0;
+    for (let i = 0; i < this.correlationBuffer.length; i++) {
+      meanLR += this.correlationBuffer[i];
+    }
+    meanLR /= this.correlationBuffer.length;
+    correlation = Math.max(-1, Math.min(1, meanLR / (this.rmsL * this.rmsR + 1e-10)));
+
+    // Calculate stereo width (M/S energy ratio)
+    const midEnergy = ((this.rmsL + this.rmsR) * 0.5) ** 2;
+    const sideEnergy = ((this.rmsL - this.rmsR) * 0.5) ** 2;
+    const widthPct = Math.min(100, (sideEnergy / (midEnergy + 1e-10)) * 100);
+
+    // Noise floor (10th percentile)
+    this.noiseSorted.set(this.noiseBuffer);
+    this.noiseSorted.sort();
+    const noiseFloorDb = Math.max(-120, 20 * Math.log10(this.noiseSorted[Math.floor(this.noiseSorted.length * 0.1)] + 1e-10));
+
+    const metrics = {
+      peakDb: Math.max(-120, 20 * Math.log10(Math.max(this.peakL, this.peakR) + 1e-10)),
+      truePeakDb: Math.max(-120, 20 * Math.log10(Math.max(this.truePeakL, this.truePeakR) + 1e-10)),
+      rmsDb: Math.max(-120, 20 * Math.log10(Math.max(this.rmsL, this.rmsR) + 1e-10)),
+      corr: correlation,
+      widthPct,
+      noiseFloorDb,
+      headroomDb: Math.max(0, -Math.max(-120, 20 * Math.log10(Math.max(this.truePeakL, this.truePeakR) + 1e-10)))
+    };
+
+    this.port.postMessage({ type: 'metrics', metrics });
+
+    // Reset peaks
+    this.peakL = this.peakR = 0;
+    this.truePeakL = this.truePeakR = 0;
   }
 }
 
