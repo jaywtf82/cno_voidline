@@ -72,9 +72,10 @@ show_main_menu() {
     echo -e "${GREEN}6.${NC} 🚀 Deploy to Platform"
     echo -e "${GREEN}7.${NC} 📖 View Documentation"
     echo -e "${GREEN}8.${NC} 🧹 Clean/Reset Project"
+    echo -e "${GREEN}9.${NC} 🏠 Local deploy"
     echo -e "${GREEN}0.${NC} ❌ Exit"
     echo ""
-    read -p "Enter your choice (0-8): " choice
+    read -p "Enter your choice (0-9): " choice
     echo ""
 }
 
@@ -1730,6 +1731,36 @@ setup_all_frontend_platforms() {
 
 # Main execution
 main() {
+    if [[ $# -gt 0 ]]; then
+        case "$1" in
+            install|--install)
+                check_requirements
+                install_dependencies
+                install_local_setup
+                exit 0
+                ;;
+            setup|--setup)
+                check_requirements
+                install_dependencies
+                install_local_setup
+                setup_local_development
+                exit 0
+                ;;
+            deploy|--deploy)
+                check_requirements
+                install_dependencies
+                install_local_setup
+                setup_local_development
+                ./scripts/deploy-local.sh
+                exit 0
+                ;;
+            *)
+                echo "Usage: $0 [install|setup|deploy]"
+                exit 1
+                ;;
+        esac
+    fi
+
     show_welcome
 
     while true; do
@@ -1793,12 +1824,19 @@ main() {
             8)
                 clean_project
                 ;;
+            9)
+                check_requirements
+                install_dependencies
+                install_local_setup
+                setup_local_development
+                ./scripts/deploy-local.sh
+                ;;
             0)
                 log_success "Thank you for using C/No Voidline setup!"
                 exit 0
                 ;;
             *)
-                log_error "Invalid choice. Please enter a number between 0-8."
+                log_error "Invalid choice. Please enter a number between 0-9."
                 ;;
         esac
 
