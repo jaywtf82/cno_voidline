@@ -17,6 +17,32 @@ command -v node >/dev/null 2>&1 || { err "Node.js required"; exit 1; }
 command -v npm >/dev/null 2>&1 || { err "npm required"; exit 1; }
 command -v docker >/dev/null 2>&1 || { err "Docker required"; exit 1; }
 
+# Ensure Docker daemon is running
+if ! docker info >/dev/null 2>&1; then
+  warn "Docker daemon not running. Attempting to start..."
+  if command -v colima >/dev/null 2>&1; then
+    colima start >/dev/null 2>&1 || true
+  elif command -v systemctl >/dev/null 2>&1; then
+    sudo systemctl start docker >/dev/null 2>&1 || true
+  elif command -v service >/dev/null 2>&1; then
+    sudo service docker start >/dev/null 2>&1 || true
+  elif [[ "${OSTYPE:-}" == darwin* ]]; then
+    open --background -a Docker >/dev/null 2>&1 || true
+  fi
+
+  # Wait for Docker to be responsive
+  until docker info >/dev/null 2>&1; do
+    sleep 1
+    printf '.'
+  done
+  printf '\n'
+
+  if ! docker info >/dev/null 2>&1; then
+    err "Unable to connect to Docker daemon. Please start Docker manually."
+    exit 1
+  fi
+fi
+
 # Install dependencies if missing
 if [ ! -d node_modules ]; then
   log "Installing npm dependencies"
