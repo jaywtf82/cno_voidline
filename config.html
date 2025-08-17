@@ -1,763 +1,1298 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>C/No Voidline - Configuration Manager</title>
-        <style>
-            :root {
-                --primary-green: #22c55e;
-                --terminal-bg: #0a0a0a;
-                --terminal-text: #00ff00;
-                --border-color: #333;
-                --card-bg: #1a1a1a;
-            }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C/No Voidline - Platform Configuration Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
 
-            body {
-                font-family: "Fira Code", "Courier New", monospace;
-                background: var(--terminal-bg);
-                color: var(--terminal-text);
-                min-height: 100vh;
-                padding: 20px;
-            }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-            .terminal-window {
-                background: var(--card-bg);
-                border: 2px solid var(--border-color);
-                border-radius: 8px;
-                max-width: 1200px;
-                margin: 0 auto;
-                overflow: hidden;
-            }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            background: linear-gradient(90deg, #16213e 0%, #0f3460 100%);
+            border-radius: 15px;
+            border: 1px solid #2a4a8a;
+        }
 
-            .terminal-header {
-                background: #333;
-                padding: 12px 20px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                border-bottom: 1px solid var(--border-color);
-            }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-            .terminal-dot {
-                width: 12px;
-                height: 12px;
-                border-radius: 50%;
-            }
+        .header p {
+            color: #b0c4de;
+            font-size: 1.1em;
+        }
 
-            .dot-red {
-                background: #ff5f57;
-            }
-            .dot-yellow {
-                background: #ffbd2e;
-            }
-            .dot-green {
-                background: #28ca42;
-            }
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
 
-            .terminal-title {
-                color: #fff;
-                font-size: 14px;
-                margin-left: 20px;
-            }
+        .platform-card {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid #2a4a8a;
+            border-radius: 12px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
 
-            .terminal-content {
-                padding: 30px;
-            }
+        .platform-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
 
-            .logo {
-                text-align: center;
-                margin-bottom: 40px;
-            }
+        .platform-card:hover::before {
+            left: 100%;
+        }
 
-            .logo h1 {
-                color: var(--primary-green);
-                font-size: 2.5rem;
-                margin-bottom: 10px;
-                text-shadow: 0 0 10px var(--primary-green);
-            }
+        .platform-card:hover {
+            border-color: #00d4ff;
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.2);
+            transform: translateY(-3px);
+        }
 
-            .logo p {
-                color: #888;
-                font-size: 1.1rem;
-            }
+        .platform-card.selected {
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+            background: linear-gradient(145deg, #16213e, #1a2f5a);
+        }
 
-            .config-section {
-                background: var(--terminal-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 6px;
-                padding: 25px;
-                margin-bottom: 30px;
-            }
+        .platform-card h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
 
-            .config-section h2 {
-                color: var(--primary-green);
-                margin-bottom: 20px;
-                font-size: 1.5rem;
-                border-bottom: 1px solid var(--border-color);
-                padding-bottom: 10px;
-            }
+        .platform-info {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
 
-            .form-group {
-                margin-bottom: 20px;
-            }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
 
-            .form-group label {
-                display: block;
-                margin-bottom: 8px;
-                color: #ccc;
-                font-weight: 500;
-            }
+        .status-free { background-color: #00ff88; }
+        .status-paid { background-color: #ffaa00; }
+        .status-premium { background-color: #ff6b6b; }
 
-            .form-group input,
-            .form-group select,
-            .form-group textarea {
-                width: 100%;
-                padding: 12px;
-                background: var(--terminal-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 4px;
-                color: var(--terminal-text);
-                font-family: inherit;
-                font-size: 14px;
-            }
+        .platform-features {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #b0c4de;
+        }
 
-            .form-group input:focus,
-            .form-group select:focus,
-            .form-group textarea:focus {
-                outline: none;
-                border-color: var(--primary-green);
-                box-shadow: 0 0 5px rgba(34, 197, 94, 0.3);
-            }
+        .config-panel {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid #2a4a8a;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            display: none;
+        }
 
-            .form-group textarea {
-                resize: vertical;
-                min-height: 120px;
-            }
+        .config-panel.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
 
-            .checkbox-group {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-            .checkbox-group input[type="checkbox"] {
-                width: auto;
-            }
+        .config-section {
+            margin-bottom: 30px;
+        }
 
-            .button-group {
-                display: flex;
-                gap: 15px;
-                flex-wrap: wrap;
-                margin-top: 30px;
-            }
+        .config-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #2a4a8a;
+            padding-bottom: 10px;
+        }
 
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #b0c4de;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            background: #0a0a1a;
+            border: 1px solid #2a4a8a;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #0099cc, #007aa3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #2a4a8a, #1e3a8a);
+            color: #ffffff;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(45deg, #1e3a8a, #1e40af);
+            transform: translateY(-2px);
+        }
+
+        .btn-export {
+            background: linear-gradient(45deg, #10b981, #059669);
+            color: #ffffff;
+        }
+
+        .btn-export:hover {
+            background: linear-gradient(45deg, #059669, #047857);
+            transform: translateY(-2px);
+        }
+
+        .btn-import {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            color: #ffffff;
+        }
+
+        .btn-import:hover {
+            background: linear-gradient(45deg, #d97706, #b45309);
+            transform: translateY(-2px);
+        }
+
+        .recommendation-box {
+            background: linear-gradient(45deg, #16213e, #1a2f5a);
+            border: 1px solid #00d4ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .recommendation-box h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .combination-item {
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .combination-item h4 {
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .file-input-label:hover {
+            background: linear-gradient(45deg, #d97706, #b45309);
+            transform: translateY(-2px);
+        }
+
+        .deployment-status {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid #2a4a8a;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #2a4a8a;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-ready { background: #10b981; color: white; }
+        .status-pending { background: #f59e0b; color: white; }
+        .status-error { background: #ef4444; color: white; }
+
+        @media (max-width: 768px) {
+            .platform-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                justify-content: center;
+            }
+            
             .btn {
-                padding: 12px 24px;
-                background: var(--primary-green);
-                color: var(--terminal-bg);
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-family: inherit;
-                font-weight: 600;
-                transition: all 0.3s ease;
+                flex: 1;
+                min-width: auto;
             }
+        }
 
-            .btn:hover {
-                background: #16a34a;
-                transform: translateY(-2px);
-            }
+        .code-block {
+            background: #0a0a1a;
+            border: 1px solid #2a4a8a;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
 
-            .btn-secondary {
-                background: transparent;
-                border: 1px solid var(--primary-green);
-                color: var(--primary-green);
-            }
+        .env-preview {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>C/No Voidline</h1>
+            <p>Platform Configuration Manager - Setup & Deploy Your AI Audio Mastering Console</p>
+        </div>
 
-            .btn-secondary:hover {
-                background: var(--primary-green);
-                color: var(--terminal-bg);
-            }
+        <div class="recommendation-box">
+            <h3>🚀 Recommended Full-Stack Combinations</h3>
+            
+            <div class="combination-item">
+                <h4>🥇 Primary: Railway + Supabase</h4>
+                <p><strong>Best for:</strong> Production applications, always-on, fast response</p>
+                <p><strong>Features:</strong> No cold starts, real-time database, built-in auth, file storage</p>
+                <p><strong>Cost:</strong> $5/month Railway + Free Supabase tier</p>
+            </div>
+            
+            <div class="combination-item">
+                <h4>🥈 Alternative: Render + PlanetScale</h4>
+                <p><strong>Best for:</strong> High-availability, database branching</p>
+                <p><strong>Features:</strong> Auto-scaling, DDoS protection, serverless MySQL</p>
+                <p><strong>Cost:</strong> $7/month Render + $29/month PlanetScale</p>
+            </div>
+            
+            <div class="combination-item">
+                <h4>🥉 Budget: Netlify + Supabase</h4>
+                <p><strong>Best for:</strong> Serverless-first, global edge</p>
+                <p><strong>Features:</strong> Edge functions, form handling, split testing</p>
+                <p><strong>Cost:</strong> Free to $19/month + Free Supabase tier</p>
+            </div>
+        </div>
 
-            .output-section {
-                background: var(--terminal-bg);
-                border: 1px solid var(--border-color);
-                padding: 20px;
-                border-radius: 6px;
-                margin-top: 30px;
-            }
-
-            .output-section h3 {
-                color: var(--primary-green);
-                margin-bottom: 15px;
-            }
-
-            .code-output {
-                background: #000;
-                border: 1px solid var(--border-color);
-                padding: 15px;
-                border-radius: 4px;
-                font-family: "Fira Code", monospace;
-                font-size: 12px;
-                white-space: pre-wrap;
-                max-height: 300px;
-                overflow-y: auto;
-            }
-
-            .copy-btn {
-                font-size: 12px;
-                padding: 6px 12px;
-                margin-top: 10px;
-            }
-
-            .grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                gap: 20px;
-            }
-
-            .status-indicator {
-                display: inline-block;
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                margin-right: 8px;
-            }
-
-            .status-active {
-                background: var(--primary-green);
-            }
-            .status-inactive {
-                background: #666;
-            }
-
-            @media (max-width: 768px) {
-                body {
-                    padding: 10px;
-                }
-
-                .terminal-content {
-                    padding: 20px;
-                }
-
-                .logo h1 {
-                    font-size: 2rem;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="terminal-window">
-            <div class="terminal-header">
-                <div class="terminal-dot dot-red"></div>
-                <div class="terminal-dot dot-yellow"></div>
-                <div class="terminal-dot dot-green"></div>
-                <div class="terminal-title">
-                    C/No Voidline Configuration Manager
+        <div class="platform-grid">
+            <div class="platform-card" onclick="selectPlatform('railway-supabase')">
+                <h3>Railway + Supabase</h3>
+                <div class="platform-info">
+                    <span class="status-indicator status-free"></span>
+                    <span>Recommended for production</span>
+                </div>
+                <div class="platform-features">
+                    <p>✨ Always-on hosting, no cold starts</p>
+                    <p>🚀 Real-time PostgreSQL with Supabase</p>
+                    <p>🔐 Built-in authentication & file storage</p>
+                    <p>⚡ Excellent performance for audio processing</p>
                 </div>
             </div>
 
-            <div class="terminal-content">
-                <div class="logo">
-                    <h1>C/No VOIDLINE</h1>
-                    <p>AI Audio Mastering Console - Configuration Manager</p>
+            <div class="platform-card" onclick="selectPlatform('render-planetscale')">
+                <h4>Render + PlanetScale</h4>
+                <div class="platform-info">
+                    <span class="status-indicator status-paid"></span>
+                    <span>High-availability option</span>
                 </div>
-
-                <!-- Deployment Configuration -->
-                <div class="config-section">
-                    <h2>
-                        <span class="status-indicator status-active"></span
-                        >Deployment Configuration
-                    </h2>
-                    <div class="grid">
-                        <div class="form-group">
-                            <label for="deployment-target"
-                                >Deployment Target</label
-                            >
-                            <select id="deployment-target">
-                                <option value="github-pages">
-                                    GitHub Pages
-                                </option>
-                                <option value="netlify">Netlify</option>
-                                <option value="vercel">Vercel</option>
-                                <option value="railway">Railway</option>
-                                <option value="render">Render</option>
-                                <option value="replit">Replit</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="base-url">Base URL</label>
-                            <input
-                                type="url"
-                                id="base-url"
-                                placeholder="https://username.github.io/cno-voidline"
-                            />
-                        </div>
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="enable-auth" checked />
-                        <label for="enable-auth">Enable Authentication</label>
-                    </div>
+                <div class="platform-features">
+                    <p>🔄 Auto-scaling web services</p>
+                    <p>🛡️ DDoS protection included</p>
+                    <p>🌐 Serverless MySQL with branching</p>
+                    <p>📊 Global read replicas</p>
                 </div>
+            </div>
 
-                <!-- Database Configuration -->
-                <div class="config-section">
-                    <h2>
-                        <span class="status-indicator status-active"></span
-                        >Database Configuration
-                    </h2>
-                    <div class="grid">
-                        <div class="form-group">
-                            <label for="storage-backend">Storage Backend</label>
-                            <select id="storage-backend">
-                                <option value="memory">
-                                    Memory (Development)
-                                </option>
-                                <option value="sqlite">SQLite (Local)</option>
-                                <option value="postgresql" selected>
-                                    PostgreSQL (Production)
-                                </option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="database-url">Database URL</label>
-                            <input
-                                type="text"
-                                id="database-url"
-                                placeholder="postgresql://user:password@host:port/database"
-                            />
-                        </div>
-                    </div>
+            <div class="platform-card" onclick="selectPlatform('netlify-supabase')">
+                <h4>Netlify + Supabase</h4>
+                <div class="platform-info">
+                    <span class="status-indicator status-free"></span>
+                    <span>Serverless-first approach</span>
                 </div>
-
-                <!-- Application Settings -->
-                <div class="config-section">
-                    <h2>
-                        <span class="status-indicator status-active"></span
-                        >Application Settings
-                    </h2>
-                    <div class="grid">
-                        <div class="form-group">
-                            <label for="default-theme">Default Theme</label>
-                            <select id="default-theme">
-                                <option value="classic" selected>
-                                    Classic Terminal
-                                </option>
-                                <option value="matrix">Matrix Green</option>
-                                <option value="cyberpunk">Cyberpunk</option>
-                                <option value="retro">Retro</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="max-file-size"
-                                >Max Audio File Size (MB)</label
-                            >
-                            <input
-                                type="number"
-                                id="max-file-size"
-                                value="100"
-                                min="1"
-                                max="500"
-                            />
-                        </div>
-                    </div>
-                    <div class="grid">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="enable-analytics" />
-                            <label for="enable-analytics"
-                                >Enable Analytics</label
-                            >
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="enable-export" checked />
-                            <label for="enable-export"
-                                >Enable Audio Export</label
-                            >
-                        </div>
-                    </div>
+                <div class="platform-features">
+                    <p>🌍 Edge functions worldwide</p>
+                    <p>📝 Built-in form handling</p>
+                    <p>🧪 A/B testing & deploy previews</p>
+                    <p>💾 Real-time database with Supabase</p>
                 </div>
+            </div>
 
-                <!-- API Configuration -->
-                <div class="config-section">
-                    <h2>
-                        <span class="status-indicator status-inactive"></span
-                        >API Configuration
-                    </h2>
-                    <div class="grid">
-                        <div class="form-group">
-                            <label for="ai-provider">AI Provider</label>
-                            <select id="ai-provider">
-                                <option value="openai">OpenAI</option>
-                                <option value="anthropic" selected>
-                                    Anthropic
-                                </option>
-                                <option value="local">Local Model</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="api-key">API Key</label>
-                            <input
-                                type="password"
-                                id="api-key"
-                                placeholder="Enter your API key"
-                            />
-                        </div>
-                    </div>
+            <div class="platform-card" onclick="selectPlatform('vercel')">
+                <h4>Vercel (Frontend Only)</h4>
+                <div class="platform-info">
+                    <span class="status-indicator status-free"></span>
+                    <span>Static hosting</span>
                 </div>
-
-                <!-- Security Settings -->
-                <div class="config-section">
-                    <h2>
-                        <span class="status-indicator status-active"></span
-                        >Security Settings
-                    </h2>
-                    <div class="grid">
-                        <div class="form-group">
-                            <label for="session-timeout"
-                                >Session Timeout (minutes)</label
-                            >
-                            <input
-                                type="number"
-                                id="session-timeout"
-                                value="60"
-                                min="5"
-                                max="1440"
-                            />
-                        </div>
-                        <div class="form-group">
-                            <label for="cors-origins"
-                                >CORS Origins (comma separated)</label
-                            >
-                            <textarea
-                                id="cors-origins"
-                                placeholder="https://example.com, https://app.example.com"
-                            ></textarea>
-                        </div>
-                    </div>
-                    <div class="checkbox-group">
-                        <input
-                            type="checkbox"
-                            id="enable-rate-limiting"
-                            checked
-                        />
-                        <label for="enable-rate-limiting"
-                            >Enable Rate Limiting</label
-                        >
-                    </div>
+                <div class="platform-features">
+                    <p>⚡ Optimized for React applications</p>
+                    <p>🔧 Zero-config deployment</p>
+                    <p>📈 Built-in analytics</p>
+                    <p>🌐 Global CDN</p>
                 </div>
+            </div>
 
-                <div class="button-group">
-                    <button class="btn" onclick="generateConfigs()">
-                        Generate Configuration Files
-                    </button>
-                    <button
-                        class="btn btn-secondary"
-                        onclick="downloadConfigs()"
-                    >
-                        Download All Configs
-                    </button>
-                    <button
-                        class="btn btn-secondary"
-                        onclick="resetToDefaults()"
-                    >
-                        Reset to Defaults
-                    </button>
+            <div class="platform-card" onclick="selectPlatform('github-pages')">
+                <h4>GitHub Pages</h4>
+                <div class="platform-info">
+                    <span class="status-indicator status-free"></span>
+                    <span>Free static hosting</span>
                 </div>
+                <div class="platform-features">
+                    <p>🆓 Completely free forever</p>
+                    <p>🔗 Direct Git integration</p>
+                    <p>🌟 Perfect for open source</p>
+                    <p>📱 Custom domains supported</p>
+                </div>
+            </div>
 
-                <!-- Output Section -->
-                <div
-                    class="output-section"
-                    id="output-section"
-                    style="display: none"
-                >
-                    <h3>Generated Configuration Files</h3>
-
-                    <h4>.env.production</h4>
-                    <div class="code-output" id="env-output"></div>
-                    <button
-                        class="btn copy-btn"
-                        onclick="copyToClipboard('env-output')"
-                    >
-                        Copy .env
-                    </button>
-
-                    <h4>vite.config.ts (Updated)</h4>
-                    <div class="code-output" id="vite-output"></div>
-                    <button
-                        class="btn copy-btn"
-                        onclick="copyToClipboard('vite-output')"
-                    >
-                        Copy Vite Config
-                    </button>
-
-                    <h4>package.json (Build Scripts)</h4>
-                    <div class="code-output" id="package-output"></div>
-                    <button
-                        class="btn copy-btn"
-                        onclick="copyToClipboard('package-output')"
-                    >
-                        Copy Package Scripts
-                    </button>
+            <div class="platform-card" onclick="selectPlatform('docker')">
+                <h4>Docker Compose</h4>
+                <div class="platform-info">
+                    <span class="status-indicator status-free"></span>
+                    <span>Local development</span>
+                </div>
+                <div class="platform-features">
+                    <p>🐳 Containerized deployment</p>
+                    <p>🏠 Self-hosted option</p>
+                    <p>🔧 Full control over environment</p>
+                    <p>📦 Includes PostgreSQL</p>
                 </div>
             </div>
         </div>
 
-        <script>
-            function generateConfigs() {
-                const deploymentTarget =
-                    document.getElementById("deployment-target").value;
-                const baseUrl = document.getElementById("base-url").value;
-                const enableAuth =
-                    document.getElementById("enable-auth").checked;
-                const storageBackend =
-                    document.getElementById("storage-backend").value;
-                const databaseUrl =
-                    document.getElementById("database-url").value;
-                const defaultTheme =
-                    document.getElementById("default-theme").value;
-                const maxFileSize =
-                    document.getElementById("max-file-size").value;
-                const enableAnalytics =
-                    document.getElementById("enable-analytics").checked;
-                const enableExport =
-                    document.getElementById("enable-export").checked;
-                const aiProvider = document.getElementById("ai-provider").value;
-                const apiKey = document.getElementById("api-key").value;
-                const sessionTimeout =
-                    document.getElementById("session-timeout").value;
-                const corsOrigins =
-                    document.getElementById("cors-origins").value;
-                const enableRateLimit = document.getElementById(
-                    "enable-rate-limiting",
-                ).checked;
+        <!-- Configuration Panels -->
+        <div id="railway-supabase-config" class="config-panel">
+            <h2>🚀 Railway + Supabase Configuration</h2>
+            
+            <div class="config-section">
+                <h3>Railway Settings</h3>
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="railway-project-name" value="cno-voidline" placeholder="Your project name">
+                </div>
+                <div class="form-group">
+                    <label>Railway Domain</label>
+                    <input type="text" id="railway-domain" placeholder="your-app-name.railway.app">
+                </div>
+                <div class="form-group">
+                    <label>Resource Allocation</label>
+                    <select id="railway-resources">
+                        <option value="starter">Starter (1GB RAM, $5/month)</option>
+                        <option value="pro">Pro (2GB RAM, $10/month)</option>
+                        <option value="premium">Premium (4GB RAM, $20/month)</option>
+                    </select>
+                </div>
+            </div>
 
-                // Generate .env.production
-                let envContent = `# C/No Voidline Environment Configuration
-# Generated on: ${new Date().toISOString()}
+            <div class="config-section">
+                <h3>Supabase Settings</h3>
+                <div class="form-group">
+                    <label>Supabase Project URL</label>
+                    <input type="url" id="supabase-url" placeholder="https://your-project.supabase.co">
+                </div>
+                <div class="form-group">
+                    <label>Supabase Anon Key</label>
+                    <input type="text" id="supabase-anon-key" placeholder="Your Supabase anonymous key">
+                </div>
+                <div class="form-group">
+                    <label>Database Connection String</label>
+                    <textarea id="supabase-db-url" placeholder="postgresql://postgres:[password]@db.[project].supabase.co:5432/postgres"></textarea>
+                </div>
+            </div>
 
-# Deployment Configuration
-VITE_DEPLOYMENT_TARGET=${deploymentTarget}
-VITE_BASE_URL=${baseUrl || ""}
-VITE_REQUIRE_AUTH=${enableAuth}
+            <div class="config-section">
+                <h3>Audio Processing Settings</h3>
+                <div class="form-group">
+                    <label>Max File Size (MB)</label>
+                    <input type="number" id="max-file-size" value="200" min="50" max="500">
+                </div>
+                <div class="form-group">
+                    <label>AI Provider</label>
+                    <select id="ai-provider">
+                        <option value="local">Local Processing (Free)</option>
+                        <option value="openai">OpenAI (Requires API Key)</option>
+                        <option value="mock">Demo Mode</option>
+                    </select>
+                </div>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="enable-auth" checked>
+                        <label for="enable-auth">Enable User Authentication</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="enable-analytics">
+                        <label for="enable-analytics">Enable Analytics</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="enable-pwa" checked>
+                        <label for="enable-pwa">Enable PWA Features</label>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-# Storage Configuration
-VITE_STORAGE_BACKEND=${storageBackend}
-${databaseUrl ? `DATABASE_URL=${databaseUrl}` : "# DATABASE_URL=your_database_url_here"}
+        <div id="render-planetscale-config" class="config-panel">
+            <h2>🔧 Render + PlanetScale Configuration</h2>
+            
+            <div class="config-section">
+                <h3>Render Settings</h3>
+                <div class="form-group">
+                    <label>Service Name</label>
+                    <input type="text" id="render-service-name" value="cno-voidline" placeholder="Your service name">
+                </div>
+                <div class="form-group">
+                    <label>Build Command</label>
+                    <input type="text" id="render-build-command" value="npm install && npm run build" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Start Command</label>
+                    <input type="text" id="render-start-command" value="npm start" readonly>
+                </div>
+            </div>
 
-# Application Settings
-VITE_DEFAULT_THEME=${defaultTheme}
-VITE_MAX_FILE_SIZE_MB=${maxFileSize}
-VITE_ENABLE_ANALYTICS=${enableAnalytics}
-VITE_ENABLE_EXPORT=${enableExport}
+            <div class="config-section">
+                <h3>PlanetScale Settings</h3>
+                <div class="form-group">
+                    <label>Database Name</label>
+                    <input type="text" id="planetscale-db-name" value="cno-voidline" placeholder="Database name">
+                </div>
+                <div class="form-group">
+                    <label>Connection String</label>
+                    <textarea id="planetscale-connection" placeholder="mysql://username:password@host:port/database?sslaccept=strict"></textarea>
+                </div>
+            </div>
+        </div>
 
-# API Configuration
-VITE_AI_PROVIDER=${aiProvider}
-${apiKey ? `${aiProvider.toUpperCase()}_API_KEY=${apiKey}` : `# ${aiProvider.toUpperCase()}_API_KEY=your_api_key_here`}
+        <div id="netlify-supabase-config" class="config-panel">
+            <h2>🌐 Netlify + Supabase Configuration</h2>
+            
+            <div class="config-section">
+                <h3>Netlify Settings</h3>
+                <div class="form-group">
+                    <label>Site Name</label>
+                    <input type="text" id="netlify-site-name" value="cno-voidline" placeholder="Your site name">
+                </div>
+                <div class="form-group">
+                    <label>Build Directory</label>
+                    <input type="text" id="netlify-build-dir" value="dist" readonly>
+                </div>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="netlify-forms" checked>
+                        <label for="netlify-forms">Enable Form Handling</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="netlify-edge-functions">
+                        <label for="netlify-edge-functions">Enable Edge Functions</label>
+                    </div>
+                </div>
+            </div>
 
-# Security Settings
-SESSION_TIMEOUT_MINUTES=${sessionTimeout}
-CORS_ORIGINS=${corsOrigins || "*"}
-ENABLE_RATE_LIMITING=${enableRateLimit}
+            <div class="config-section">
+                <h3>Supabase Integration</h3>
+                <div class="form-group">
+                    <label>Supabase Project URL</label>
+                    <input type="url" id="netlify-supabase-url" placeholder="https://your-project.supabase.co">
+                </div>
+                <div class="form-group">
+                    <label>Supabase Anon Key</label>
+                    <input type="text" id="netlify-supabase-key" placeholder="Your Supabase anonymous key">
+                </div>
+            </div>
+        </div>
 
-# Production Optimization
-NODE_ENV=production
-VITE_OPTIMIZE_BUNDLE=true
-VITE_ENABLE_PWA=true`;
+        <div id="vercel-config" class="config-panel">
+            <h2>⚡ Vercel Configuration</h2>
+            
+            <div class="config-section">
+                <h3>Project Settings</h3>
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="vercel-project-name" value="cno-voidline" placeholder="Your project name">
+                </div>
+                <div class="form-group">
+                    <label>Framework Preset</label>
+                    <select id="vercel-framework">
+                        <option value="vite">Vite</option>
+                        <option value="react">React</option>
+                        <option value="nextjs">Next.js</option>
+                    </select>
+                </div>
+            </div>
 
-                // Generate vite.config.ts updates
-                let viteConfig = `import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+            <div class="config-section">
+                <h3>Build Settings</h3>
+                <div class="form-group">
+                    <label>Build Command</label>
+                    <input type="text" id="vercel-build-command" value="npm run build" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Output Directory</label>
+                    <input type="text" id="vercel-output-dir" value="dist" readonly>
+                </div>
+            </div>
+        </div>
 
-export default defineConfig({
-  plugins: [react()],
-  base: '${deploymentTarget === "github-pages" ? `${baseUrl.split("/").pop() || ""}/` : "/"}',
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: false,
-    minify: 'esbuild',
-    target: 'esnext',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          audio: ['@/lib/audio', '@/modules/audio'],
-        },
-      },
-    },
-  },
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './client/src'),
-      '@shared': resolve(__dirname, './shared'),
-      '@assets': resolve(__dirname, './attached_assets'),
-    },
-  },
-  server: {
-    port: 5173,
-    host: '0.0.0.0',
-  },
-  preview: {
-    port: 4173,
-    host: '0.0.0.0',
-  },
-})`;
+        <div id="github-pages-config" class="config-panel">
+            <h2>📚 GitHub Pages Configuration</h2>
+            
+            <div class="config-section">
+                <h3>Repository Settings</h3>
+                <div class="form-group">
+                    <label>Repository Name</label>
+                    <input type="text" id="gh-repo-name" value="cno-voidline" placeholder="Your repository name">
+                </div>
+                <div class="form-group">
+                    <label>GitHub Username</label>
+                    <input type="text" id="gh-username" placeholder="Your GitHub username">
+                </div>
+                <div class="form-group">
+                    <label>Branch</label>
+                    <select id="gh-branch">
+                        <option value="main">main</option>
+                        <option value="gh-pages">gh-pages</option>
+                    </select>
+                </div>
+            </div>
 
-                // Generate package.json build scripts
-                let packageScripts = `{
-  "scripts": {
-    "dev": "NODE_ENV=development tsx server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "build:client": "vite build",
-    "build:${deploymentTarget}": "NODE_ENV=production vite build --mode production",
-    "preview": "vite preview",
-    "start": "NODE_ENV=production node dist/index.js",
-    "check": "tsc",
-    "db:push": "drizzle-kit push",
-    "db:generate": "drizzle-kit generate",
-    "deploy:${deploymentTarget}": "npm run build:${deploymentTarget} && ${getDeployCommand(deploymentTarget)}"
-  }
-}`;
+            <div class="config-section">
+                <h3>GitHub Actions</h3>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="gh-auto-deploy" checked>
+                        <label for="gh-auto-deploy">Enable Auto-deployment</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="gh-custom-domain">
+                        <label for="gh-custom-domain">Custom Domain</label>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                // Update output sections
-                document.getElementById("env-output").textContent = envContent;
-                document.getElementById("vite-output").textContent = viteConfig;
-                document.getElementById("package-output").textContent =
-                    packageScripts;
+        <div id="docker-config" class="config-panel">
+            <h2>🐳 Docker Configuration</h2>
+            
+            <div class="config-section">
+                <h3>Container Settings</h3>
+                <div class="form-group">
+                    <label>Container Name</label>
+                    <input type="text" id="docker-container-name" value="cno-voidline" placeholder="Container name">
+                </div>
+                <div class="form-group">
+                    <label>Port Mapping</label>
+                    <input type="text" id="docker-port-mapping" value="5000:5000" placeholder="host:container">
+                </div>
+            </div>
 
-                // Show output section
-                document.getElementById("output-section").style.display =
-                    "block";
-                document
-                    .getElementById("output-section")
-                    .scrollIntoView({ behavior: "smooth" });
+            <div class="config-section">
+                <h3>Database Settings</h3>
+                <div class="form-group">
+                    <label>PostgreSQL Version</label>
+                    <select id="docker-postgres-version">
+                        <option value="15">PostgreSQL 15</option>
+                        <option value="14">PostgreSQL 14</option>
+                        <option value="13">PostgreSQL 13</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Database Name</label>
+                    <input type="text" id="docker-db-name" value="cno_voidline" placeholder="Database name">
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="generateConfig()">Generate Configuration</button>
+            <button class="btn btn-export" onclick="exportConfig()">Export Config Files</button>
+            <label for="import-config" class="file-input-label">Import Config</label>
+            <input type="file" id="import-config" class="file-input" accept=".json,.env,.yml,.yaml" onchange="importConfig(event)">
+            <button class="btn btn-secondary" onclick="deployToReplit()">Deploy to Replit</button>
+        </div>
+
+        <div id="config-output" style="display: none;">
+            <h3>Generated Configuration</h3>
+            <div class="code-block env-preview" id="config-preview"></div>
+        </div>
+
+        <div class="deployment-status">
+            <h3>📊 Deployment Status</h3>
+            <div class="status-item">
+                <span>Configuration</span>
+                <span class="status-badge status-ready" id="config-status">Ready</span>
+            </div>
+            <div class="status-item">
+                <span>Environment Variables</span>
+                <span class="status-badge status-pending" id="env-status">Pending</span>
+            </div>
+            <div class="status-item">
+                <span>Database Setup</span>
+                <span class="status-badge status-pending" id="db-status">Pending</span>
+            </div>
+            <div class="status-item">
+                <span>Deployment</span>
+                <span class="status-badge status-pending" id="deploy-status">Pending</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedPlatform = null;
+        let currentConfig = {};
+
+        function selectPlatform(platform) {
+            // Remove previous selection
+            document.querySelectorAll('.platform-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Hide all config panels
+            document.querySelectorAll('.config-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+
+            // Select current platform
+            event.currentTarget.classList.add('selected');
+            selectedPlatform = platform;
+
+            // Show config panel
+            const configPanel = document.getElementById(platform + '-config');
+            if (configPanel) {
+                configPanel.classList.add('active');
             }
 
-            function getDeployCommand(target) {
-                const commands = {
-                    "github-pages": "gh-pages -d dist",
-                    netlify: "netlify deploy --prod --dir=dist",
-                    vercel: "vercel --prod",
-                    railway: "railway up",
-                    render: 'echo "Push to main branch to deploy"',
-                };
-                return commands[target] || 'echo "Manual deployment required"';
+            // Update status
+            updateStatus('env-status', 'pending');
+            updateStatus('db-status', 'pending');
+            updateStatus('deploy-status', 'pending');
+        }
+
+        function updateStatus(elementId, status) {
+            const element = document.getElementById(elementId);
+            element.className = `status-badge status-${status}`;
+            element.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        function generateConfig() {
+            if (!selectedPlatform) {
+                alert('Please select a platform first!');
+                return;
             }
 
-            function copyToClipboard(elementId) {
-                const element = document.getElementById(elementId);
-                const text = element.textContent;
-                navigator.clipboard.writeText(text).then(() => {
-                    const btn = element.nextElementSibling;
-                    const originalText = btn.textContent;
-                    btn.textContent = "Copied!";
-                    btn.style.background = "var(--primary-green)";
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.style.background = "";
-                    }, 2000);
-                });
+            let config = {};
+            
+            switch (selectedPlatform) {
+                case 'railway-supabase':
+                    config = generateRailwaySupabaseConfig();
+                    break;
+                case 'render-planetscale':
+                    config = generateRenderPlanetScaleConfig();
+                    break;
+                case 'netlify-supabase':
+                    config = generateNetlifySupabaseConfig();
+                    break;
+                case 'vercel':
+                    config = generateVercelConfig();
+                    break;
+                case 'github-pages':
+                    config = generateGitHubPagesConfig();
+                    break;
+                case 'docker':
+                    config = generateDockerConfig();
+                    break;
             }
 
-            function downloadConfigs() {
-                const configs = [
-                    {
-                        name: ".env.production",
-                        content:
-                            document.getElementById("env-output").textContent,
-                    },
-                    {
-                        name: "vite.config.ts",
-                        content:
-                            document.getElementById("vite-output").textContent,
-                    },
-                    {
-                        name: "package.json",
-                        content:
-                            document.getElementById("package-output")
-                                .textContent,
-                    },
-                ];
+            currentConfig = config;
+            displayConfig(config);
+            updateStatus('env-status', 'ready');
+            updateStatus('db-status', 'ready');
+        }
 
-                configs.forEach((config) => {
-                    if (config.content) {
-                        const blob = new Blob([config.content], {
-                            type: "text/plain",
-                        });
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = config.name;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(url);
+        function generateRailwaySupabaseConfig() {
+            return {
+                platform: 'railway-supabase',
+                railway: {
+                    projectName: document.getElementById('railway-project-name').value,
+                    domain: document.getElementById('railway-domain').value,
+                    resources: document.getElementById('railway-resources').value
+                },
+                supabase: {
+                    url: document.getElementById('supabase-url').value,
+                    anonKey: document.getElementById('supabase-anon-key').value,
+                    dbUrl: document.getElementById('supabase-db-url').value
+                },
+                environment: {
+                    NODE_ENV: 'production',
+                    PORT: '5000',
+                    HOST: '0.0.0.0',
+                    VITE_DEPLOYMENT_TARGET: 'railway',
+                    VITE_STORAGE_BACKEND: 'postgresql',
+                    DATABASE_URL: document.getElementById('supabase-db-url').value,
+                    VITE_SUPABASE_URL: document.getElementById('supabase-url').value,
+                    VITE_SUPABASE_ANON_KEY: document.getElementById('supabase-anon-key').value,
+                    VITE_REQUIRE_AUTH: document.getElementById('enable-auth').checked,
+                    VITE_AI_PROVIDER: document.getElementById('ai-provider').value,
+                    VITE_MAX_FILE_SIZE_MB: document.getElementById('max-file-size').value,
+                    VITE_ENABLE_PWA: document.getElementById('enable-pwa').checked,
+                    VITE_ENABLE_ANALYTICS: document.getElementById('enable-analytics').checked
+                }
+            };
+        }
+
+        function generateRenderPlanetScaleConfig() {
+            return {
+                platform: 'render-planetscale',
+                render: {
+                    serviceName: document.getElementById('render-service-name').value,
+                    buildCommand: document.getElementById('render-build-command').value,
+                    startCommand: document.getElementById('render-start-command').value
+                },
+                planetscale: {
+                    dbName: document.getElementById('planetscale-db-name').value,
+                    connection: document.getElementById('planetscale-connection').value
+                },
+                environment: {
+                    NODE_ENV: 'production',
+                    PORT: '5000',
+                    VITE_DEPLOYMENT_TARGET: 'render',
+                    DATABASE_URL: document.getElementById('planetscale-connection').value,
+                    VITE_STORAGE_BACKEND: 'mysql',
+                    VITE_REQUIRE_AUTH: 'true',
+                    VITE_AI_PROVIDER: 'local'
+                }
+            };
+        }
+
+        function generateNetlifySupabaseConfig() {
+            return {
+                platform: 'netlify-supabase',
+                netlify: {
+                    siteName: document.getElementById('netlify-site-name').value,
+                    buildDir: document.getElementById('netlify-build-dir').value,
+                    enableForms: document.getElementById('netlify-forms').checked,
+                    enableEdgeFunctions: document.getElementById('netlify-edge-functions').checked
+                },
+                supabase: {
+                    url: document.getElementById('netlify-supabase-url').value,
+                    anonKey: document.getElementById('netlify-supabase-key').value
+                },
+                environment: {
+                    NODE_ENV: 'production',
+                    VITE_DEPLOYMENT_TARGET: 'netlify',
+                    VITE_STORAGE_BACKEND: 'supabase',
+                    VITE_SUPABASE_URL: document.getElementById('netlify-supabase-url').value,
+                    VITE_SUPABASE_ANON_KEY: document.getElementById('netlify-supabase-key').value,
+                    VITE_REQUIRE_AUTH: 'false',
+                    VITE_AI_PROVIDER: 'local'
+                }
+            };
+        }
+
+        function generateVercelConfig() {
+            return {
+                platform: 'vercel',
+                vercel: {
+                    projectName: document.getElementById('vercel-project-name').value,
+                    framework: document.getElementById('vercel-framework').value,
+                    buildCommand: document.getElementById('vercel-build-command').value,
+                    outputDir: document.getElementById('vercel-output-dir').value
+                },
+                environment: {
+                    NODE_ENV: 'production',
+                    VITE_DEPLOYMENT_TARGET: 'vercel',
+                    VITE_STORAGE_BACKEND: 'memory',
+                    VITE_REQUIRE_AUTH: 'false',
+                    VITE_AI_PROVIDER: 'local',
+                    VITE_ENABLE_PWA: 'true'
+                }
+            };
+        }
+
+        function generateGitHubPagesConfig() {
+            return {
+                platform: 'github-pages',
+                github: {
+                    repoName: document.getElementById('gh-repo-name').value,
+                    username: document.getElementById('gh-username').value,
+                    branch: document.getElementById('gh-branch').value,
+                    autoDeploy: document.getElementById('gh-auto-deploy').checked,
+                    customDomain: document.getElementById('gh-custom-domain').checked
+                },
+                environment: {
+                    NODE_ENV: 'production',
+                    VITE_DEPLOYMENT_TARGET: 'github-pages',
+                    VITE_STORAGE_BACKEND: 'memory',
+                    VITE_REQUIRE_AUTH: 'false',
+                    VITE_AI_PROVIDER: 'local',
+                    VITE_BASE_URL: `https://${document.getElementById('gh-username').value}.github.io/${document.getElementById('gh-repo-name').value}`
+                }
+            };
+        }
+
+        function generateDockerConfig() {
+            return {
+                platform: 'docker',
+                docker: {
+                    containerName: document.getElementById('docker-container-name').value,
+                    portMapping: document.getElementById('docker-port-mapping').value,
+                    postgresVersion: document.getElementById('docker-postgres-version').value,
+                    dbName: document.getElementById('docker-db-name').value
+                },
+                environment: {
+                    NODE_ENV: 'production',
+                    PORT: '5000',
+                    HOST: '0.0.0.0',
+                    VITE_DEPLOYMENT_TARGET: 'docker',
+                    DATABASE_URL: `postgresql://postgres:password@postgres:5432/${document.getElementById('docker-db-name').value}`,
+                    VITE_STORAGE_BACKEND: 'postgresql',
+                    VITE_REQUIRE_AUTH: 'true',
+                    VITE_AI_PROVIDER: 'local'
+                }
+            };
+        }
+
+        function displayConfig(config) {
+            const output = document.getElementById('config-output');
+            const preview = document.getElementById('config-preview');
+            
+            let envContent = `# C/No Voidline - ${config.platform.toUpperCase()} Configuration\n# Generated: ${new Date().toISOString()}\n\n`;
+            
+            Object.entries(config.environment).forEach(([key, value]) => {
+                envContent += `${key}=${value}\n`;
+            });
+
+            preview.textContent = envContent;
+            output.style.display = 'block';
+        }
+
+        function exportConfig() {
+            if (!currentConfig || Object.keys(currentConfig).length === 0) {
+                alert('Please generate a configuration first!');
+                return;
+            }
+
+            const configFiles = generateConfigFiles(currentConfig);
+            
+            configFiles.forEach(file => {
+                const blob = new Blob([file.content], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            });
+
+            updateStatus('deploy-status', 'ready');
+        }
+
+        function generateConfigFiles(config) {
+            const files = [];
+
+            // Environment file
+            let envContent = `# C/No Voidline - ${config.platform.toUpperCase()} Configuration\n# Generated: ${new Date().toISOString()}\n\n`;
+            Object.entries(config.environment).forEach(([key, value]) => {
+                envContent += `${key}=${value}\n`;
+            });
+            files.push({ name: '.env.production', content: envContent });
+
+            // Platform-specific files
+            switch (config.platform) {
+                case 'railway-supabase':
+                    files.push({
+                        name: 'railway.json',
+                        content: JSON.stringify({
+                            build: { builder: "NIXPACKS" },
+                            deploy: {
+                                startCommand: "npm start",
+                                healthcheckPath: "/api/health"
+                            }
+                        }, null, 2)
+                    });
+                    break;
+
+                case 'render-planetscale':
+                    files.push({
+                        name: 'render.yaml',
+                        content: `services:
+  - type: web
+    name: ${config.render.serviceName}
+    env: node
+    buildCommand: ${config.render.buildCommand}
+    startCommand: ${config.render.startCommand}
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: ${config.planetscale.connection}`
+                    });
+                    break;
+
+                case 'netlify-supabase':
+                    files.push({
+                        name: 'netlify.toml',
+                        content: `[build]
+  publish = "${config.netlify.buildDir}"
+  command = "npm run build"
+
+[build.environment]
+  NODE_ENV = "production"`
+                    });
+                    break;
+
+                case 'vercel':
+                    files.push({
+                        name: 'vercel.json',
+                        content: JSON.stringify({
+                            buildCommand: config.vercel.buildCommand,
+                            outputDirectory: config.vercel.outputDir,
+                            framework: config.vercel.framework
+                        }, null, 2)
+                    });
+                    break;
+
+                case 'github-pages':
+                    files.push({
+                        name: '.github/workflows/deploy.yml',
+                        content: `name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ ${config.github.branch} ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: \${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist`
+                    });
+                    break;
+
+                case 'docker':
+                    files.push({
+                        name: 'docker-compose.yml',
+                        content: `version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: ${config.docker.containerName}
+    ports:
+      - "${config.docker.portMapping}"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/${config.docker.dbName}
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:${config.docker.postgresVersion}
+    environment:
+      - POSTGRES_DB=${config.docker.dbName}
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:`
+                    });
+                    break;
+            }
+
+            // Setup script
+            const setupScript = generateSetupScript(config);
+            files.push({ name: 'setup.sh', content: setupScript });
+
+            return files;
+        }
+
+        function generateSetupScript(config) {
+            let script = `#!/bin/bash
+# C/No Voidline - ${config.platform.toUpperCase()} Setup Script
+# Generated: ${new Date().toISOString()}
+
+echo "🚀 Setting up C/No Voidline for ${config.platform}"
+
+# Install dependencies
+echo "📦 Installing dependencies..."
+npm install
+
+# Copy environment configuration
+cp .env.production .env
+
+`;
+
+            switch (config.platform) {
+                case 'railway-supabase':
+                    script += `# Railway deployment
+echo "🚂 Deploying to Railway..."
+railway up
+railway variables set NODE_ENV=production
+railway variables set DATABASE_URL="$DATABASE_URL"
+`;
+                    break;
+
+                case 'docker':
+                    script += `# Docker deployment
+echo "🐳 Building Docker containers..."
+docker-compose up -d
+echo "✅ Application running at http://localhost:5000"
+`;
+                    break;
+
+                default:
+                    script += `# Build the application
+echo "🔨 Building application..."
+npm run build
+
+echo "✅ Setup complete! Check platform-specific deployment instructions."
+`;
+            }
+
+            return script;
+        }
+
+        function importConfig(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    let config;
+
+                    if (file.name.endsWith('.json')) {
+                        config = JSON.parse(content);
+                    } else if (file.name.endsWith('.env')) {
+                        config = parseEnvFile(content);
+                    } else {
+                        config = { environment: parseEnvFile(content) };
+                    }
+
+                    currentConfig = config;
+                    populateFormFromConfig(config);
+                    updateStatus('env-status', 'ready');
+                    
+                } catch (error) {
+                    alert('Error importing configuration: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseEnvFile(content) {
+            const env = {};
+            const lines = content.split('\n');
+            
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed && !trimmed.startsWith('#')) {
+                    const [key, ...valueParts] = trimmed.split('=');
+                    if (key && valueParts.length > 0) {
+                        env[key.trim()] = valueParts.join('=').trim();
+                    }
+                }
+            });
+            
+            return { environment: env };
+        }
+
+        function populateFormFromConfig(config) {
+            if (config.environment) {
+                Object.entries(config.environment).forEach(([key, value]) => {
+                    const element = document.querySelector(`input[value="${value}"], select option[value="${value}"]`);
+                    if (element) {
+                        if (element.tagName === 'INPUT') {
+                            element.value = value;
+                        } else if (element.tagName === 'OPTION') {
+                            element.selected = true;
+                        }
                     }
                 });
             }
+        }
 
-            function resetToDefaults() {
-                document.getElementById("deployment-target").value =
-                    "github-pages";
-                document.getElementById("base-url").value = "";
-                document.getElementById("enable-auth").checked = true;
-                document.getElementById("storage-backend").value = "postgresql";
-                document.getElementById("database-url").value = "";
-                document.getElementById("default-theme").value = "classic";
-                document.getElementById("max-file-size").value = "100";
-                document.getElementById("enable-analytics").checked = false;
-                document.getElementById("enable-export").checked = true;
-                document.getElementById("ai-provider").value = "anthropic";
-                document.getElementById("api-key").value = "";
-                document.getElementById("session-timeout").value = "60";
-                document.getElementById("cors-origins").value = "";
-                document.getElementById("enable-rate-limiting").checked = true;
-
-                document.getElementById("output-section").style.display =
-                    "none";
+        function deployToReplit() {
+            if (!currentConfig || Object.keys(currentConfig).length === 0) {
+                alert('Please generate a configuration first!');
+                return;
             }
 
-            // Auto-populate base URL based on deployment target
-            document
-                .getElementById("deployment-target")
-                .addEventListener("change", function () {
-                    const target = this.value;
-                    const baseUrlField = document.getElementById("base-url");
+            const replitConfig = {
+                platform: 'replit',
+                environment: {
+                    NODE_ENV: 'production',
+                    PORT: '5000',
+                    HOST: '0.0.0.0',
+                    VITE_DEPLOYMENT_TARGET: 'replit',
+                    DATABASE_URL: '${DATABASE_URL}',
+                    VITE_STORAGE_BACKEND: 'postgresql',
+                    VITE_REQUIRE_AUTH: 'true',
+                    VITE_AI_PROVIDER: 'local',
+                    VITE_MAX_FILE_SIZE_MB: '200',
+                    VITE_ENABLE_PWA: 'true'
+                }
+            };
 
-                    switch (target) {
-                        case "github-pages":
-                            baseUrlField.placeholder =
-                                "https://username.github.io/cno-voidline";
-                            break;
-                        case "netlify":
-                            baseUrlField.placeholder =
-                                "https://app-name.netlify.app";
-                            break;
-                        case "vercel":
-                            baseUrlField.placeholder =
-                                "https://cno-voidline.vercel.app";
-                            break;
-                        case "railway":
-                            baseUrlField.placeholder =
-                                "https://cno-voidline.railway.app";
-                            break;
-                        case "render":
-                            baseUrlField.placeholder =
-                                "https://cno-voidline.onrender.com";
-                            break;
-                        default:
-                            baseUrlField.placeholder =
-                                "https://your-app-url.com";
-                    }
-                });
-        </script>
-    </body>
+            displayConfig(replitConfig);
+            updateStatus('deploy-status', 'ready');
+            
+            alert('Replit configuration generated! Use the Deployments tab in Replit to deploy your application.');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('C/No Voidline Platform Configuration Manager loaded');
+        });
+    </script>
+</body>
 </html>
