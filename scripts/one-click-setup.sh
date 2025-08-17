@@ -148,20 +148,114 @@ install_local_setup() {
     # Create scripts directory
     mkdir -p scripts
 
+    # Create local development start script
+    cat > scripts/start-local.sh << 'EOF'
+#!/bin/bash
+echo "🚀 Starting C/No Voidline locally..."
+echo "📍 Application will be available at http://0.0.0.0:5000"
+echo "📍 Or access via: http://localhost:5000"
+echo ""
+
+# Check if port 5000 is available
+if lsof -i :5000 >/dev/null 2>&1; then
+    echo "⚠️  Port 5000 is already in use. Stopping existing process..."
+    pkill -f "node.*server" || true
+    sleep 2
+fi
+
+# Start the application
+npm run dev
+EOF
+    chmod +x scripts/start-local.sh
+
+    # Create local build script
+    cat > scripts/build-local.sh << 'EOF'
+#!/bin/bash
+echo "🔨 Building C/No Voidline for local deployment..."
+
+# Clean previous build
+rm -rf dist
+
+# Build the application
+npm run build
+
+if [ $? -eq 0 ]; then
+    echo "✅ Build completed successfully!"
+    echo "📦 Built files are in the 'dist' directory"
+    
+    # Create simple local server script
+    cat > scripts/serve-local.sh << 'SERVE_EOF'
+#!/bin/bash
+echo "🌐 Starting local production server..."
+echo "📍 Application will be available at http://0.0.0.0:5000"
+
+# Start production server
+npm run start
+SERVE_EOF
+    chmod +x scripts/serve-local.sh
+    
+    echo "🚀 To run production build locally: ./scripts/serve-local.sh"
+else
+    echo "❌ Build failed!"
+    exit 1
+fi
+EOF
+    chmod +x scripts/build-local.sh
+
     # Create health check endpoint script
     cat > scripts/health-check.sh << 'EOF'
 #!/bin/bash
 # Health check for local development
+echo "🔍 Checking application health..."
 curl -f http://0.0.0.0:5000/health > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo "✅ Application is running and healthy"
+    echo "📍 Access your app at: http://0.0.0.0:5000"
 else
     echo "❌ Application is not responding"
+    echo "💡 Try starting with: ./scripts/start-local.sh"
 fi
 EOF
     chmod +x scripts/health-check.sh
 
-    log_success "Local setup dependencies installed"
+    # Create local deployment script
+    cat > scripts/deploy-local.sh << 'EOF'
+#!/bin/bash
+echo "🚀 Local Deployment Process"
+echo "=========================="
+
+# Step 1: Build the application
+echo "Step 1: Building application..."
+./scripts/build-local.sh
+
+if [ $? -ne 0 ]; then
+    echo "❌ Build failed. Deployment aborted."
+    exit 1
+fi
+
+# Step 2: Test the build
+echo ""
+echo "Step 2: Testing build..."
+if [ -d "dist" ] && [ -f "dist/index.html" ]; then
+    echo "✅ Build artifacts verified"
+else
+    echo "❌ Build artifacts missing"
+    exit 1
+fi
+
+# Step 3: Start production server
+echo ""
+echo "Step 3: Starting production server..."
+echo "📍 Your app will be available at: http://0.0.0.0:5000"
+echo "📍 Press Ctrl+C to stop the server"
+echo ""
+
+# Start the production server
+./scripts/serve-local.sh
+EOF
+    chmod +x scripts/deploy-local.sh
+
+    log_success "Local setup dependencies and scripts created"
 }
 
 # Local development setup
@@ -201,6 +295,39 @@ EOF
 
     log_success "Created .env.development"
 
+    # Create production environment for local deployment
+    cat > .env.production << EOF
+# C/No Voidline - Local Production Environment
+# Generated: $(date)
+
+NODE_ENV=production
+PORT=${DEFAULT_PORT}
+
+# Storage Configuration
+VITE_STORAGE_BACKEND=memory
+VITE_REQUIRE_AUTH=false
+
+# Application Settings
+VITE_DEFAULT_THEME=classic
+VITE_MAX_FILE_SIZE_MB=100
+VITE_ENABLE_ANALYTICS=false
+VITE_ENABLE_EXPORT=true
+VITE_AI_PROVIDER=local
+
+# Production Settings
+VITE_OPTIMIZE_BUNDLE=true
+VITE_ENABLE_PWA=true
+VITE_MINIFY=true
+SESSION_TIMEOUT_MINUTES=30
+CORS_ORIGINS=http://0.0.0.0:${DEFAULT_PORT}
+ENABLE_RATE_LIMITING=true
+
+# Debug Settings (minimal for production)
+LOG_LEVEL=info
+EOF
+
+    log_success "Created .env.production"
+
     # Test the setup
     log_info "Testing development setup..."
     npm run build > /dev/null 2>&1
@@ -209,10 +336,16 @@ EOF
     echo ""
     log_success "🎉 Local Development Setup Complete!"
     echo ""
-    echo -e "${WHITE}Next steps:${NC}"
-    echo -e "  ${GREEN}1.${NC} Start development: ${CYAN}npm run dev${NC}"
-    echo -e "  ${GREEN}2.${NC} Open browser: ${CYAN}http://localhost:${DEFAULT_PORT}${NC}"
-    echo -e "  ${GREEN}3.${NC} Configure settings: ${CYAN}http://localhost:${DEFAULT_PORT}/config.html${NC}"
+    echo -e "${WHITE}Development Commands:${NC}"
+    echo -e "  ${GREEN}•${NC} Start development: ${CYAN}./scripts/start-local.sh${NC} or ${CYAN}npm run dev${NC}"
+    echo -e "  ${GREEN}•${NC} Build for production: ${CYAN}./scripts/build-local.sh${NC} or ${CYAN}npm run build${NC}"
+    echo -e "  ${GREEN}•${NC} Deploy locally: ${CYAN}./scripts/deploy-local.sh${NC}"
+    echo -e "  ${GREEN}•${NC} Check health: ${CYAN}./scripts/health-check.sh${NC}"
+    echo ""
+    echo -e "${WHITE}Access URLs:${NC}"
+    echo -e "  ${GREEN}•${NC} Development: ${CYAN}http://0.0.0.0:${DEFAULT_PORT}${NC}"
+    echo -e "  ${GREEN}•${NC} Configuration: ${CYAN}http://0.0.0.0:${DEFAULT_PORT}/config.html${NC}"
+    echo -e "  ${GREEN}•${NC} Alternative: ${CYAN}http://localhost:${DEFAULT_PORT}${NC}"
     echo ""
 }
 
@@ -1608,6 +1741,30 @@ main() {
                 install_dependencies
                 install_local_setup
                 setup_local_development
+                
+                echo ""
+                echo -e "${WHITE}Choose what to do next:${NC}"
+                echo -e "${GREEN}a)${NC} 🚀 Start development server now"
+                echo -e "${GREEN}b)${NC} 🔨 Build and deploy locally"
+                echo -e "${GREEN}c)${NC} ✋ Setup complete, I'll start manually"
+                echo ""
+                read -p "Enter your choice (a/b/c): " next_choice
+                
+                case $next_choice in
+                    a|A)
+                        log_info "Starting development server..."
+                        ./scripts/start-local.sh
+                        ;;
+                    b|B)
+                        log_info "Building and deploying locally..."
+                        ./scripts/deploy-local.sh
+                        ;;
+                    c|C)
+                        log_info "Setup complete. You can start manually with:"
+                        echo "  Development: ./scripts/start-local.sh"
+                        echo "  Production:  ./scripts/deploy-local.sh"
+                        ;;
+                esac
                 ;;
             2)
                 check_requirements
