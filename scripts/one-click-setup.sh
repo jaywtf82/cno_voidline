@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # C/No Voidline - One-Click Setup & Deployment Script
@@ -82,35 +81,35 @@ show_main_menu() {
 # Check system requirements
 check_requirements() {
     log_header "Checking System Requirements"
-    
+
     # Check Node.js
     if ! command -v node &> /dev/null; then
         log_error "Node.js is required but not installed."
         log_info "Please install Node.js 18+ from: https://nodejs.org/"
         exit 1
     fi
-    
+
     NODE_VERSION=$(node -v | cut -d'v' -f2)
     if [ "$(printf '%s\n' "18.0.0" "$NODE_VERSION" | sort -V | head -n1)" != "18.0.0" ]; then
         log_error "Node.js version $NODE_VERSION is too old. Please upgrade to version 18+"
         exit 1
     fi
     log_success "Node.js version $NODE_VERSION ✓"
-    
+
     # Check npm
     if ! command -v npm &> /dev/null; then
         log_error "npm is required but not installed."
         exit 1
     fi
     log_success "npm $(npm -v) ✓"
-    
+
     # Check Git
     if ! command -v git &> /dev/null; then
         log_warning "Git not found. Some features may not work."
     else
         log_success "Git $(git --version | cut -d' ' -f3) ✓"
     fi
-    
+
     # Check available disk space (minimum 1GB)
     AVAILABLE_KB=$(df . | tail -1 | awk '{print $4}')
     if [ "$AVAILABLE_KB" -lt 1048576 ]; then
@@ -123,21 +122,52 @@ check_requirements() {
 # Install dependencies
 install_dependencies() {
     log_header "Installing Dependencies"
-    
+
     if [ ! -f "package.json" ]; then
         log_error "package.json not found. Please run this script from the project root."
         exit 1
     fi
-    
+
     log_info "Installing npm dependencies..."
     npm ci --silent --no-audit
     log_success "Dependencies installed successfully"
 }
 
+# Install local dependencies and setup
+install_local_setup() {
+    log_header "Installing Local Dependencies"
+
+    # Install all dependencies
+    log_info "Installing npm dependencies..."
+    npm install
+
+    # Install additional development tools
+    log_info "Installing development tools..."
+    npm install --save-dev @types/node concurrently nodemon > /dev/null 2>&1 || true
+
+    # Create scripts directory
+    mkdir -p scripts
+
+    # Create health check endpoint script
+    cat > scripts/health-check.sh << 'EOF'
+#!/bin/bash
+# Health check for local development
+curl -f http://0.0.0.0:5000/health > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "✅ Application is running and healthy"
+else
+    echo "❌ Application is not responding"
+fi
+EOF
+    chmod +x scripts/health-check.sh
+
+    log_success "Local setup dependencies installed"
+}
+
 # Local development setup
 setup_local_development() {
     log_header "Setting Up Local Development Environment"
-    
+
     # Create environment file
     cat > .env.development << EOF
 # C/No Voidline - Local Development Environment
@@ -168,14 +198,14 @@ ENABLE_RATE_LIMITING=false
 DEBUG=voidline:*
 LOG_LEVEL=debug
 EOF
-    
+
     log_success "Created .env.development"
-    
+
     # Test the setup
     log_info "Testing development setup..."
     npm run build > /dev/null 2>&1
     log_success "Build test passed"
-    
+
     echo ""
     log_success "🎉 Local Development Setup Complete!"
     echo ""
@@ -189,11 +219,11 @@ EOF
 # PostgreSQL setup
 setup_postgresql() {
     log_header "Setting Up PostgreSQL Development Environment"
-    
+
     # Check if PostgreSQL is available
     if command -v psql &> /dev/null; then
         log_success "PostgreSQL found"
-        
+
         # Create database setup script
         cat > scripts/setup-postgres.sql << EOF
 -- C/No Voidline Database Setup
@@ -201,7 +231,7 @@ CREATE DATABASE IF NOT EXISTS cno_voidline_dev;
 CREATE USER IF NOT EXISTS voidline_user WITH PASSWORD 'voidline_dev_password';
 GRANT ALL PRIVILEGES ON DATABASE cno_voidline_dev TO voidline_user;
 EOF
-        
+
         # Create environment file
         cat > .env.local << EOF
 # C/No Voidline - Local Development with PostgreSQL
@@ -231,7 +261,7 @@ ENABLE_RATE_LIMITING=false
 DEBUG=voidline:*
 LOG_LEVEL=debug
 EOF
-        
+
         log_success "Created .env.local with PostgreSQL configuration"
         log_info "Run 'npm run db:setup' to initialize the database"
     else
@@ -244,7 +274,7 @@ EOF
 # Frontend-only deployment setup
 setup_frontend_deployment() {
     log_header "Setting Up Frontend-Only Deployment"
-    
+
     echo -e "${WHITE}Choose deployment platform:${NC}\n"
     echo -e "${GREEN}1.${NC} GitHub Pages"
     echo -e "${GREEN}2.${NC} Netlify"
@@ -252,7 +282,7 @@ setup_frontend_deployment() {
     echo -e "${GREEN}4.${NC} All platforms"
     echo ""
     read -p "Enter your choice (1-4): " platform_choice
-    
+
     case $platform_choice in
         1) setup_github_pages ;;
         2) setup_netlify ;;
@@ -265,7 +295,7 @@ setup_frontend_deployment() {
 # GitHub Pages setup
 setup_github_pages() {
     log_info "Setting up GitHub Pages deployment..."
-    
+
     # Create production environment for GitHub Pages
     cat > .env.production << EOF
 # C/No Voidline - GitHub Pages Production Environment
@@ -290,13 +320,13 @@ VITE_OPTIMIZE_BUNDLE=true
 VITE_ENABLE_PWA=true
 VITE_MINIFY=true
 EOF
-    
+
     # Install gh-pages if not present
     if ! npm list gh-pages &> /dev/null; then
         log_info "Installing gh-pages..."
         npm install --save-dev gh-pages
     fi
-    
+
     log_success "GitHub Pages setup complete"
     log_info "Run 'npm run deploy:github' to deploy"
 }
@@ -304,7 +334,7 @@ EOF
 # Create enhanced config.html
 create_enhanced_config() {
     log_header "Creating Enhanced Configuration Manager"
-    
+
     cat > config.html << 'EOF'
 <!DOCTYPE html>
 <html lang="en">
@@ -615,7 +645,7 @@ create_enhanced_config() {
             .setup-wizard {
                 grid-template-columns: 1fr;
             }
-            
+
             .platform-cards {
                 grid-template-columns: 1fr;
             }
@@ -663,7 +693,7 @@ create_enhanced_config() {
                 <div id="platform" class="step active">
                     <h2>Choose Your Deployment Platform</h2>
                     <p>Select the platform where you want to deploy C/No Voidline:</p>
-                    
+
                     <div class="platform-cards">
                         <div class="platform-card" onclick="selectPlatform('github-pages')">
                             <h4>GitHub Pages</h4>
@@ -671,21 +701,21 @@ create_enhanced_config() {
                             <p>Perfect for: Personal projects, portfolios</p>
                             <p>Features: Static hosting, custom domains</p>
                         </div>
-                        
+
                         <div class="platform-card" onclick="selectPlatform('netlify')">
                             <h4>Netlify</h4>
                             <p><span class="status-indicator status-free"></span>Free tier available</p>
                             <p>Perfect for: Modern web apps, CI/CD</p>
                             <p>Features: Form handling, edge functions</p>
                         </div>
-                        
+
                         <div class="platform-card" onclick="selectPlatform('vercel')">
                             <h4>Vercel</h4>
                             <p><span class="status-indicator status-free"></span>Free tier available</p>
                             <p>Perfect for: React apps, serverless</p>
                             <p>Features: Zero-config deployment, analytics</p>
                         </div>
-                        
+
                         <div class="platform-card" onclick="selectPlatform('replit')">
                             <h4>Replit</h4>
                             <p><span class="status-indicator status-free"></span>Free tier available</p>
@@ -708,17 +738,17 @@ create_enhanced_config() {
                 <!-- Step 2: Environment Setup -->
                 <div id="environment" class="step">
                     <h2>Environment Configuration</h2>
-                    
+
                     <div class="form-group">
                         <label for="app-name">Application Name</label>
                         <input type="text" id="app-name" value="cno-voidline" placeholder="your-app-name">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="base-url">Base URL</label>
                         <input type="url" id="base-url" placeholder="https://your-app.netlify.app">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="environment-type">Environment Type</label>
                         <select id="environment-type">
@@ -727,12 +757,12 @@ create_enhanced_config() {
                             <option value="staging">Staging</option>
                         </select>
                     </div>
-                    
+
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-pwa" checked>
                         <label for="enable-pwa">Enable Progressive Web App (PWA)</label>
                     </div>
-                    
+
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-compression" checked>
                         <label for="enable-compression">Enable Asset Compression</label>
@@ -742,7 +772,7 @@ create_enhanced_config() {
                 <!-- Step 3: Database Configuration -->
                 <div id="database" class="step">
                     <h2>Database Configuration</h2>
-                    
+
                     <div class="form-group">
                         <label for="storage-type">Storage Type</label>
                         <select id="storage-type" onchange="toggleDatabaseFields()">
@@ -751,19 +781,19 @@ create_enhanced_config() {
                             <option value="postgresql">PostgreSQL (Production)</option>
                         </select>
                     </div>
-                    
+
                     <div id="database-fields" style="display: none;">
                         <div class="form-group">
                             <label for="database-url">Database URL</label>
                             <input type="text" id="database-url" placeholder="postgresql://user:password@host:5432/database">
                         </div>
-                        
+
                         <div class="checkbox-group">
                             <input type="checkbox" id="enable-ssl" checked>
                             <label for="enable-ssl">Enable SSL Connection</label>
                         </div>
                     </div>
-                    
+
                     <div class="instructions">
                         <h4>Database Setup Guide:</h4>
                         <div id="db-instructions">
@@ -775,7 +805,7 @@ create_enhanced_config() {
                 <!-- Step 4: Features & AI -->
                 <div id="features" class="step">
                     <h2>Features & AI Configuration</h2>
-                    
+
                     <div class="form-group">
                         <label for="ai-provider">AI Provider</label>
                         <select id="ai-provider">
@@ -785,22 +815,22 @@ create_enhanced_config() {
                             <option value="mock">Mock/Demo Mode</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="max-file-size">Max Audio File Size (MB)</label>
                         <input type="number" id="max-file-size" value="100" min="1" max="500">
                     </div>
-                    
+
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-auth" checked>
                         <label for="enable-auth">Enable User Authentication</label>
                     </div>
-                    
+
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-analytics">
                         <label for="enable-analytics">Enable Analytics</label>
                     </div>
-                    
+
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-export" checked>
                         <label for="enable-export">Enable Audio Export</label>
@@ -810,22 +840,22 @@ create_enhanced_config() {
                 <!-- Step 5: Security Settings -->
                 <div id="security" class="step">
                     <h2>Security Settings</h2>
-                    
+
                     <div class="form-group">
                         <label for="session-timeout">Session Timeout (minutes)</label>
                         <input type="number" id="session-timeout" value="60" min="5" max="1440">
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="cors-origins">CORS Origins (comma separated)</label>
                         <textarea id="cors-origins" placeholder="https://example.com, https://app.example.com" rows="3"></textarea>
                     </div>
-                    
+
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-rate-limiting" checked>
                         <label for="enable-rate-limiting">Enable Rate Limiting</label>
                     </div>
-                    
+
                     <div class="checkbox-group">
                         <input type="checkbox" id="enable-https" checked>
                         <label for="enable-https">Force HTTPS</label>
@@ -835,11 +865,11 @@ create_enhanced_config() {
                 <!-- Step 6: Generate & Deploy -->
                 <div id="deploy" class="step">
                     <h2>Generate Configuration & Deploy</h2>
-                    
+
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <button class="btn" onclick="generateAllConfigs()">
                             🔧 Generate All Configuration Files
@@ -860,9 +890,9 @@ create_enhanced_config() {
         <!-- Output Section -->
         <div class="output-section" id="output-section" style="display: none;">
             <h3>Generated Configuration Files</h3>
-            
+
             <div id="config-outputs"></div>
-            
+
             <div class="form-group">
                 <button class="btn" onclick="copyAllConfigs()">📋 Copy All Configurations</button>
                 <button class="btn btn-secondary" onclick="resetWizard()">🔄 Reset Wizard</button>
@@ -873,38 +903,38 @@ create_enhanced_config() {
     <script>
         let selectedPlatform = '';
         let currentStep = 'platform';
-        
+
         function showStep(stepId) {
             // Hide all steps
             document.querySelectorAll('.step').forEach(step => {
                 step.classList.remove('active');
             });
-            
+
             // Remove active class from nav items
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
-            
+
             // Show selected step
             document.getElementById(stepId).classList.add('active');
-            
+
             // Add active class to corresponding nav item
             event.target.classList.add('active');
-            
+
             currentStep = stepId;
         }
-        
+
         function selectPlatform(platform) {
             // Remove selected class from all cards
             document.querySelectorAll('.platform-card').forEach(card => {
                 card.classList.remove('selected');
             });
-            
+
             // Add selected class to clicked card
             event.currentTarget.classList.add('selected');
-            
+
             selectedPlatform = platform;
-            
+
             // Update base URL placeholder
             const baseUrlField = document.getElementById('base-url');
             switch(platform) {
@@ -922,12 +952,12 @@ create_enhanced_config() {
                     break;
             }
         }
-        
+
         function toggleDatabaseFields() {
             const storageType = document.getElementById('storage-type').value;
             const databaseFields = document.getElementById('database-fields');
             const instructions = document.getElementById('db-instructions');
-            
+
             if (storageType === 'memory') {
                 databaseFields.style.display = 'none';
                 instructions.innerHTML = '<p>Memory storage requires no setup and is perfect for development and demo purposes.</p>';
@@ -948,10 +978,10 @@ create_enhanced_config() {
                 }
             }
         }
-        
+
         function generateAllConfigs() {
             updateProgress(20);
-            
+
             const configs = {
                 env: generateEnvFile(),
                 vite: generateViteConfig(),
@@ -960,16 +990,16 @@ create_enhanced_config() {
                 github: generateGitHubAction(),
                 instructions: generateDeploymentInstructions()
             };
-            
+
             updateProgress(100);
-            
+
             displayConfigs(configs);
             showDeploymentInstructions();
-            
+
             document.getElementById('output-section').style.display = 'block';
             document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
         }
-        
+
         function generateEnvFile() {
             const appName = document.getElementById('app-name').value;
             const baseUrl = document.getElementById('base-url').value;
@@ -985,7 +1015,7 @@ create_enhanced_config() {
             const corsOrigins = document.getElementById('cors-origins').value;
             const enableRateLimit = document.getElementById('enable-rate-limiting').checked;
             const enableHttps = document.getElementById('enable-https').checked;
-            
+
             return `# C/No Voidline Environment Configuration
 # Generated: ${new Date().toISOString()}
 # Platform: ${selectedPlatform}
@@ -1021,7 +1051,7 @@ VITE_ENABLE_COMPRESSION=${document.getElementById('enable-compression').checked}
 # Platform-specific settings
 ${getPlatformSpecificEnv()}`;
         }
-        
+
         function getPlatformSpecificEnv() {
             switch(selectedPlatform) {
                 case 'github-pages':
@@ -1040,10 +1070,10 @@ REPLIT_DB_URL=\${REPLIT_DB_URL}`;
                     return '';
             }
         }
-        
+
         function generateViteConfig() {
             const appName = document.getElementById('app-name').value;
-            
+
             return `import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
@@ -1082,7 +1112,7 @@ export default defineConfig({
   },
 })`;
         }
-        
+
         function generatePackageScripts() {
             return `{
   "scripts": {
@@ -1097,7 +1127,7 @@ export default defineConfig({
   }
 }`;
         }
-        
+
         function getDeployCommand() {
             switch(selectedPlatform) {
                 case 'github-pages':
@@ -1112,10 +1142,10 @@ export default defineConfig({
                     return 'echo "Manual deployment required"';
             }
         }
-        
+
         function generateGitHubAction() {
             if (selectedPlatform !== 'github-pages') return null;
-            
+
             return `name: Deploy to GitHub Pages
 
 on:
@@ -1158,7 +1188,7 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4`;
         }
-        
+
         function generateDockerfile() {
             return `FROM node:20-alpine
 
@@ -1174,7 +1204,7 @@ EXPOSE 5000
 
 CMD ["npm", "start"]`;
         }
-        
+
         function generateDeploymentInstructions() {
             const instructions = {
                 'github-pages': `
@@ -1211,26 +1241,26 @@ CMD ["npm", "start"]`;
     <li>Use Deployments tab for production hosting</li>
 </ol>`
             };
-            
+
             return instructions[selectedPlatform] || '';
         }
-        
+
         function updateProgress(percentage) {
             document.getElementById('progress-fill').style.width = percentage + '%';
         }
-        
+
         function showDeploymentInstructions() {
             const instructionsDiv = document.getElementById('deployment-instructions');
             const platformInstructions = document.getElementById('platform-instructions');
-            
+
             platformInstructions.innerHTML = generateDeploymentInstructions();
             instructionsDiv.style.display = 'block';
         }
-        
+
         function displayConfigs(configs) {
             const outputDiv = document.getElementById('config-outputs');
             outputDiv.innerHTML = '';
-            
+
             Object.entries(configs).forEach(([key, content]) => {
                 if (content) {
                     const section = document.createElement('div');
@@ -1243,7 +1273,7 @@ CMD ["npm", "start"]`;
                 }
             });
         }
-        
+
         function getConfigTitle(key) {
             const titles = {
                 env: '.env.production',
@@ -1255,22 +1285,22 @@ CMD ["npm", "start"]`;
             };
             return titles[key] || key;
         }
-        
+
         function copyToClipboard(configKey) {
             // Implementation would copy the specific config to clipboard
             navigator.clipboard.writeText(document.querySelector(`[data-config="${configKey}"]`).textContent);
         }
-        
+
         function downloadConfigZip() {
             // Implementation would create and download a ZIP file with all configs
             alert('ZIP download functionality would be implemented here');
         }
-        
+
         function copyAllConfigs() {
             // Implementation would copy all configs to clipboard
             alert('All configurations copied to clipboard!');
         }
-        
+
         function resetWizard() {
             // Reset all form fields and return to first step
             document.querySelectorAll('input, select, textarea').forEach(field => {
@@ -1280,12 +1310,12 @@ CMD ["npm", "start"]`;
                     field.value = field.defaultValue;
                 }
             });
-            
+
             selectedPlatform = '';
             document.querySelectorAll('.platform-card').forEach(card => {
                 card.classList.remove('selected');
             });
-            
+
             showStep('platform');
             document.getElementById('output-section').style.display = 'none';
             updateProgress(0);
@@ -1294,14 +1324,81 @@ CMD ["npm", "start"]`;
 </body>
 </html>
 EOF
-    
+
     log_success "Enhanced configuration manager created at config.html"
 }
+
+# Netlify setup
+setup_netlify() {
+    log_info "Setting up Netlify deployment..."
+
+    # Create production environment for Netlify
+    cat > .env.production << EOF
+# C/No Voidline - Netlify Production Environment
+# Generated: $(date)
+
+NODE_ENV=production
+VITE_DEPLOYMENT_TARGET=netlify
+
+# Storage Configuration (Frontend-only)
+VITE_STORAGE_BACKEND=memory
+VITE_REQUIRE_AUTH=false
+
+# Application Settings
+VITE_DEFAULT_THEME=classic
+VITE_MAX_FILE_SIZE_MB=50
+VITE_ENABLE_ANALYTICS=false
+VITE_ENABLE_EXPORT=true
+VITE_AI_PROVIDER=local
+
+# Production Optimization
+VITE_OPTIMIZE_BUNDLE=true
+VITE_ENABLE_PWA=true
+VITE_MINIFY=true
+EOF
+
+    log_success "Netlify setup complete"
+    log_info "Run 'npm run deploy:netlify' to deploy"
+}
+
+# Vercel setup
+setup_vercel() {
+    log_info "Setting up Vercel deployment..."
+
+    # Create production environment for Vercel
+    cat > .env.production << EOF
+# C/No Voidline - Vercel Production Environment
+# Generated: $(date)
+
+NODE_ENV=production
+VITE_DEPLOYMENT_TARGET=vercel
+
+# Storage Configuration (Frontend-only)
+VITE_STORAGE_BACKEND=memory
+VITE_REQUIRE_AUTH=false
+
+# Application Settings
+VITE_DEFAULT_THEME=classic
+VITE_MAX_FILE_SIZE_MB=50
+VITE_ENABLE_ANALYTICS=false
+VITE_ENABLE_EXPORT=true
+VITE_AI_PROVIDER=local
+
+# Production Optimization
+VITE_OPTIMIZE_BUNDLE=true
+VITE_ENABLE_PWA=true
+VITE_MINIFY=true
+EOF
+
+    log_success "Vercel setup complete"
+    log_info "Run 'npm run deploy:vercel' to deploy"
+}
+
 
 # Deploy to different platforms
 deploy_to_platform() {
     log_header "Platform Deployment"
-    
+
     echo -e "${WHITE}Choose deployment platform:${NC}\n"
     echo -e "${GREEN}1.${NC} 🐙 GitHub Pages"
     echo -e "${GREEN}2.${NC} 🌐 Netlify"
@@ -1311,7 +1408,7 @@ deploy_to_platform() {
     echo -e "${GREEN}6.${NC} 🤗 Hugging Face Spaces"
     echo ""
     read -p "Enter your choice (1-6): " deploy_choice
-    
+
     case $deploy_choice in
         1) deploy_github_pages ;;
         2) deploy_netlify ;;
@@ -1326,11 +1423,11 @@ deploy_to_platform() {
 # GitHub Pages deployment
 deploy_github_pages() {
     log_info "Deploying to GitHub Pages..."
-    
+
     if ! command -v gh &> /dev/null; then
         log_warning "GitHub CLI not found. Installing gh-pages for manual deployment..."
         npm install --save-dev gh-pages
-        
+
         log_info "Manual deployment process:"
         echo "1. Run: npm run build"
         echo "2. Run: npx gh-pages -d dist"
@@ -1338,10 +1435,10 @@ deploy_github_pages() {
     else
         log_info "Building application..."
         npm run build
-        
+
         log_info "Deploying with gh-pages..."
         npx gh-pages -d dist
-        
+
         log_success "Deployed to GitHub Pages!"
         log_info "Enable GitHub Pages in your repository settings if not already done"
     fi
@@ -1350,7 +1447,7 @@ deploy_github_pages() {
 # Hugging Face Spaces deployment
 deploy_huggingface() {
     log_info "Setting up Hugging Face Spaces deployment..."
-    
+
     # Create Hugging Face Spaces configuration
     cat > README.md << EOF
 ---
@@ -1398,7 +1495,7 @@ EOF
 # Show documentation
 show_documentation() {
     log_header "Documentation"
-    
+
     echo -e "${WHITE}Available documentation:${NC}\n"
     echo -e "${GREEN}1.${NC} 📖 Setup Guide"
     echo -e "${GREEN}2.${NC} 🚀 Deployment Guide"
@@ -1407,7 +1504,7 @@ show_documentation() {
     echo -e "${GREEN}5.${NC} 🔧 Troubleshooting"
     echo ""
     read -p "Enter your choice (1-5): " doc_choice
-    
+
     case $doc_choice in
         1) show_setup_guide ;;
         2) show_deployment_guide ;;
@@ -1421,14 +1518,14 @@ show_documentation() {
 # Show setup guide
 show_setup_guide() {
     echo -e "${CYAN}=== C/No Voidline Setup Guide ===${NC}\n"
-    
+
     echo -e "${WHITE}Quick Start:${NC}"
     echo "1. Run: ./scripts/one-click-setup.sh"
     echo "2. Choose option 1 for local development"
     echo "3. Start: npm run dev"
     echo "4. Open: http://localhost:5000"
     echo ""
-    
+
     echo -e "${WHITE}Full Setup:${NC}"
     echo "1. Install Node.js 18+"
     echo "2. Clone the repository"
@@ -1436,7 +1533,7 @@ show_setup_guide() {
     echo "4. Configure using config.html"
     echo "5. Deploy to your chosen platform"
     echo ""
-    
+
     echo -e "${WHITE}Available Scripts:${NC}"
     echo "- npm run dev          # Development server"
     echo "- npm run build        # Production build"
@@ -1448,7 +1545,7 @@ show_setup_guide() {
 # Clean/reset project
 clean_project() {
     log_header "Cleaning Project"
-    
+
     echo -e "${WHITE}Choose cleaning option:${NC}\n"
     echo -e "${GREEN}1.${NC} 🧹 Clean build artifacts only"
     echo -e "${GREEN}2.${NC} 🔄 Reset to development defaults"
@@ -1456,7 +1553,7 @@ clean_project() {
     echo -e "${GREEN}4.${NC} ❌ Cancel"
     echo ""
     read -p "Enter your choice (1-4): " clean_choice
-    
+
     case $clean_choice in
         1)
             log_info "Cleaning build artifacts..."
@@ -1489,11 +1586,11 @@ clean_project() {
 # Create all platform setups
 setup_all_frontend_platforms() {
     log_info "Setting up configurations for all frontend platforms..."
-    
+
     setup_github_pages
     setup_netlify
     setup_vercel
-    
+
     log_success "All frontend platform configurations created"
     log_info "Choose your preferred platform and run the corresponding deploy command"
 }
@@ -1501,19 +1598,21 @@ setup_all_frontend_platforms() {
 # Main execution
 main() {
     show_welcome
-    
+
     while true; do
         show_main_menu
-        
+
         case $choice in
             1)
                 check_requirements
                 install_dependencies
+                install_local_setup
                 setup_local_development
                 ;;
             2)
                 check_requirements
                 install_dependencies
+                install_local_setup
                 setup_postgresql
                 ;;
             3)
@@ -1545,7 +1644,7 @@ main() {
                 log_error "Invalid choice. Please enter a number between 0-8."
                 ;;
         esac
-        
+
         echo ""
         read -p "Press Enter to continue..."
         echo ""
